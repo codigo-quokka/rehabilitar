@@ -1,0 +1,120 @@
+using Application.Auth;
+using Application.Auth.DTOs;
+using Domain;
+using System.Text;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+
+namespace Infrastructure.Identity;
+
+public class AuthService : IAuthService
+{
+    private readonly UserManager<User> _userManager;
+    private readonly IConfiguration _config;
+
+    public AuthService(UserManager<User> userManager, IConfiguration configuration)
+    {
+        _userManager = userManager;
+        _config = configuration;
+    }
+
+    public async Task RegisterAsync(RegisterRequest request)
+    {
+        var user = new User(
+            request.FirstName,
+            request.LastName,
+            request.FechaNacimiento,
+            request.Email,
+            request.Dni,
+            request.Telefono
+        );
+
+        var result = await _userManager.CreateAsync(user, request.Password);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new Exception($"Error al registrar usuario: {errors}");
+        }
+
+        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        // TO-DO: IEmailService para enviar el correo y retornar el confirmationToken.
+    }
+
+    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            throw new Exception("Credenciales incorrectas.");
+
+        if (!await _userManager.CheckPasswordAsync(user, request.Password))
+            throw new Exception("Credenciales incorrectas.");
+
+        if (!user.EmailConfirmed) // TO-DO: EmailNoConfirmadoException.
+            throw new Exception("Debe confirmar su email para iniciar sesión.");
+
+        var token = GenerateJwtToken(user);
+
+        return new AuthResponse(token);
+    }
+
+
+    public async Task<bool> ResendVerificationEmailAsync(ResendVerificationEmailRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null || user.EmailConfirmed)
+            return false;
+
+        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        var mensaje = "Usuario registrado. Enlace de verificación:";
+
+        // user id y token para scalar:
+        System.Console.WriteLine(user.Id);
+        System.Console.WriteLine(confirmationToken);
+        // TO-DO: IEmailService para enviar el correo, lo siguiente es una simulación.
+        System.Console.WriteLine(
+            $"{mensaje} /api/auth/verify-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}");
+
+        return true;
+    }
+
+    public async Task<bool> VerifyEmailAsync(VerifyEmailRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(request.UserId);
+        if (user == null) return false;
+
+        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+        return result.Succeeded;
+        
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var jwtSettings = _config.GetSection("JwtSettings");
+        var secretKey = jwtSettings["Secret"] ?? throw new Exception("JWT Secret not configured.");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"],
+            audience: jwtSettings["Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(2),
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
