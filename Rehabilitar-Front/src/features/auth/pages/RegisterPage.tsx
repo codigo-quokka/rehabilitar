@@ -1,0 +1,157 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button, Input, Card } from '../../../components/ui';
+import { authApi } from '../../../api';
+import logo from '../../../assets/logo.png';
+
+export function RegisterPage() {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    documento: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await authApi.register({
+        email: formData.email,
+        password: formData.password,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        telefono: formData.telefono,
+        documento: formData.documento,
+      });
+      navigate('/login');
+    } catch {
+      setError('Error al registrar usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-10">
+          <img src={logo} alt="RehabilitAR" className="w-24 h-auto mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-dark">RehabilitAR</h1>
+          <p className="text-gray-500 mt-2 text-lg">Centro de Rehabilitación</p>
+        </div>
+
+        <Card className="shadow-xl">
+          <div className="p-2">
+            <h2 className="text-2xl font-semibold text-dark mb-8">Crear cuenta</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Nombre"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  placeholder="Juan"
+                  required
+                />
+                <Input
+                  label="Apellido"
+                  name="apellido"
+                  value={formData.apellido}
+                  onChange={handleChange}
+                  placeholder="Pérez"
+                  required
+                />
+              </div>
+
+              <Input
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="tu@email.com"
+                required
+              />
+
+              <Input
+                label="Teléfono"
+                type="tel"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleChange}
+                placeholder="+54 11 1234 5678"
+              />
+
+              <Input
+                label="Documento"
+                name="documento"
+                value={formData.documento}
+                onChange={handleChange}
+                placeholder="DNI / Pasaporte"
+              />
+
+              <Input
+                label="Contraseña"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+              />
+
+              <Input
+                label="Confirmar contraseña"
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+              />
+
+              <Button type="submit" className="w-full py-3 text-base" loading={loading}>
+                Crear cuenta
+              </Button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-border text-center">
+              <p className="text-gray-500">
+                ¿Ya tienes cuenta?{' '}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  Iniciar sesión
+                </Link>
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}

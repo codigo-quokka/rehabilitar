@@ -1,0 +1,110 @@
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { Role } from "../types";
+
+import { LoginPage } from "../features/auth/pages/LoginPage";
+import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { PasswordRecoveryPage } from "../features/auth/pages/PasswordRecoveryPage";
+import { DashboardPage } from "../features/usuarios/pages/DashboardPage";
+import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
+import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
+import { ReservasPage } from "../features/reservas/pages/ReservasPage";
+import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
+import { SalasPage } from "../features/salas/pages/SalasPage";
+import { MetricasPage } from "../features/metricas/pages/MetricasPage";
+import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
+
+function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
+  const { isAuthenticated, isLoading, hasRole } = useAuth();
+
+  if (isLoading) return null; // espera hidratación
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !hasRole(allowedRoles)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
+}
+
+export const routes = [
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/recover",
+    element: <PasswordRecoveryPage />,
+  },
+  {
+    path: "/",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "dashboard",
+        element: <DashboardPage />,
+      },
+      {
+        path: "actividades",
+        element: <ActividadesPage />,
+      },
+      {
+        path: "calendario",
+        element: <CalendarioPage />,
+      },
+      {
+        path: "reservas",
+        element: <ReservasPage />,
+      },
+      {
+        path: "perfil",
+        element: <PerfilPage />,
+      },
+      {
+        path: "usuarios",
+        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        children: [
+          {
+            index: true,
+            element: <UsuariosPage />,
+          },
+        ],
+      },
+      {
+        path: "salas",
+        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        children: [
+          {
+            index: true,
+            element: <SalasPage />,
+          },
+        ],
+      },
+      {
+        path: "metricas",
+        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        children: [
+          {
+            index: true,
+            element: <MetricasPage />,
+          },
+        ],
+      },
+      {
+        path: "",
+        element: <Navigate to="/dashboard" replace />,
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <Navigate to="/dashboard" replace />,
+  },
+];
