@@ -481,5 +481,8 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-Rehabilitar/src/API/appsettings.Development.json
-Rehabilitar/src/API/appsettings.json
+Rehabilitar/src/API/appsettings.*.json
+
+*.db
+GEMINI.md
+Rehabilitar/docs/
