@@ -9,10 +9,11 @@ export function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    nombre: '',
-    apellido: '',
+    firstName: '',
+    lastName: '',
     telefono: '',
-    documento: '',
+    dni: '',
+    fechaNacimiento: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,10 +38,11 @@ export function RegisterPage() {
       await authApi.register({
         email: formData.email,
         password: formData.password,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        telefono: formData.telefono,
-        documento: formData.documento,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dni: formData.dni,
+        fechaNacimiento: formData.fechaNacimiento,
+        telefono: formData.telefono || undefined,
       });
       navigate('/login');
     } catch {
@@ -73,16 +75,16 @@ export function RegisterPage() {
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Nombre"
-                  name="nombre"
-                  value={formData.nombre}
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleChange}
                   placeholder="Juan"
                   required
                 />
                 <Input
                   label="Apellido"
-                  name="apellido"
-                  value={formData.apellido}
+                  name="lastName"
+                  value={formData.lastName}
                   onChange={handleChange}
                   placeholder="Pérez"
                   required
@@ -108,13 +110,24 @@ export function RegisterPage() {
                 placeholder="+54 11 1234 5678"
               />
 
-              <Input
-                label="Documento"
-                name="documento"
-                value={formData.documento}
-                onChange={handleChange}
-                placeholder="DNI / Pasaporte"
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="DNI"
+                  name="dni"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  placeholder="12345678"
+                  required
+                />
+                <Input
+                  label="Fecha de nacimiento"
+                  type="date"
+                  name="fechaNacimiento"
+                  value={formData.fechaNacimiento}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
               <Input
                 label="Contraseña"

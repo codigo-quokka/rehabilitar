@@ -74,13 +74,13 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  nombre: string;
-  apellido: string;
+  dni: string;
+  fechaNacimiento: string;
   telefono?: string;
-  fechaNacimiento?: string;
-  documento?: string;
 }
 
 export interface ApiResponse<T> {

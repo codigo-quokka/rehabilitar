@@ -8,7 +8,15 @@ export const authApi = {
   },
 
   register: async (data: RegisterData) => {
-    const response = await apiClient.post('/auth/register', data);
+    const response = await apiClient.post('/auth/register', {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: data.password,
+      dni: data.dni,
+      fechaNacimiento: data.fechaNacimiento,
+      telefono: data.telefono,
+    });
     return response.data;
   },
 
