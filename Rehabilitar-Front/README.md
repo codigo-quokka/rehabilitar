@@ -5,10 +5,11 @@ Frontend web application for a rehabilitation/physical therapy management system
 ## Tech Stack
 
 - **Framework**: React 19 + TypeScript
-- **Build Tool**: Vite
+- **Build Tool**: Vite 8
 - **Routing**: React Router
 - **HTTP Client**: Axios
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4
+- **State Management**: React hooks (useState, useEffect, useCallback, useMemo)
 
 ## Prerequisites
 
@@ -36,6 +37,7 @@ The app runs at `http://localhost:5173`
 | `npm run dev` | Start development server |
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
 
 ## Configuration
 
@@ -68,6 +70,17 @@ The app supports 5 roles: `admin`, `reception`, `professor`, `registered_client`
 
 Role-based route protection is implemented.
 
+## Accessibility
+
+This project follows WCAG 2.2 guidelines:
+
+- Keyboard navigation support with visible focus indicators
+- Skip link for main content
+- Proper ARIA labels on interactive elements
+- Form inputs with programmatically associated labels
+- Reduced motion support via `prefers-reduced-motion`
+- Color contrast meets AA standards (4.5:1)
+
 ## Development Notes
 
 - The sidebar has been converted to a horizontal top navigation bar
@@ -77,3 +90,6 @@ localStorage.setItem('token', 'mock-token');
 localStorage.setItem('user', JSON.stringify({ id: '1', nombre: 'Test', apellido: 'User', email: 'test@test.com', rol: 'admin', activo: true, fechaAlta: '2026-01-01' }));
 location.reload();
 ```
+
+- Uses parallel API fetching with `Promise.all()` for optimal performance
+- Functional state updates and proper dependency management in hooks

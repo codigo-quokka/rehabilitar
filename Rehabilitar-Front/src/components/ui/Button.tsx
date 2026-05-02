@@ -16,7 +16,9 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const focusStyles = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary';
 
   const variants = {
     primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
@@ -34,8 +36,9 @@ export function Button({
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className} ${disabled || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`${baseStyles} ${focusStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={disabled || loading}
+      aria-disabled={disabled || loading}
       {...props}
     >
       {loading && (

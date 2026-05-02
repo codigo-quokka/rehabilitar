@@ -12,7 +12,7 @@ export function MainLayout({ children, title }: MainLayoutProps) {
     <div className="min-h-screen bg-bg-main flex flex-col">
       <Header title={title} />
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main id="main-content" className="flex-1 p-8" tabIndex={-1}>
         {children}
       </main>
     </div>
