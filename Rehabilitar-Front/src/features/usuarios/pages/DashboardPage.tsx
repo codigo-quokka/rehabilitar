@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
@@ -12,31 +12,45 @@ export function DashboardPage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (hasRole(['admin', 'reception'])) {
-          const metricsData = await metricasApi.getDashboard();
-          setMetricas(metricsData);
-        }
-
-        const today = new Date().toISOString().split('T')[0];
-        const acts = await actividadesApi.getAll({ fecha: today });
-        setActividades(acts.slice(0, 5));
-
-        if (user) {
-          const res = await reservasApi.getAll({ usuarioId: user.id });
-          setReservas(res.slice(0, 5));
-        }
-      } catch (err) {
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user, hasRole]);
-
   const isAdmin = hasRole(['admin', 'reception']);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const fetchPromises: Promise<unknown>[] = [];
+
+      if (isAdmin) {
+        fetchPromises.push(
+          metricasApi.getDashboard().then((data) => setMetricas(data))
+        );
+      }
+
+      fetchPromises.push(
+        actividadesApi.getAll({ fecha: today }).then((data) =>
+          setActividades(data.slice(0, 5))
+        )
+      );
+
+      if (user) {
+        fetchPromises.push(
+          reservasApi.getAll({ usuarioId: user.id }).then((data) =>
+            setReservas(data.slice(0, 5))
+          )
+        );
+      }
+
+      await Promise.all(fetchPromises);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return (
     <MainLayout title="Dashboard">
