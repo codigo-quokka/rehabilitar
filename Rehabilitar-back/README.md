@@ -30,3 +30,10 @@ Con este comando se leen las migraciones existentes y se construye el archivo SQ
 
 ### Verificación:
 Si el comando finaliza correctamente (`Done.`), deberías ver un archivo llamado rehabilitar.db en el directorio Rehabilitar-back/src/API/.
+
+---
+
+### Comando para incializar la API
+
+Desde la raíz del proyecto:
+`dotnet run --project .\Rehabilitar-back\src\API\API.csproj`
