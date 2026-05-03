@@ -12,6 +12,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [visiblePass, setVisible] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -69,14 +70,25 @@ export function LoginPage() {
                 required
               />
 
-              <Input
-                label="Contraseña"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Contraseña"
+                  type={visiblePass ? "password" : "text"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="pr-16"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVisible(!visiblePass)}
+                  className="absolute right-3 top-[25px] text-xs text-gray-500 hover:text-primary font-medium px-2 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                  aria-label={visiblePass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {visiblePass ? "Mostrar" : "Ocultar"}
+                </button>
+              </div>
 
               <div className="flex justify-end">
                 <Link

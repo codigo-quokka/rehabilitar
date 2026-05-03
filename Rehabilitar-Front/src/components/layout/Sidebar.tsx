@@ -66,23 +66,26 @@ export function Sidebar() {
   const visibleItems = menuItems.filter((item) => user && hasRole(item.roles));
 
   return (
-    <nav className="bg-white border-b border-border px-6 py-3 flex items-center gap-2 overflow-x-auto">
-      {visibleItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          className={({ isActive }) =>
-            `flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 text-sm font-medium ${
-              isActive
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-dark'
-            }`
-          }
-        >
-          {item.icon}
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <nav className="bg-white border-b border-border px-6 py-3 flex items-center gap-3">
+  {visibleItems.map((item) => (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      className={({ isActive }) =>
+        `flex-1 flex items-center justify-center gap-3
+         px-6 py-3 rounded-lg transition-all duration-200
+         text-sm font-medium text-center
+         ${
+           isActive
+             ? 'bg-primary text-white shadow-sm'
+             : 'text-gray-600 hover:bg-gray-100 hover:text-dark'
+         }`
+      }
+    >
+      {item.icon}
+      <span>{item.label}</span>
+    </NavLink>
+  ))}
+</nav>
   );
 }
