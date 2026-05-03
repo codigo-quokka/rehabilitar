@@ -1,0 +1,153 @@
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Button, Card } from "../../../components/ui";
+import { useAuth } from "../../../hooks/useAuth";
+import logo from "../../../assets/logo.png";
+import { authApi } from "../../../api";
+
+type PageStatus = "idle" | "loading" | "success" | "already_verified" | "error";
+
+export function EmailVerificationPage() {
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState<PageStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const calledRef = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+    
+    if (calledRef.current) return;
+    calledRef.current = true;
+
+    const userId = searchParams.get("userId");
+    const confirmationToken = searchParams.get("confirmationToken");
+    
+    if (!userId || !confirmationToken) {
+      setStatus("error");
+      setErrorMessage("Enlace de verificación inválido.");
+      return;
+    }
+
+    const verifyAccount = async () => {
+      setStatus("loading");
+      try {
+        await authApi.verifyEmail({
+          userId: userId,
+          confirmationToken: confirmationToken
+        });
+        setStatus("success");
+      } catch (error: any) {
+        const data = error.response?.data;
+
+        switch (data?.errorCode) {
+          case "EMAIL_ALREADY_VERIFIED":
+            setStatus("already_verified");
+            break;
+          default:
+            setStatus("error");
+            setErrorMessage("El enlace expiró o es incorrecto.");
+            break;
+        }
+      }
+    }
+
+    verifyAccount();
+
+  }, [isAuthenticated, searchParams, navigate]);
+
+  const renderContent = () => {
+    switch (status) {
+      case "loading":
+        return (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-gray-600">Verificando tu correo...</p>
+          </div>
+        );
+      case "success":
+        return (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-green-500 bg-green-100 p-3 rounded-full">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <p className="text-green-600 font-medium">¡Tu correo ha sido verificado con éxito!</p>
+            <p className="text-gray-500 text-sm">Ya podés iniciar sesión.</p>
+            <Link to="/login" className="w-full mt-4">
+              <Button className="w-full">
+                Ir al inicio de sesión
+              </Button>
+            </Link>
+          </div>
+        );
+      case "already_verified":
+        return (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-blue-500 bg-blue-100 p-3 rounded-full">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <p className="text-blue-600 font-medium">Tu correo ya está verificado.</p>
+            <p className="text-gray-500 text-sm">No es necesario volver a confirmarlo.</p>
+            <Link to="/login" className="w-full mt-4">
+              <Button className="w-full">
+                Ir al inicio de sesión
+              </Button>
+            </Link>
+          </div>
+        );
+      case "error":
+        return (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-red-500 bg-red-100 p-3 rounded-full">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <p className="text-red-600 font-medium">{errorMessage}</p>
+            <Button 
+              onClick={() => navigate("/login")}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              Volver al inicio de sesión
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-10">
+          <img
+            src={logo}
+            alt="RehabilitAR"
+            className="w-24 h-auto mx-auto mb-4"
+          />
+          <h1 className="text-4xl font-bold text-dark">RehabilitAR</h1>
+          <p className="text-gray-500 mt-2 text-lg">Centro de Rehabilitación</p>
+        </div>
+
+        <Card className="shadow-xl text-center">
+          <div className="p-6">
+            <h2 className="text-2xl font-semibold text-dark mb-6">
+              Verificación de correo
+            </h2>
+
+            {renderContent()}
+            
+          </div>
+        </Card>
+
+        <p className="text-center text-gray-400 text-sm mt-8">
+          © 2026 RehabilitAR
+        </p>
+      </div>
+    </div>
+  );
+}
