@@ -23,9 +23,9 @@ public class AuthController : ControllerBase
             await _authService.RegisterAsync(request);
             return Ok(new { Message = "Usuario registrado exitosamente."});
         }
-        catch (Exception e)
+        catch (Exception )
         {
-            return BadRequest(new { Error = e.Message});
+            return BadRequest(new { Error = "El e-mail ingresado ya se encuentra registrado"});
         }
     }
 

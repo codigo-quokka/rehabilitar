@@ -94,3 +94,11 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
 }
+
+export interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  type?: 'success' | 'error' | 'info';
+}

@@ -119,3 +119,27 @@ When making significant changes or adding new features, run:
 - Dependencies change
 - Project structure changes
 - New skills are installed
+
+## Commit Types Cheatsheet
+
+Use this reference when creating git commits:
+
+- **feat** – New feature or functionality
+- **fix** – Fix a bug in production code
+- **perf** – Performance improvements
+- **refactor** – Code restructuring without behavior change
+- **style** – Formatting and cosmetic changes only
+- **test** – Adding or modifying tests
+- **docs** – Documentation changes
+- **build** – Build process or dependencies (production)
+- **ci** – CI/CD configuration changes
+- **chore** – Maintenance tasks (dev dependencies, .gitignore, etc.)
+- **revert** – Revert a previous commit
+
+Examples:
+```
+feat(ui): add dark mode toggle
+fix: correct null pointer handling
+refactor: extract utility functions
+chore: organize project structure
+```
