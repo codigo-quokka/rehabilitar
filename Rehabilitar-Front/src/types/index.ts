@@ -83,6 +83,11 @@ export interface RegisterData {
   telefono?: string;
 }
 
+export interface EmailVerificationData {
+  userId: string;
+  confirmationToken: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;
@@ -93,4 +98,12 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  type?: 'success' | 'error' | 'info';
 }

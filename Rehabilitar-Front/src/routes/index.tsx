@@ -5,6 +5,7 @@ import { Role } from "../types";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { PasswordRecoveryPage } from "../features/auth/pages/PasswordRecoveryPage";
+import { EmailVerificationPage } from "../features/auth/pages/EmailVerificationPage";
 import { DashboardPage } from "../features/usuarios/pages/DashboardPage";
 import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
 import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
@@ -42,6 +43,10 @@ export const routes = [
   {
     path: "/recover",
     element: <PasswordRecoveryPage />,
+  },
+  {
+    path: "/email-verification",
+    element: <EmailVerificationPage />,
   },
   {
     path: "/",

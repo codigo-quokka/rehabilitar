@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,9 +9,12 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      modalRef.current?.focus();
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -19,6 +22,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -29,17 +42,31 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-auto`}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'modal-title' : undefined}
+    >
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-auto focus:outline-none`}
+      >
         {title && (
           <div className="flex items-center justify-between p-6 border-b border-border">
-            <h2 className="text-xl font-semibold text-dark">{title}</h2>
+            <h2 id="modal-title" className="text-xl font-semibold text-dark">{title}</h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-dark hover:bg-gray-100 rounded-lg transition-all"
+              className="p-2 text-gray-400 hover:text-dark hover:bg-gray-100 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label="Cerrar modal"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
