@@ -21,7 +21,7 @@ BACKEND_PID=$!
 cd ../../../
 
 echo "Iniciando Frontend (React)..."
-cd Rehabilitar-Front
+cd Rehabilitar-front
 npm run dev &
 FRONTEND_PID=$!
 cd ..
