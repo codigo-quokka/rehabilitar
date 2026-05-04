@@ -1,6 +1,6 @@
 namespace Domain.Exceptions;
 
-public class EmailNotVerifiedException : Exception
+public class EmailNotVerifiedException : DomainException
 {
     public EmailNotVerifiedException() { }
 
