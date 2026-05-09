@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Domain.Exceptions;
 
 namespace Infrastructure.Identity;
 
@@ -42,7 +43,7 @@ public class AuthService : IAuthService
 
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        // TO-DO: IEmailService para enviar el correo y retornar el confirmationToken.
+        await EnviarEmailDeVerificacion(user.Id, confirmationToken);
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -54,8 +55,8 @@ public class AuthService : IAuthService
         if (!await _userManager.CheckPasswordAsync(user, request.Password))
             throw new Exception("Credenciales incorrectas.");
 
-        if (!user.EmailConfirmed) // TO-DO: EmailNoConfirmadoException.
-            throw new Exception("Debe confirmar su email para iniciar sesión.");
+        if (!user.EmailConfirmed)
+            throw new EmailNotVerifiedException("Email no confirmado.");
 
         var token = GenerateJwtToken(user);
 
@@ -71,26 +72,22 @@ public class AuthService : IAuthService
 
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        var mensaje = "Usuario registrado. Enlace de verificación:";
-
-        // user id y token para scalar:
-        System.Console.WriteLine(user.Id);
-        System.Console.WriteLine(confirmationToken);
         // TO-DO: IEmailService para enviar el correo, lo siguiente es una simulación.
-        System.Console.WriteLine(
-            $"{mensaje} /api/auth/verify-email?userId={user.Id}&token={Uri.EscapeDataString(confirmationToken)}");
-
+        await EnviarEmailDeVerificacion(user.Id, confirmationToken);
         return true;
     }
 
     public async Task<bool> VerifyEmailAsync(VerifyEmailRequest request)
     {
         var user = await _userManager.FindByIdAsync(request.UserId);
-        if (user == null) return false;
+        if (user == null)
+            throw new UserNotFoundException($"No se encontró al usuario con id {request.UserId}.");
 
-        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+        if (user.EmailConfirmed)
+            throw new EmailAlreadyVerifiedException("El email del usuario ya se encuentra verificado.");
+
+        var result = await _userManager.ConfirmEmailAsync(user, request.ConfirmationToken);
         return result.Succeeded;
-        
     }
 
     private string GenerateJwtToken(User user)
@@ -116,5 +113,18 @@ public class AuthService : IAuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task EnviarEmailDeVerificacion(Guid userId, string confirmationToken)
+    {
+        // user id y token para scalar:
+        System.Console.WriteLine($"userId = {userId}");
+        System.Console.WriteLine($"confirmationToken = {confirmationToken}");
+        // TO-DO: IEmailService para enviar el correo y retornar el confirmationToken.
+        // Para testear mientras no esté la verificación de email se imprime el link en consola.
+        System.Console.WriteLine();
+        System.Console.WriteLine("Enlace de verificación: ");
+        System.Console.WriteLine();
+        System.Console.WriteLine($"http://localhost:5173/email-verification?userId={userId}&confirmationToken={Uri.EscapeDataString(confirmationToken)}");
     }
 }

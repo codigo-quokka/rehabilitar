@@ -83,6 +83,11 @@ export interface RegisterData {
   telefono?: string;
 }
 
+export interface EmailVerificationData {
+  userId: string;
+  confirmationToken: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;
