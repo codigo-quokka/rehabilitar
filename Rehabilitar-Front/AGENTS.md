@@ -104,6 +104,14 @@ This project follows guidelines from these installed skills:
 - Use design tokens from theme configuration
 - Extract repeated patterns into reusable component classes
 
+### Notification & Toast System
+- **Hook**: `useNotifications` (src/hooks/useNotifications.tsx) - centralized notification state management
+- **NotificationTray**: Bell icon in header with unread indicator (src/components/layout/NotificationTray.tsx)
+- **Notitoast**: Reusable toast component (src/components/Notitoast.tsx) with success/error/info variants
+  - Props: `type`, `message`, `onClose`, `duration` (default 4000ms)
+  - Auto-dismiss, animations, manual close button
+- Notifications shared between toast and tray
+
 ## Auto-Update Documentation
 
 When making significant changes or adding new features, run:
