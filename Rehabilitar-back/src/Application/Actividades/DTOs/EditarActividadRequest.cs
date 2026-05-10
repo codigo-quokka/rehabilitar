@@ -1,5 +1,5 @@
 namespace Application.Actividades.DTOs;
-using Domain.Enums;
+using Domain.Actividades;
 
 public record EditarActividadRequest(
     Guid Id,

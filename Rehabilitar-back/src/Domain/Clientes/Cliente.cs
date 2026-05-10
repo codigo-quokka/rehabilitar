@@ -7,6 +7,7 @@ public class Cliente
     public Dni Dni { get; private set; }
     public string? Telefono { get; private set; }
 
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public ICollection<Reserva>? Reservas { get; private set; }
 
     // constructor vacío para EF Core.

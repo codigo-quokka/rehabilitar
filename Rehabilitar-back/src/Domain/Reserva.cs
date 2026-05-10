@@ -1,4 +1,5 @@
 namespace Domain;
+using Domain.Actividades;
 using Domain.Enums;
 
 public class Reserva

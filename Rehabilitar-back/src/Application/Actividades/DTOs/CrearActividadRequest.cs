@@ -1,6 +1,6 @@
 namespace Application.Actividades.DTOs;
 
-using Domain.Enums;
+using Domain.Actividades;
 public record CrearActividadRequest(
     string Nombre,
     string Descripcion,
