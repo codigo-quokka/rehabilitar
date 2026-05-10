@@ -6,6 +6,7 @@ using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Exceptions;
@@ -73,6 +74,11 @@ public class AuthService : IAuthService
         var roles = await _userManager.GetRolesAsync(user);
         var rol = roles.FirstOrDefault() ?? "guest";
 
+        // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
+        var cliente = await _dbContext.Clientes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+
         // Crear objeto UserResponse con los datos del usuario
         var userResponse = new UserResponse
         {
@@ -82,7 +88,10 @@ public class AuthService : IAuthService
             Apellido = user.LastName,
             Rol = rol,
             Activo = user.EmailConfirmed,
-            FechaAlta = DateTime.UtcNow
+            FechaAlta = DateTime.UtcNow,
+            Telefono = cliente?.Telefono,
+            FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
+            Documento = cliente?.Dni.Valor
         };
 
         return new AuthResponse(token, userResponse);
