@@ -151,3 +151,58 @@ fix: correct null pointer handling
 refactor: extract utility functions
 chore: organize project structure
 ```
+
+---
+
+## Current Project State
+
+### Propósito y Stack
+- Sistema de gestión para centros de kinesiología/rehabilitación
+- **Backend:** .NET 10, ASP.NET Core Web API, SQLite, Entity Framework Core, JWT Bearer auth
+- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS v4
+- Enfoque en accesibilidad WCAG 2.2
+
+### Roles de usuario (5)
+- `admin` - Administrador del sistema
+- `reception` - Personal de recepción
+- `professor` - Profesor/Instructor
+- `registered_client` - Cliente registrado
+- `guest` - Invitado
+
+### Componentes y páginas implementadas (Frontend)
+| Componente/Página | Descripción |
+|-------------------|-------------|
+| `LoginPage` | Página de inicio de sesión con verificación de email |
+| `RegisterPage` | Registro de nuevos usuarios con validación de contraseña |
+| `PasswordRecoveryPage` | Recuperación de contraseña |
+| `EmailVerificationPage` | Verificación de email |
+| `DashboardPage` | Dashboard principal con métricas y resumen |
+| `PerfilPage` | Perfil del usuario con edición |
+| `UsuariosPage` | Gestión de usuarios (admin/reception) |
+| `ActividadesPage` | Listado y creación de actividades |
+| `CalendarioPage` | Vista de calendario de actividades |
+| `ReservasPage` | Gestión de reservas de usuarios |
+| `SalasPage` | Gestión de salas (admin/reception) |
+| `MetricasPage` | Métricas y reportes (admin/reception) |
+| `Sidebar` | Navegación con filtros por rol |
+| `Header` | Header con logout con confirmación |
+| `NotificationTray` | Bandeja de notificaciones |
+| `Notitoast` | Componente toast para notificaciones |
+
+### Arquitectura de notificaciones
+- **Hook:** `useNotifications` en `src/hooks/useNotifications.tsx`
+- **Estado:** Array de objetos `Notification` con estructura `{ id, message, timestamp, read, type }`
+- **Notitoast:** Componente visual que acepta `type` (success/error/info), `message`, `onClose`, `duration`
+- **Notificaciones compartidas:** Mismo estado para toast y NotificationTray
+- **Integración:** Se usa tanto para feedback de acciones como para errores de API
+
+### Convenciones importantes
+- **API Base URL:** `http://localhost:5129/api` (configurable via `VITE_API_URL`)
+- **CamelCase:** El backend devuelve camelCase (`token`, `user`, `id`, `nombre`) - el frontend debe usar camelCase al acceder a estos campos
+- **Estilos:** Tailwind con tokens personalizados en `tailwind.config.js`
+- **Colores brand:** Primary (#6DD3A8), Secondary (#2F6274)
+- **No usar #FFFFFF:** Usar #FBFBFB en backgrounds
+- **Accesibilidad:** Enfoque en keyboard navigation, focus states, skip links, ARIA labels
+- **Auth:** Token JWT en localStorage, interceptor auto-añade Bearer token
+- **Roles:** Protegido por `ProtectedRoute` con verificación de rol en `routes/index.tsx`
+- **Logout:** Incluye diálogo de confirmación antes de cerrar sesión

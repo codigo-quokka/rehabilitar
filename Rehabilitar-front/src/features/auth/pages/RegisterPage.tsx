@@ -45,9 +45,24 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setShowToast(false);
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      const msg = "Las contraseñas no coinciden. Por favor, ingrésalas de nuevo.";
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+
+    const MIN_PASSWORD_LENGTH = 6;
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      const msg = `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
       return;
     }
 
@@ -145,12 +160,12 @@ export function RegisterPage() {
                 />
 
                 <Input
-                  label="Teléfono"
+                  label="Teléfono *"
                   type="tel"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  placeholder="+54 11 1234 5678"
+                  placeholder="+54 221 1234 567"              
                 />
 
                 <div className="grid grid-cols-2 gap-4">

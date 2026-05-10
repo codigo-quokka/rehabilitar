@@ -41,6 +41,9 @@ public class AuthService : IAuthService
             throw new Exception($"Error al registrar usuario: {errors}");
         }
 
+        // Asignar rol de cliente registrado por defecto
+        await _userManager.AddToRoleAsync(user, "registered_client");
+
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
         await EnviarEmailDeVerificacion(user.Id, confirmationToken);
@@ -60,7 +63,23 @@ public class AuthService : IAuthService
 
         var token = GenerateJwtToken(user);
 
-        return new AuthResponse(token);
+        // Obtener rol del usuario
+        var roles = await _userManager.GetRolesAsync(user);
+        var rol = roles.FirstOrDefault() ?? "guest";
+
+        // Crear objeto UserResponse con los datos del usuario
+        var userResponse = new UserResponse
+        {
+            Id = user.Id,
+            Email = user.Email ?? string.Empty,
+            Nombre = user.FirstName,
+            Apellido = user.LastName,
+            Rol = rol,
+            Activo = user.EmailConfirmed,
+            FechaAlta = DateTime.UtcNow
+        };
+
+        return new AuthResponse(token, userResponse);
     }
 
 
