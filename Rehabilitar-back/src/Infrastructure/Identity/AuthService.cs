@@ -1,6 +1,7 @@
 using Application.Auth;
 using Application.Auth.DTOs;
 using Domain;
+using Domain.Clientes;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Exceptions;
+using Infrastructure.Persistence;
 
 namespace Infrastructure.Identity;
 
@@ -15,22 +17,24 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly IConfiguration _config;
+    private readonly RehabilitarDbContext _dbContext;
 
-    public AuthService(UserManager<User> userManager, IConfiguration configuration)
+    public AuthService(UserManager<User> userManager, IConfiguration configuration, RehabilitarDbContext dbContext)
     {
         _userManager = userManager;
         _config = configuration;
+        _dbContext = dbContext;
     }
 
     public async Task RegisterAsync(RegisterRequest request)
     {
-        var user = new User(
+        var user = User.Create(
             request.FirstName,
             request.LastName,
-            request.FechaNacimiento,
-            request.Email,
-            request.Dni,
-            request.Telefono
+            // request.FechaNacimiento,
+            request.Email
+            // request.Dni,
+            // request.Telefono
         );
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -43,6 +47,8 @@ public class AuthService : IAuthService
 
         // Asignar rol de cliente registrado por defecto
         await _userManager.AddToRoleAsync(user, "registered_client");
+
+        await CreateClient(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
 
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
@@ -109,6 +115,8 @@ public class AuthService : IAuthService
         return result.Succeeded;
     }
 
+    // métodos privados para funcionalidades específicas:
+
     private string GenerateJwtToken(User user)
     {
         var jwtSettings = _config.GetSection("JwtSettings");
@@ -145,5 +153,13 @@ public class AuthService : IAuthService
         System.Console.WriteLine("Enlace de verificación: ");
         System.Console.WriteLine();
         System.Console.WriteLine($"http://localhost:5173/email-verification?userId={userId}&confirmationToken={Uri.EscapeDataString(confirmationToken)}");
+    }
+
+    private async Task CreateClient(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
+    {
+        var dniObj = new Dni(dni); // crear el value object (dni validado). 
+        var c = Cliente.Create(userId, fechaNac, dniObj, telefono); // se manda a la factory.
+        _dbContext.Clientes.Add(c); // se guarda el cliente en la tabla de clientes.
+        await _dbContext.SaveChangesAsync(); // se persisten los cambios.
     }
 }
