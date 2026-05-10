@@ -1,4 +1,4 @@
-namespace Domain;
+namespace Domain.Actividades;
 
 using Domain.Enums;
 

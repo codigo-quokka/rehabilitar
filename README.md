@@ -87,3 +87,5 @@ npm run dev
         ├── features/          # Feature-based modules (actividades, auth, etc.)
         └── hooks/             # Custom React hooks
 ```
+
+

@@ -1,4 +1,4 @@
-namespace Domain.Enums;
+namespace Domain.Actividades;
 
 public enum TipoActividad
 {

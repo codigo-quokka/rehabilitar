@@ -7,7 +7,7 @@ start "Rehabilitar API" cmd /c "cd Rehabilitar-back\src\API && dotnet run"
 
 echo.
 echo Iniciando Frontend (React)...
-start "Rehabilitar Frontend" cmd /c "cd Rehabilitar-Front && npm run dev"
+start "Rehabilitar Frontend" cmd /c "cd Rehabilitar-front && npm run dev"
 
 echo.
 echo Servicios iniciados en ventanas separadas.
