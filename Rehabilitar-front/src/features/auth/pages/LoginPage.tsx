@@ -36,7 +36,10 @@ export function LoginPage() {
       navigate("/dashboard");
     } catch (err: any) {
       if (err.response?.data?.errorCode === "EMAIL_NOT_VERIFIED") {
-        setError(err.response?.data?.message || "Debes confirmar tu correo para iniciar sesión.");
+        setError(
+          err.response?.data?.message ||
+            "Debes confirmar tu correo para iniciar sesión.",
+        );
         setUnverifiedEmail(email);
       } else {
         setError("Email o contraseña incorrectos");
@@ -54,7 +57,9 @@ export function LoginPage() {
       await authApi.resendVerificationEmail(unverifiedEmail);
       setResendSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Ocurrió un error al reenviar el correo.");
+      setError(
+        err.response?.data?.error || "Ocurrió un error al reenviar el correo.",
+      );
     } finally {
       setResending(false);
     }
@@ -84,10 +89,10 @@ export function LoginPage() {
                 <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex flex-col space-y-2">
                   <span>{error}</span>
                   {unverifiedEmail && (
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={handleResendEmail} 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleResendEmail}
                       loading={resending}
                       className="mt-2 text-xs py-2"
                     >
@@ -96,10 +101,11 @@ export function LoginPage() {
                   )}
                 </div>
               )}
-              
+
               {resendSuccess && (
                 <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm font-medium">
-                  Correo de confirmación reenviado exitosamente. Por favor revisa tu bandeja de entrada.
+                  Correo de confirmación reenviado exitosamente. Por favor
+                  revisa tu bandeja de entrada.
                 </div>
               )}
 
@@ -125,8 +131,10 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setVisible(!visiblePass)}
-                  className="absolute right-3 top-[25px] text-xs text-gray-500 hover:text-primary font-medium px-2 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
-                  aria-label={visiblePass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute right-3 top-10 text-xs text-gray-500 hover:text-primary font-medium px-2 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                  aria-label={
+                    visiblePass ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
                 >
                   {visiblePass ? "Mostrar" : "Ocultar"}
                 </button>

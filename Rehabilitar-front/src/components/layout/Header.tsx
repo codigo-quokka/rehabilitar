@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationTray } from './NotificationTray';
+import { Modal, Button } from '../ui';
 import logo from '../../assets/logo.png';
 
 interface HeaderProps {
@@ -9,8 +11,13 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   const { user, logout } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = async () => {
     await logout();
     window.location.href = '/login';
   };
@@ -53,7 +60,7 @@ export function Header({ title }: HeaderProps) {
             </div>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="p-2.5 text-gray-500 hover:text-dark hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Cerrar sesión"
           >
@@ -63,6 +70,27 @@ export function Header({ title }: HeaderProps) {
           </button>
         </div>
       </header>
+
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Confirmar cierre de sesión"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas cerrar sesión?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="ghost" onClick={() => setShowLogoutConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleConfirmLogout}>
+              Cerrar sesión
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
