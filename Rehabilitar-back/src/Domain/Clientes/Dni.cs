@@ -6,6 +6,11 @@ public record class Dni
 {
     public string Valor { get; private set; }
 
+    // constructor vacío para EF Core
+#nullable disable
+    private Dni() { }
+#nullable enable
+
     public Dni(string dni)
     {
         if (dni.Length < 7 || dni.Length > 8)

@@ -1,6 +1,6 @@
 namespace Application.Actividades;
 using Application.Actividades.DTOs;
-using Domain.Enums;
+using Domain.Actividades;
 
 public interface IActividadService
 {
