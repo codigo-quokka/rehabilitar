@@ -1,3 +1,5 @@
+using Domain.Actividades;
+
 namespace Domain;
 
 public class Sala
