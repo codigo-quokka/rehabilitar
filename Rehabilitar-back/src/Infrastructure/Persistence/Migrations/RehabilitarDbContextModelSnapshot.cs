@@ -20,8 +20,13 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("Dni")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Dni");
 
                     b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("TEXT");
@@ -37,7 +42,6 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Especialidad")
@@ -301,25 +305,19 @@ namespace Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>
                 {
-                    b.OwnsOne("Domain.Clientes.Dni", "Dni", b1 =>
-                        {
-                            b1.Property<Guid>("ClienteUserId")
-                                .HasColumnType("TEXT");
+                    b.HasOne("Domain.User", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Clientes.Cliente", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                            b1.Property<string>("Valor")
-                                .IsRequired()
-                                .HasColumnType("TEXT")
-                                .HasColumnName("Dni");
-
-                            b1.HasKey("ClienteUserId");
-
-                            b1.ToTable("Clientes");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ClienteUserId");
-                        });
-
-                    b.Navigation("Dni")
+            modelBuilder.Entity("Domain.Profesores.Profesor", b =>
+                {
+                    b.HasOne("Domain.User", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Profesores.Profesor", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
