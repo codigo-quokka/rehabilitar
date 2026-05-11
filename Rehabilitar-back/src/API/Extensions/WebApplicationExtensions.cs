@@ -1,4 +1,4 @@
-using Infrastructure.Persistence.Seeding;
+using Application.Seeding;
 
 namespace API.Extensions;
 
@@ -10,11 +10,12 @@ public static class WebApplicationExtensions
         using var scope = app.Services.CreateScope();
         try
         {
-            await IdentitySeeder.SeedRolesAsync(scope.ServiceProvider);
+            var seeder = scope.ServiceProvider.GetRequiredService<ISeedingService>();
+            await seeder.SeedAsync();
         }
         catch (Exception e)
         {
-            System.Console.WriteLine("Error al seedear roles: " + e.Message);
+            System.Console.WriteLine("Error al seedear: " + e.Message);
         }
     }
 }

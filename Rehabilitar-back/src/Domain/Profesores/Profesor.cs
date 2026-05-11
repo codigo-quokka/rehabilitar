@@ -14,9 +14,14 @@ public class Profesor
     public Profesor() { }
     #nullable enable
 
-    public Profesor(Guid userId, TipoEspecialidad especialidad)
+    private Profesor(Guid userId, TipoEspecialidad especialidad)
     {
         UserId = userId;
         Especialidad = especialidad;
+    }
+
+    public static Profesor Create(Guid userId, TipoEspecialidad especialidad)
+    {
+        return new Profesor(userId, especialidad);
     }
 }
