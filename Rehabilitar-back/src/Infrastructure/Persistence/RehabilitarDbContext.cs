@@ -33,16 +33,36 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
         {
             entity.ToTable("Clientes");
             entity.HasKey(c => c.UserId);
-            entity.OwnsOne(c => c.Dni, dni =>
-            {
-                dni.Property(d => d.Valor).HasColumnName("Dni");
-            });
+
+            // mapeo a user:
+            entity.HasOne<User>()
+                .WithOne()
+                .HasForeignKey<Cliente>(c => c.UserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(c => c.Dni)
+                .HasConversion(
+                    dniObjeto => dniObjeto.Valor,
+                    dniString => new Dni(dniString)
+                )
+                .HasColumnName("Dni")
+                .HasMaxLength(8)
+                .IsRequired();
         });
 
         builder.Entity<Profesor>(entity =>
         {
             entity.ToTable("Profesores");
             entity.HasKey(p => p.UserId);
+
+            // mapeo a user:
+            entity.HasOne<User>()
+                .WithOne()
+                .HasForeignKey<Profesor>(p => p.UserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.Ignore(p => p.ActividadesAsignadas);
         });
     }

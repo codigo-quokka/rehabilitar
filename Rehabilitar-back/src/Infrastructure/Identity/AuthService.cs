@@ -28,32 +28,43 @@ public class AuthService : IAuthService
     }
 
     public async Task RegisterAsync(RegisterRequest request)
+
     {
-        var user = User.Create(
-            request.FirstName,
-            request.LastName,
-            // request.FechaNacimiento,
-            request.Email
-            // request.Dni,
-            // request.Telefono
-        );
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        
+        try {
+            var user = User.Create(
+                request.FirstName,
+                request.LastName,
+                // request.FechaNacimiento,
+                request.Email
+                // request.Dni,
+                // request.Telefono
+            );
 
-        var result = await _userManager.CreateAsync(user, request.Password);
+            var result = await _userManager.CreateAsync(user, request.Password);
 
-        if (!result.Succeeded)
-        {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new Exception($"Error al registrar usuario: {errors}");
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception($"Error al registrar usuario: {errors}");
+            }
+
+            // Asignar rol de cliente registrado por defecto
+            await _userManager.AddToRoleAsync(user, "registered_client");
+
+            await CreateClient(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
+
+            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            await EnviarEmailDeVerificacion(user.Id, confirmationToken);
+
+            await transaction.CommitAsync();
         }
-
-        // Asignar rol de cliente registrado por defecto
-        await _userManager.AddToRoleAsync(user, "registered_client");
-
-        await CreateClient(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
-
-        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-        await EnviarEmailDeVerificacion(user.Id, confirmationToken);
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
