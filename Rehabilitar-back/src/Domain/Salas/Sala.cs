@@ -1,7 +1,7 @@
 using Domain.Actividades;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Domain;
+namespace Domain.Salas;
 
 public class Sala
 {

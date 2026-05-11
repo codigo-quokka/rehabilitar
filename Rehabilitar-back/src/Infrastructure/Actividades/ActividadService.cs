@@ -1,7 +1,7 @@
 namespace Infrastructure.Actividades;
 using Application.Actividades;
 using Application.Actividades.DTOs;
-using Domain;
+using Domain.Salas;
 using Domain.Actividades;
 using Infrastructure.Persistence;
 using Domain.Profesores;

@@ -1,6 +1,6 @@
 using Application.Salas;
 using Application.Salas.DTOs;
-using Domain;
+using Domain.Salas;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

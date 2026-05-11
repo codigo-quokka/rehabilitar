@@ -3,6 +3,7 @@ namespace Domain.Actividades;
 using Domain.Clientes;
 using Domain.Profesores;
 using Domain.Reservas;
+using Domain.Salas;
 
 public class Actividad
 {
