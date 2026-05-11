@@ -1,16 +1,17 @@
 namespace Application.Actividades;
 using Application.Actividades.DTOs;
 using Domain.Actividades;
+using Domain.Profesores;
 
 public interface IActividadService
 {
-    Task<Guid> CrearActividadAsync(CrearActividadRequest request);
-    Task EditarActividadAsync(Guid actividadId, EditarActividadRequest request);
-    Task CambiarEstadoActividadAsync(Guid actividadId, EstadoActividad nuevoEstado);
-    Task CambiarFechaYHoraActividadAsync(Guid actividadId, DateTime nuevaFechaYHora);
-    Task CambiarSalaActividadAsync(Guid actividadId, Guid nuevaSalaId);
+    Task<ActividadDTO> CrearActividadAsync(CrearActividadRequest request);
+    Task<ActividadDTO> EditarActividadAsync(Guid actividadId, EditarActividadRequest request);
+    Task<ActividadDTO> CambiarEstadoActividadAsync(Guid actividadId, EstadoActividad nuevoEstado);
+    Task<ActividadDTO> CambiarFechaYHoraActividadAsync(Guid actividadId, DateTime nuevaFechaYHora);
+    Task<ActividadDTO> CambiarSalaActividadAsync(Guid actividadId, Guid nuevaSalaId);
 
-    Task AsignarProfesorActividadAsync(Guid actividadId, Guid profesorId);
-    Task ListarActividadesAsync(TipoActividad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null);
-    Task ObtenerActividadPorIdAsync(Guid actividadId);
+    Task<ActividadDTO> AsignarProfesorActividadAsync(Guid actividadId, Guid profesorId);
+    Task<ICollection<ActividadDTO>> ListarActividadesAsync(TipoEspecialidad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null);
+    Task<ActividadDTO> ObtenerActividadPorIdAsync(Guid actividadId);
 }
