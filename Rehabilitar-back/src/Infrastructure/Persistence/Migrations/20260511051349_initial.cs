@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -127,28 +127,6 @@ namespace Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Reservas",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ActividadId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    EstadoDelPago = table.Column<int>(type: "INTEGER", nullable: false),
-                    MontoPendiente = table.Column<double>(type: "REAL", nullable: true),
-                    EstadoDeReserva = table.Column<int>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Reservas", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Reservas_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "UserClaims",
                 columns: table => new
                 {
@@ -233,10 +211,87 @@ namespace Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Actividades",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Nombre = table.Column<string>(type: "TEXT", nullable: false),
+                    Descripcion = table.Column<string>(type: "TEXT", nullable: false),
+                    Tipo = table.Column<int>(type: "INTEGER", nullable: false),
+                    Frecuencia = table.Column<int>(type: "INTEGER", nullable: false),
+                    Estado = table.Column<int>(type: "INTEGER", nullable: false),
+                    FechaYHora = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CupoMaximo = table.Column<int>(type: "INTEGER", nullable: false),
+                    Precio = table.Column<decimal>(type: "TEXT", nullable: false),
+                    SalaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProfesorId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    SerieId = table.Column<Guid>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Actividades", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Actividades_Profesores_ProfesorId",
+                        column: x => x.ProfesorId,
+                        principalTable: "Profesores",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Actividades_Salas_SalaId",
+                        column: x => x.SalaId,
+                        principalTable: "Salas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reservas",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ActividadId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MontoTotal = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
+                    MontoPagado = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
+                    EstadoDeReserva = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reservas", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reservas_Actividades_ActividadId",
+                        column: x => x.ActividadId,
+                        principalTable: "Actividades",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reservas_Clientes_ClienteId",
+                        column: x => x.ClienteId,
+                        principalTable: "Clientes",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
-                name: "IX_Reservas_UserId",
+                name: "IX_Actividades_ProfesorId",
+                table: "Actividades",
+                column: "ProfesorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Actividades_SalaId",
+                table: "Actividades",
+                column: "SalaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reservas_ActividadId",
                 table: "Reservas",
-                column: "UserId");
+                column: "ActividadId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reservas_ClienteId",
+                table: "Reservas",
+                column: "ClienteId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoleClaims_RoleId",
@@ -280,19 +335,10 @@ namespace Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Clientes");
-
-            migrationBuilder.DropTable(
-                name: "Profesores");
-
-            migrationBuilder.DropTable(
                 name: "Reservas");
 
             migrationBuilder.DropTable(
                 name: "RoleClaims");
-
-            migrationBuilder.DropTable(
-                name: "Salas");
 
             migrationBuilder.DropTable(
                 name: "UserClaims");
@@ -307,7 +353,19 @@ namespace Infrastructure.Persistence.Migrations
                 name: "UserTokens");
 
             migrationBuilder.DropTable(
+                name: "Actividades");
+
+            migrationBuilder.DropTable(
+                name: "Clientes");
+
+            migrationBuilder.DropTable(
                 name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "Profesores");
+
+            migrationBuilder.DropTable(
+                name: "Salas");
 
             migrationBuilder.DropTable(
                 name: "Users");
