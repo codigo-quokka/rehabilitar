@@ -38,7 +38,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
             entity.HasKey(c => c.UserId);
 
             // mapeo a user:
-            entity.HasOne<User>()
+            entity.HasOne<User>(p => p.User)
                 .WithOne()
                 .HasForeignKey<Cliente>(c => c.UserId)
                 .IsRequired()
@@ -60,7 +60,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
             entity.HasKey(p => p.UserId);
 
             // mapeo a user:
-            entity.HasOne<User>()
+            entity.HasOne<User>(p => p.User)
                 .WithOne()
                 .HasForeignKey<Profesor>(p => p.UserId)
                 .IsRequired()
