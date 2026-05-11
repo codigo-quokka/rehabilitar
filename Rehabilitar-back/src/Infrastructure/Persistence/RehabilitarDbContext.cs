@@ -1,4 +1,5 @@
 using Domain;
+using Domain.Salas;
 using Domain.Reservas;
 using Domain.Clientes;
 using Domain.Profesores;
