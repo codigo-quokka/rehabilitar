@@ -84,7 +84,7 @@ export function ReservasPage() {
   ];
 
   return (
-    <MainLayout title="Mis Reservas">
+    <MainLayout title="Mis reservas">
       <div className="space-y-6">
         {loading ? (
           <p className="text-gray-500">Cargando...</p>
