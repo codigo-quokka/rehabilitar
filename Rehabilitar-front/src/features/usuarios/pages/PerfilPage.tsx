@@ -28,7 +28,7 @@ export function PerfilPage() {
   };
 
   return (
-    <MainLayout title="Mi Perfil">
+    <MainLayout title="Mi perfil">
       <div className="max-w-2xl mx-auto">
         <Card>
           <div className="flex items-center gap-4 mb-6">
