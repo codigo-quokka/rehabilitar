@@ -1,6 +1,8 @@
 using Domain;
+using Domain.Reservas;
 using Domain.Clientes;
 using Domain.Profesores;
+using Domain.Actividades;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +15,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Profesor> Profesores { get; set; }
     public DbSet<Sala> Salas { get; set; }
+    public DbSet<Actividad> Actividades { get; set; }
 
     public RehabilitarDbContext(DbContextOptions<RehabilitarDbContext> options) : base(options) { }
 
@@ -64,6 +67,35 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.Ignore(p => p.ActividadesAsignadas);
+        });
+
+        builder.Entity<Reserva>(entity =>
+        {
+            entity.ToTable("Reservas");
+            entity.HasKey(r => r.Id);
+            entity.HasOne(r => r.Cliente)
+                  .WithMany()
+                  .HasForeignKey(r => r.ClienteId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.OwnsOne(r => r.DetallePago, dp =>
+            {
+                dp.Property(d => d.MontoTotal).HasColumnName("MontoTotal").HasColumnType("decimal(18, 2)");
+                dp.Property(d => d.MontoPagado).HasColumnName("MontoPagado").HasColumnType("decimal(18, 2)");
+            });
+        });
+
+        builder.Entity<Actividad>(entity =>
+        {
+            entity.ToTable("Actividades");
+            entity.HasKey(a => a.Id);
+            entity.HasOne(a => a.Sala)
+                  .WithMany(s => s.Actividades)
+                  .HasForeignKey(a => a.SalaId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(a => a.Profesor)
+                  .WithMany(p => p.ActividadesAsignadas)
+                  .HasForeignKey(a => a.ProfesorId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
