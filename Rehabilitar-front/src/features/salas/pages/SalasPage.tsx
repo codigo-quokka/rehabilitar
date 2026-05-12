@@ -148,6 +148,7 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
       <Input
         label="Capacidad"
         type="number"
+        min={1}
         value={formData.capacidad}
         onChange={(e) => setFormData({ ...formData, capacidad: parseInt(e.target.value) })}
         required
