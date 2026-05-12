@@ -20,11 +20,11 @@ public class SalaRepository : ISalaRepository
         _context.Salas.Remove(sala);
     }
 
-    public async Task<Sala?> ObtenerPorIdAsync(Guid id, CancellationToken ct)
+    public async Task<Sala?> ObtenerPorIdAsync(Guid id, CancellationToken ct = default)
     {
         // Para que FindAsync acepte un CancellationToken junto con el ID, la sintaxis de Entity Framework pide que el ID vaya dentro de un arreglo de objetos.
         // si se envía (id, ct) EFCore interpreta que tiene que buscar una pk compuesto {id + ct}.
-        return await _context.Salas.FindAsync(new object[] { id } , ct);
+        return await _context.Salas.FindAsync(new object[] { id }, ct);
     }
 
     public async Task<IEnumerable<Sala>> ObtenerTodasLasSalasAsync(CancellationToken ct = default)
