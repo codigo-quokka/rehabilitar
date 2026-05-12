@@ -1,6 +1,6 @@
-namespace Application.Salas.DTOs;
+namespace Application.Salas.Responses;
 
-public record SalaDto(
+public record SalaResponse(
     Guid Id,
     string Nombre,
     int Capacidad,

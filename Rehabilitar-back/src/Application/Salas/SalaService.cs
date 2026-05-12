@@ -1,0 +1,84 @@
+using Application.Common.Interfaces;
+using Application.Salas.Requests;
+using Application.Salas.Responses;
+using Domain.Salas;
+using ErrorOr;
+
+namespace Application.Salas;
+
+public class SalaService : ISalaService
+{
+
+    private readonly ISalaRepository _repo;
+    private readonly IUnitOfWork _uow;
+
+    public SalaService(ISalaRepository repo, IUnitOfWork uow)
+    {
+        _repo = repo;
+        _uow = uow;
+    }
+
+    public async Task<ErrorOr<SalaResponse>> CrearSala(CrearSalaRequest request, CancellationToken ct = default)
+    {
+        var sala = Sala.Create(request.Nombre, request.Capacidad, request.Descripcion);
+        _repo.AgregarSala(sala);
+        await _uow.SaveChangesAsync(ct);
+
+        return MapToDto(sala);
+    }
+
+    public async Task<ErrorOr<SalaResponse>> EditarSala(Guid id, EditarSalaRequest request, CancellationToken ct = default)
+    {
+        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        if (sala == null)
+            return Error.NotFound("Sala no encontrada.");
+
+        if (request.Nombre != null)
+            sala.CambiarNombre(request.Nombre);
+        if (request.Capacidad.HasValue)
+            sala.CambiarCapacidad(request.Capacidad.Value);
+        if (request.Descripcion != null)
+            sala.CambiarDescripcion(request.Descripcion);
+        if (request.Activo.HasValue)
+        {
+            if (request.Activo.Value)
+                sala.Activar();
+            else
+                sala.Desactivar();
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        return MapToDto(sala);
+    }
+
+    public async Task<ErrorOr<Deleted>> EliminarSala(Guid id, CancellationToken ct = default)
+    {
+        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        if (sala == null)
+            return Error.NotFound("Sala no encontrada.");
+
+        _repo.EliminarSala(sala);
+        await _uow.SaveChangesAsync(ct);
+
+        return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<SalaResponse>> ObtenerSalaPorId(Guid id, CancellationToken ct = default)
+    {
+        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        
+        if (sala == null)
+            return Error.NotFound("Sala no encontrada.");
+
+        return MapToDto(sala);
+    }
+
+    public async Task<ErrorOr<IEnumerable<SalaResponse>>> ObtenerTodasLasSalas(CancellationToken ct = default)
+    {
+        var salas = await _repo.ObtenerTodasLasSalasAsync(ct);
+        return salas.Select(MapToDto).ToList();
+    }
+
+    private static SalaResponse MapToDto(Sala sala) =>
+        new(sala.Id, sala.Nombre, sala.Capacidad, sala.Descripcion, sala.Activo);
+}
