@@ -1,4 +1,4 @@
-namespace Application.Salas.DTOs;
+namespace Application.Salas.Requests;
 
 public record EditarSalaRequest(
     string? Nombre,

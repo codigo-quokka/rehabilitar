@@ -1,12 +1,13 @@
 using System.Text;
 using Application.Auth;
+using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
 using Domain;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using Infrastructure.Persistence.Seeding;
-using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Infrastructure;
+namespace Infrastructure.Common;
 
 public static class DependencyInjection
 {
@@ -65,7 +66,8 @@ public static class DependencyInjection
 
         services.AddScoped<ISeedingService, SeedingService>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ISalaService, SalaService>();
+        services.AddScoped<ISalaRepository, SalaRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }
