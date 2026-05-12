@@ -5,6 +5,7 @@ using Application.Salas;
 using Application.Seeding;
 using Application.Usuarios;
 using Domain;
+using Infrastructure.Email;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
@@ -16,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Resend;
 
 namespace Infrastructure.Common;
 
@@ -66,11 +68,22 @@ public static class DependencyInjection
             };
         });
 
+        // Config. Resend (emails)
+        services.AddOptions<ResendClientOptions>()
+            .Configure(options => {
+                options.ApiToken = configuration["Resend:ApiKey"]!;
+            });
+        services.AddHttpClient<ResendClient>();
+
+
+        // registro de servicios:
         services.AddScoped<ISeedingService, SeedingService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<ISalaRepository, SalaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IResend, ResendClient>();
 
         return services;
     }
