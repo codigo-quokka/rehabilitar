@@ -24,4 +24,9 @@ public class Profesor
     {
         return new Profesor(userId, especialidad);
     }
+
+    public void CambiarEspecialidad(TipoEspecialidad especialidad)
+    {
+        Especialidad = especialidad;
+    }
 }

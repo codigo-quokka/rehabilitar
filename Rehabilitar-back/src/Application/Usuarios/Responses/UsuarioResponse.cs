@@ -1,0 +1,18 @@
+namespace Application.Usuarios.Responses;
+
+public class UsuarioResponse
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty;
+    public string Apellido { get; set; } = string.Empty;
+    public string Rol { get; set; } = string.Empty;
+    public bool Activo { get; set; }
+    public DateTime FechaAlta { get; set; }
+    public string? Telefono { get; set; }
+    public string? FechaNacimiento { get; set; }
+    public string? Documento { get; set; }
+    public bool? AptitudFisica { get; set; }
+    public string? FechaAptitud { get; set; }
+    public string? Especialidad { get; set; }
+}

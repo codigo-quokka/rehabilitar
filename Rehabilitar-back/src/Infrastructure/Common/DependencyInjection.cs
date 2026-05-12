@@ -3,11 +3,13 @@ using Application.Auth;
 using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
+using Application.Usuarios;
 using Domain;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Persistence.Seeding;
+using Infrastructure.Usuarios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +68,7 @@ public static class DependencyInjection
 
         services.AddScoped<ISeedingService, SeedingService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<ISalaRepository, SalaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

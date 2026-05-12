@@ -25,4 +25,12 @@ public class User : IdentityUser<Guid>
     {
         return new User(firstName, lastName, email);
     }
+
+    public void UpdateInfo(string firstName, string lastName, string email)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        UserName = email;
+        Email = email;
+    }
 }
