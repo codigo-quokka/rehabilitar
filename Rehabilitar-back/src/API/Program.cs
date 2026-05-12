@@ -1,13 +1,13 @@
-using Infrastructure;
+using Infrastructure.Common;
 using Scalar.AspNetCore;
-using Microsoft.AspNetCore.Identity;
-using Domain;
 using API.Extensions;
+using Application.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
