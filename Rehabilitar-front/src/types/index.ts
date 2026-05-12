@@ -13,6 +13,7 @@ export interface User {
   fechaAptitud?: string;
   activo: boolean;
   fechaAlta: string;
+  especialidad?: string;
 }
 
 export interface AuthState {
