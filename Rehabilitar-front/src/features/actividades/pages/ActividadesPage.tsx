@@ -25,17 +25,22 @@ export function ActividadesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const acts = await actividadesApi.getAll();
-      setActividades(acts);
-      if (hasRole(["admin", "reception"])) {
-        const s = await salasApi.getAll();
-        setSalas(s);
-      }
-    } catch (err) {
+      const [actsResult, salasResult] = await Promise.all([
+        actividadesApi.getAll().catch(err => {
+          console.error('Error fetching actividades:', err);
+          return [];
+        }),
+        salasApi.getAll().catch(err => {
+          console.error('Error fetching salas:', err);
+          return [];
+        }),
+      ]);
+      setActividades(actsResult);
+      setSalas(salasResult);
     } finally {
       setLoading(false);
     }
-  };
+};
 
   useEffect(() => {
     fetchData();
@@ -190,7 +195,7 @@ export function ActividadesPage() {
             setShowModal(false);
             fetchData();
           }}
-          salas={salas}
+          salas={salas.filter(s => s.activo)}
         />
       </Modal>
     </MainLayout>
@@ -307,10 +312,9 @@ function ActividadForm({ onClose, salas }: ActividadFormProps) {
           setFormData({ ...formData, categoria: e.target.value })
         }
         options={[
-          { value: "rehabilitacion", label: "Rehabilitación" },
-          { value: "ejercicio", label: "Ejercicio" },
-          { value: "yoga", label: "Yoga" },
-          { value: "fisioterapia", label: "Fisioterapia" },
+          { value: "trensuperior", label: "Tren Superior" },
+          { value: "trenmedio", label: "Tren Medio" },
+          { value: "treninferior", label: "Tren Inferior" },
         ]}
       />
       <div className="flex justify-end gap-3 pt-4">
