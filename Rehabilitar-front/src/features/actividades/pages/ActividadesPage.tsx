@@ -264,6 +264,7 @@ function ActividadForm({ onClose, salas }: ActividadFormProps) {
           value={formData.fecha}
           onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
           required
+          
         />
         <Select
           label="Sala"

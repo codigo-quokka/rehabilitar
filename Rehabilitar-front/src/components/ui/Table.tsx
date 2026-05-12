@@ -4,6 +4,7 @@ interface Column<T> {
   key: string;
   header: string;
   render?: (item: T) => ReactNode;
+  width?: string;
 }
 
 interface TableProps<T> {
@@ -20,7 +21,10 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
         <thead>
           <tr className="border-b border-border">
             {columns.map((col) => (
-              <th key={col.key} className="px-4 py-3 text-left text-sm font-medium text-dark">
+              <th
+                key={col.key}
+                className={`px-4 py-3 text-left text-sm font-medium text-dark${col.width ? ` ${col.width}` : ''}`}
+              >
                 {col.header}
               </th>
             ))}
@@ -37,7 +41,7 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
             data.map((item) => (
               <tr key={keyExtractor(item)} className="border-b border-border/50 hover:bg-gray-50">
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-sm text-dark">
+                  <td key={col.key} className={`px-4 py-3 text-sm text-dark${col.width ? ` ${col.width}` : ''}`}>
                     {col.render ? col.render(item) : (item as Record<string, unknown>)[col.key] as ReactNode}
                   </td>
                 ))}

@@ -5,11 +5,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
 
-const btnEdit = { backgroundColor: '#6DD3A8', color: '#2F4858' };
-const btnSuspender = { backgroundColor: '#fed7aa', color: '#2F4858' };
-const btnDelete = { backgroundColor: '#FCA5A5', color: '#2F4858' };
-const btnBase =
-  'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 px-4 py-2 text-sm cursor-pointer border-none';
+
 
 export function UsuariosPage() {
   const { user: currentUser } = useAuth();
@@ -89,37 +85,21 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <button
-            className={`${btnBase} hover:brightness-125`}
-            style={btnEdit}
-            onClick={() => setSelectedUser(u)}
-          >
+          <Button variant="ghost" size="sm" className="bg-green-200 hover:bg-green-300" onClick={() => setSelectedUser(u)}>
             Editar
-          </button>
+          </Button>
           {u.activo ? (
-            <button
-              className={`${btnBase} hover:brightness-125`}
-              style={btnSuspender}
-              onClick={() => setUserToSuspend(u)}
-            >
+            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => setUserToSuspend(u)}>
               Suspender
-            </button>
+            </Button>
           ) : (
-            <button
-              className={`${btnBase} hover:brightness-125`}
-              style={btnSuspender}
-              onClick={() => handleReactivar(u.id)}
-            >
+            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u.id)}>
               Reactivar
-            </button>
+            </Button>
           )}
-          <button
-            className={`${btnBase} hover:brightness-125`}
-            style={btnDelete}
-            onClick={() => setUserToDelete(u)}
-          >
+          <Button variant="ghost" size="sm" className="bg-red-300 hover:bg-red-400" onClick={() => setUserToDelete(u)}>
             Eliminar
-          </button>
+          </Button>
         </div>
       ),
     },

@@ -49,7 +49,7 @@ export function Header({ title }: HeaderProps) {
         <div className="flex items-center gap-4">
           <NotificationTray />
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm" aria-hidden="true">
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm" aria-hidden="true">
               <span className="text-sm font-semibold text-white">
                 {user?.nombre?.charAt(0)}{user?.apellido?.charAt(0)}
               </span>
