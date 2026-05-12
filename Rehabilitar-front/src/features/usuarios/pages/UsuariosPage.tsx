@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table } from '../../../components/ui';
+import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
 
@@ -11,11 +12,13 @@ const btnBase =
   'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 px-4 py-2 text-sm cursor-pointer border-none';
 
 export function UsuariosPage() {
+  const { user: currentUser } = useAuth();
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,10 +45,11 @@ export function UsuariosPage() {
     }
   };
 
-  const handleSuspender = async (id: string) => {
-    if (!confirm('¿Estás seguro de suspender este usuario?')) return;
+  const handleConfirmSuspender = async () => {
+    if (!userToSuspend) return;
     try {
-      await usuariosApi.suspender(id);
+      await usuariosApi.suspender(userToSuspend.id);
+      setUserToSuspend(null);
       fetchData();
     } catch (err) {
     }
@@ -96,7 +100,7 @@ export function UsuariosPage() {
             <button
               className={`${btnBase} hover:brightness-125`}
               style={btnSuspender}
-              onClick={() => handleSuspender(u.id)}
+              onClick={() => setUserToSuspend(u)}
             >
               Suspender
             </button>
@@ -132,7 +136,7 @@ export function UsuariosPage() {
           <p className="text-gray-500">Cargando...</p>
         ) : (
           <Card padding="none">
-            <Table columns={columns} data={usuarios} keyExtractor={(u) => u.id} />
+            <Table columns={columns} data={usuarios.filter(u => u.id !== currentUser?.id)} keyExtractor={(u) => u.id} />
           </Card>
         )}
       </div>
@@ -146,6 +150,27 @@ export function UsuariosPage() {
           user={selectedUser}
           onClose={() => { setShowModal(false); setSelectedUser(null); fetchData(); }}
         />
+      </Modal>
+
+      <Modal
+        isOpen={!!userToSuspend}
+        onClose={() => setUserToSuspend(null)}
+        title="Confirmar suspensión"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas suspender este usuario?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="ghost" onClick={() => setUserToSuspend(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleConfirmSuspender}>
+              Suspender
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       <Modal
