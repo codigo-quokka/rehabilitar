@@ -34,9 +34,18 @@ export function UsuariosPage() {
     }
   };
 
-  const handleAptitud = async (id: string, aptitud: boolean) => {
+  const handleSuspender = async (id: string) => {
+    if (!confirm('¿Estás seguro de suspender este usuario?')) return;
     try {
-      await usuariosApi.confirmarAptitud(id, aptitud);
+      await usuariosApi.suspender(id);
+      fetchData();
+    } catch (err) {
+    }
+  };
+
+  const handleReactivar = async (id: string) => {
+    try {
+      await usuariosApi.reactivar(id);
       fetchData();
     } catch (err) {
     }
@@ -55,20 +64,11 @@ export function UsuariosPage() {
       ),
     },
     {
-      key: 'aptitud',
-      header: 'Aptitud',
-      render: (u: User) => u.aptitudFisica ? (
-        <Badge variant="success">Apto</Badge>
-      ) : (
-        <Badge variant="warning">Pendiente</Badge>
-      ),
-    },
-    {
       key: 'estado',
       header: 'Estado',
       render: (u: User) => (
         <Badge variant={u.activo ? 'success' : 'danger'}>
-          {u.activo ? 'Activo' : 'Inactivo'}
+          {u.activo ? 'Activo' : 'Suspendido'}
         </Badge>
       ),
     },
@@ -80,9 +80,13 @@ export function UsuariosPage() {
           <Button variant="ghost" size="sm" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
-          {!u.aptitudFisica && (
-            <Button variant="outline" size="sm" onClick={() => handleAptitud(u.id, true)}>
-              Aprobar
+          {u.activo ? (
+            <Button variant="outline" size="sm" onClick={() => handleSuspender(u.id)}>
+              Suspender
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => handleReactivar(u.id)}>
+              Reactivar
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id)}>
@@ -133,9 +137,8 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
-    telefono: user?.telefono || '',
-    documento: user?.documento || '',
     rol: user?.rol || 'registered_client',
+    especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -180,22 +183,25 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         required
       />
-      <Input
-        label="Teléfono"
-        value={formData.telefono}
-        onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-      />
-      <Input
-        label="Documento"
-        value={formData.documento}
-        onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
-      />
       <Select
         label="Rol"
         value={formData.rol}
-        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role })}
+        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role, especialidad: e.target.value !== 'professor' ? '' : formData.especialidad })}
         options={roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))}
       />
+      {formData.rol === 'professor' && (
+        <Select
+          label="Especialidad"
+          value={formData.especialidad}
+          onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+          options={[
+            { value: 'TrenSuperior', label: 'Tren Superior' },
+            { value: 'TrenMedio', label: 'Tren Medio' },
+            { value: 'TrenInferior', label: 'Tren Inferior' },
+          ]}
+          required
+        />
+      )}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
         <Button type="submit" loading={loading}>{user ? 'Actualizar' : 'Crear'}</Button>

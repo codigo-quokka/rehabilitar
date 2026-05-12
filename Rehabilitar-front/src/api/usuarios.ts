@@ -1,19 +1,24 @@
 import { apiClient } from './client';
-import { User } from '../types';
 
 interface CreateUserData {
   nombre: string;
   apellido: string;
   email: string;
-  telefono?: string;
-  documento?: string;
   rol?: string;
-  password?: string;
+  especialidad?: string;
+}
+
+interface UpdateUserData {
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  rol?: string;
+  especialidad?: string;
 }
 
 export const usuariosApi = {
-  getAll: async (params?: { page?: number; pageSize?: number; rol?: string }) => {
-    const response = await apiClient.get('/usuarios', { params });
+  getAll: async () => {
+    const response = await apiClient.get('/usuarios');
     return response.data;
   },
 
@@ -27,7 +32,7 @@ export const usuariosApi = {
     return response.data;
   },
 
-  update: async (id: string, data: Partial<User>) => {
+  update: async (id: string, data: UpdateUserData) => {
     const response = await apiClient.put(`/usuarios/${id}`, data);
     return response.data;
   },
@@ -37,8 +42,13 @@ export const usuariosApi = {
     return response.data;
   },
 
-  confirmarAptitud: async (id: string, aptitud: boolean) => {
-    const response = await apiClient.post(`/usuarios/${id}/aptitud`, { aptitud });
+  suspender: async (id: string) => {
+    const response = await apiClient.put(`/usuarios/${id}/suspender`);
+    return response.data;
+  },
+
+  reactivar: async (id: string) => {
+    const response = await apiClient.put(`/usuarios/${id}/reactivar`);
     return response.data;
   },
 };

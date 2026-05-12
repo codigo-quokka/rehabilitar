@@ -1,0 +1,9 @@
+colores base para unificar UI
+#6DD3A8
+#48B7A5
+#309B9B
+#2C7E8B
+#2F6274
+#2f4858
+#fed7aa
+#FCA5A5
