@@ -18,13 +18,18 @@ public class Sala
     public Sala() { }
 #nullable enable
 
-    public Sala(string nombre, int capacidad, string? descripcion = null)
+    private Sala(string nombre, int capacidad, string? descripcion = null)
     {
         Id = Guid.NewGuid();
         CambiarNombre(nombre);
         CambiarCapacidad(capacidad);
         Descripcion = descripcion;
         Activo = true;
+    }
+
+    public static Sala Create(string nombre, int capacidad, string? descripcion = null)
+    {
+        return new Sala(nombre, capacidad, descripcion);
     }
 
     public void CambiarNombre(string nuevoNombre)
