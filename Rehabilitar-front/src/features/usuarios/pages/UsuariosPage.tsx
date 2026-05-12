@@ -4,11 +4,18 @@ import { Card, Button, Badge, Modal, Input, Select, Table } from '../../../compo
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
 
+const btnEdit = { backgroundColor: '#6DD3A8', color: '#2F4858' };
+const btnSuspender = { backgroundColor: '#fed7aa', color: '#2F4858' };
+const btnDelete = { backgroundColor: '#FCA5A5', color: '#2F4858' };
+const btnBase =
+  'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 px-4 py-2 text-sm cursor-pointer border-none';
+
 export function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -25,10 +32,11 @@ export function UsuariosPage() {
     fetchData();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+  const handleDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await usuariosApi.delete(id);
+      await usuariosApi.delete(userToDelete.id);
+      setUserToDelete(null);
       fetchData();
     } catch (err) {
     }
@@ -77,21 +85,37 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedUser(u)}>
+          <button
+            className={`${btnBase} hover:brightness-125`}
+            style={btnEdit}
+            onClick={() => setSelectedUser(u)}
+          >
             Editar
-          </Button>
+          </button>
           {u.activo ? (
-            <Button variant="outline" size="sm" onClick={() => handleSuspender(u.id)}>
+            <button
+              className={`${btnBase} hover:brightness-125`}
+              style={btnSuspender}
+              onClick={() => handleSuspender(u.id)}
+            >
               Suspender
-            </Button>
+            </button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => handleReactivar(u.id)}>
+            <button
+              className={`${btnBase} hover:brightness-125`}
+              style={btnSuspender}
+              onClick={() => handleReactivar(u.id)}
+            >
               Reactivar
-            </Button>
+            </button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id)}>
+          <button
+            className={`${btnBase} hover:brightness-125`}
+            style={btnDelete}
+            onClick={() => setUserToDelete(u)}
+          >
             Eliminar
-          </Button>
+          </button>
         </div>
       ),
     },
@@ -122,6 +146,27 @@ export function UsuariosPage() {
           user={selectedUser}
           onClose={() => { setShowModal(false); setSelectedUser(null); fetchData(); }}
         />
+      </Modal>
+
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        title="Confirmar eliminación"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas eliminar este usuario?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="ghost" onClick={() => setUserToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleDelete}>
+              Eliminar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </MainLayout>
   );
