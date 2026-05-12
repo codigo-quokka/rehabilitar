@@ -1,12 +1,13 @@
 using Application.Salas;
-using Application.Salas.DTOs;
+using Application.Salas.Requests;
+using Application.Salas.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SalasController : ControllerBase
+public class SalasController : ApiControllerBase
 {
     private readonly ISalaService _salaService;
 
@@ -16,58 +17,52 @@ public class SalasController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var salas = await _salaService.ObtenerTodasLasSalas();
-        return Ok(salas);
+        var result = await _salaService.ObtenerTodasLasSalas(ct);
+        return result.Match(
+            salas => Ok(salas),
+            errores => Problem(errores)
+        );
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        try
-        {
-            var sala = await _salaService.ObtenerSalaPorId(id);
-            return Ok(sala);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Sala no encontrada." });
-        }
+        var result = await _salaService.ObtenerSalaPorId(id, ct);
+        return result.Match(
+            salas => Ok(salas),
+            errores => Problem(errores)
+        );
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CrearSalaRequest request)
+    public async Task<IActionResult> Create([FromBody] CrearSalaRequest request, CancellationToken ct)
     {
-        var sala = await _salaService.CrearSala(request);
-        return CreatedAtAction(nameof(GetById), new { id = sala.Id }, sala);
+        var result = await _salaService.CrearSala(request, ct);
+        return result.Match(
+            sala => CreatedAtAction(nameof(GetById), new { id = sala.Id }, sala),
+            errores => Problem(errores)
+        );
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] EditarSalaRequest request)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] EditarSalaRequest request, CancellationToken ct)
     {
-        try
-        {
-            var sala = await _salaService.EditarSala(id, request);
-            return Ok(sala);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Sala no encontrada." });
-        }
+        var result = await _salaService.EditarSala(id, request, ct);
+        return result.Match( 
+            salaResponse => Ok(salaResponse),
+            errores => Problem(errores)
+        );
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        try
-        {
-            await _salaService.EliminarSala(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Sala no encontrada." });
-        }
+        var result = await _salaService.EliminarSala(id, ct);
+        return result.Match( 
+            _ => NoContent(),
+            errores => Problem(errores)
+        );
     }
 }
