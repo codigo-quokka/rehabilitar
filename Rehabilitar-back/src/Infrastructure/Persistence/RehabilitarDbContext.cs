@@ -98,5 +98,11 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                   .HasForeignKey(a => a.ProfesorId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
+
+        builder.Entity<Sala>(entity =>
+        {
+           entity.ToTable("Salas");
+           entity.HasIndex(s => s.Nombre).IsUnique();
+        });
     }
 }
