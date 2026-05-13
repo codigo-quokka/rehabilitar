@@ -5,11 +5,10 @@ using Domain;
 using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Domain.Exceptions;
 using Infrastructure.Persistence;
 
-namespace Infrastructure.Identity;
+namespace Infrastructure.Auth;
 
 public class AuthService : IAuthService
 {
