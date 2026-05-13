@@ -15,6 +15,17 @@ export function UsuariosPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+
+  const filteredUsuarios = usuarios.filter(u => {
+    if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
+    if (statusFilter === 'active' && !u.activo) return false;
+    if (statusFilter === 'suspended' && u.activo) return false;
+    return true;
+  }).filter(u => u.id !== currentUser?.id);
 
   const fetchData = async () => {
     setLoading(true);
@@ -108,7 +119,26 @@ export function UsuariosPage() {
   return (
     <MainLayout title="Usuarios">
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todos los roles' },
+                ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))
+              ]}
+            />
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todos los estados' },
+                { value: 'active', label: 'Activos' },
+                { value: 'suspended', label: 'Suspendidos' }
+              ]}
+            />
+          </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
         </div>
 
@@ -116,7 +146,7 @@ export function UsuariosPage() {
           <p className="text-gray-500">Cargando...</p>
         ) : (
           <Card padding="none">
-            <Table columns={columns} data={usuarios.filter(u => u.id !== currentUser?.id)} keyExtractor={(u) => u.id} />
+            <Table columns={columns} data={filteredUsuarios} keyExtractor={(u) => u.id} />
           </Card>
         )}
       </div>
