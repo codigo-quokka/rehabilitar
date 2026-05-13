@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IResend, ResendClient>();
+        services.AddScoped<JwtService>();
 
         return services;
     }

@@ -3,13 +3,9 @@ using Application.Auth.DTOs;
 using Application.Common.Interfaces;
 using Domain;
 using Domain.Clientes;
-using System.Text;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using Domain.Exceptions;
 using Infrastructure.Persistence;
 
@@ -18,19 +14,19 @@ namespace Infrastructure.Identity;
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
-    private readonly IConfiguration _config;
     private readonly RehabilitarDbContext _dbContext;
     private readonly IEmailService _emailService;
+    private readonly JwtService _jwt;
 
     public AuthService(UserManager<User> userManager,
-                        IConfiguration configuration,
                         RehabilitarDbContext dbContext,
-                        IEmailService emailService)
+                        IEmailService emailService,
+                        JwtService jwt)
     {
         _userManager = userManager;
-        _config = configuration;
         _dbContext = dbContext;
         _emailService = emailService;
+        _jwt = jwt;
     }
 
     public async Task RegisterAsync(RegisterRequest request)
@@ -84,7 +80,7 @@ public class AuthService : IAuthService
         if (!user.EmailConfirmed)
             throw new EmailNotVerifiedException("Email no confirmado.");
 
-        var token = GenerateJwtToken(user);
+        var token = _jwt.GenerateJwtToken(user);
 
         // Obtener rol del usuario
         var roles = await _userManager.GetRolesAsync(user);
@@ -139,31 +135,6 @@ public class AuthService : IAuthService
     }
 
     // métodos privados para funcionalidades específicas:
-
-    private string GenerateJwtToken(User user)
-    {
-        var jwtSettings = _config.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"] ?? throw new Exception("JWT Secret not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(2),
-            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
 
     private async Task CreateClient(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
     {
