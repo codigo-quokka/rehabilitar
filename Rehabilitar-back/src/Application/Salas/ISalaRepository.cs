@@ -1,14 +1,9 @@
+using Application.Common.Interfaces;
 using Domain.Salas;
 
 namespace Application.Salas;
 
-public interface ISalaRepository
+public interface ISalaRepository : IRepositoryBase<Sala>
 {
-    // Commands
-    void AgregarSala(Sala sala);
-    void EliminarSala(Sala sala);
-
-    // Queries
-    Task<Sala?> ObtenerPorIdAsync(Guid id, CancellationToken ct);
-    Task<IEnumerable<Sala>> ObtenerTodasLasSalasAsync(CancellationToken ct);
+    Task<bool> ExisteSalaConNombre(string nombre);
 }

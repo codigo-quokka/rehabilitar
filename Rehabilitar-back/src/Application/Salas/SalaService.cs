@@ -8,7 +8,6 @@ namespace Application.Salas;
 
 public class SalaService : ISalaService
 {
-
     private readonly ISalaRepository _repo;
     private readonly IUnitOfWork _uow;
 
@@ -20,8 +19,11 @@ public class SalaService : ISalaService
 
     public async Task<ErrorOr<SalaResponse>> CrearSala(CrearSalaRequest request, CancellationToken ct = default)
     {
+        if (await _repo.ExisteSalaConNombre(request.Nombre))
+            return Error.Conflict($"Ya existe una sala con nombre {request.Nombre}");
+
         var sala = Sala.Create(request.Nombre, request.Capacidad, request.Descripcion);
-        _repo.AgregarSala(sala);
+        _repo.Add(sala);
         await _uow.SaveChangesAsync(ct);
 
         return MapToDto(sala);
@@ -29,7 +31,7 @@ public class SalaService : ISalaService
 
     public async Task<ErrorOr<SalaResponse>> EditarSala(Guid id, EditarSalaRequest request, CancellationToken ct = default)
     {
-        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        var sala = await _repo.GetByIdAsync(id, ct);
         if (sala == null)
             return Error.NotFound("Sala no encontrada.");
 
@@ -53,11 +55,11 @@ public class SalaService : ISalaService
 
     public async Task<ErrorOr<Deleted>> EliminarSala(Guid id, CancellationToken ct = default)
     {
-        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        var sala = await _repo.GetByIdAsync(id, ct);
         if (sala == null)
             return Error.NotFound("Sala no encontrada.");
 
-        _repo.EliminarSala(sala);
+        _repo.Remove(sala);
         await _uow.SaveChangesAsync(ct);
 
         return Result.Deleted;
@@ -65,7 +67,7 @@ public class SalaService : ISalaService
 
     public async Task<ErrorOr<SalaResponse>> ObtenerSalaPorId(Guid id, CancellationToken ct = default)
     {
-        var sala = await _repo.ObtenerPorIdAsync(id, ct);
+        var sala = await _repo.GetByIdAsync(id, ct);
         
         if (sala == null)
             return Error.NotFound("Sala no encontrada.");
@@ -75,7 +77,7 @@ public class SalaService : ISalaService
 
     public async Task<ErrorOr<IEnumerable<SalaResponse>>> ObtenerTodasLasSalas(CancellationToken ct = default)
     {
-        var salas = await _repo.ObtenerTodasLasSalasAsync(ct);
+        var salas = await _repo.GetAllAsync(ct);
         return salas.Select(MapToDto).ToList();
     }
 
