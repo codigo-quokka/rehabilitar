@@ -6,7 +6,7 @@ using Application.Seeding;
 using Application.Usuarios;
 using Domain;
 using Infrastructure.Email;
-using Infrastructure.Identity;
+using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Persistence.Seeding;
@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IResend, ResendClient>();
+        services.AddScoped<JwtService>();
 
         return services;
     }
