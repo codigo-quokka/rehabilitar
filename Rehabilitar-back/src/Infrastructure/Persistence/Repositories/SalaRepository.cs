@@ -8,8 +8,12 @@ public class SalaRepository : RepositoryBase<Sala>, ISalaRepository
 {
     public SalaRepository(RehabilitarDbContext context) : base(context) { }
 
-    public async Task<bool> ExisteSalaConNombre(string nombre)
+    public async Task<bool> ExisteSalaConNombre(string nombre, Guid? idExcluido = null)
     {
-        return await _context.Salas.AnyAsync(s => s.Nombre.ToLower().Equals(nombre.ToLower()));
+        var query = _context.Salas.Where(s => s.Nombre.ToLower() == nombre.ToLower());
+        if (idExcluido.HasValue)
+            query = query.Where(s => s.Id != idExcluido);
+
+        return await query.AnyAsync();
     }
 }

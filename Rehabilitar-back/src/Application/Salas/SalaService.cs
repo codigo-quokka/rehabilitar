@@ -20,7 +20,7 @@ public class SalaService : ISalaService
     public async Task<ErrorOr<SalaResponse>> CrearSala(CrearSalaRequest request, CancellationToken ct = default)
     {
         if (await _repo.ExisteSalaConNombre(request.Nombre))
-            return Error.Conflict($"Ya existe una sala con nombre {request.Nombre}");
+            return Error.Conflict($"Ya existe una sala con el nombre \"{request.Nombre}\"");
 
         var sala = Sala.Create(request.Nombre, request.Capacidad, request.Descripcion);
         _repo.Add(sala);
@@ -36,7 +36,11 @@ public class SalaService : ISalaService
             return Error.NotFound("Sala no encontrada.");
 
         if (request.Nombre != null)
+        {
+            if (await _repo.ExisteSalaConNombre(request.Nombre, sala.Id)) // se envía el id de la sala a modificar para excluirla de la query.
+                return Error.Conflict($"Ya existe una sala con el nombre \"{request.Nombre}\"");
             sala.CambiarNombre(request.Nombre);
+        }
         if (request.Capacidad.HasValue)
             sala.CambiarCapacidad(request.Capacidad.Value);
         if (request.Descripcion != null)
