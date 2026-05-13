@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Domain;
 using Domain.Clientes;
 using Domain.Profesores;
-using Microsoft.EntityFrameworkCore;
 using Application.Seeding;
 
 namespace Infrastructure.Persistence.Seeding;
