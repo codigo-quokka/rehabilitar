@@ -1,5 +1,6 @@
 using Application.Auth;
 using Application.Auth.DTOs;
+using Application.Common.Interfaces;
 using Domain;
 using Domain.Clientes;
 using System.Text;
@@ -19,12 +20,17 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly IConfiguration _config;
     private readonly RehabilitarDbContext _dbContext;
+    private readonly IEmailService _emailService;
 
-    public AuthService(UserManager<User> userManager, IConfiguration configuration, RehabilitarDbContext dbContext)
+    public AuthService(UserManager<User> userManager,
+                        IConfiguration configuration,
+                        RehabilitarDbContext dbContext,
+                        IEmailService emailService)
     {
         _userManager = userManager;
         _config = configuration;
         _dbContext = dbContext;
+        _emailService = emailService;
     }
 
     public async Task RegisterAsync(RegisterRequest request)
@@ -55,8 +61,7 @@ public class AuthService : IAuthService
 
             await CreateClient(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
 
-            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            await EnviarEmailDeVerificacion(user.Id, confirmationToken);
+            await EnviarEmailDeVerificacion(user);
 
             await transaction.CommitAsync();
         }
@@ -115,10 +120,8 @@ public class AuthService : IAuthService
         if (user == null || user.EmailConfirmed)
             return false;
 
-        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        await EnviarEmailDeVerificacion(user);
 
-        // TO-DO: IEmailService para enviar el correo, lo siguiente es una simulación.
-        await EnviarEmailDeVerificacion(user.Id, confirmationToken);
         return true;
     }
 
@@ -162,24 +165,21 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private async Task EnviarEmailDeVerificacion(Guid userId, string confirmationToken)
-    {
-        // user id y token para scalar:
-        System.Console.WriteLine($"userId = {userId}");
-        System.Console.WriteLine($"confirmationToken = {confirmationToken}");
-        // TO-DO: IEmailService para enviar el correo y retornar el confirmationToken.
-        // Para testear mientras no esté la verificación de email se imprime el link en consola.
-        System.Console.WriteLine();
-        System.Console.WriteLine("Enlace de verificación: ");
-        System.Console.WriteLine();
-        System.Console.WriteLine($"http://localhost:5173/email-verification?userId={userId}&confirmationToken={Uri.EscapeDataString(confirmationToken)}");
-    }
-
     private async Task CreateClient(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
     {
         var dniObj = new Dni(dni); // crear el value object (dni validado). 
         var c = Cliente.Create(userId, fechaNac, dniObj, telefono); // se manda a la factory.
         _dbContext.Clientes.Add(c); // se guarda el cliente en la tabla de clientes.
         await _dbContext.SaveChangesAsync(); // se persisten los cambios.
+    }
+
+    private async Task EnviarEmailDeVerificacion(User user)
+    {
+        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        string verificationLink =
+            $"http://localhost:5173/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
+        var emailResult = await _emailService.SendConfirmationEmail(user.Email!, verificationLink);
+        if (emailResult.IsError)
+            throw new Exception("El usuario no pudo ser creado porque falló el correo de verificación.");
     }
 }
