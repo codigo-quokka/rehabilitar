@@ -4,11 +4,13 @@ using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
 using Application.Usuarios;
+using Application.Actividades;
 using Domain;
 using Infrastructure.Email;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
+using Infrastructure.Actividades;
 using Infrastructure.Persistence.Seeding;
 using Infrastructure.Usuarios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -80,11 +82,12 @@ public static class DependencyInjection
         services.AddScoped<ISeedingService, SeedingService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
-        services.AddScoped<ISalaRepository, SalaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IResend, ResendClient>();
         services.AddScoped<JwtService>();
+        services.AddScoped<ISalaRepository, SalaRepository>();
+        services.AddScoped<IActividadRepository, ActividadRepository>();
 
         return services;
     }
