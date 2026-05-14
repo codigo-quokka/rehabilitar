@@ -1,17 +1,18 @@
-namespace Application.Actividades;
+using ErrorOr;
 using Application.Actividades.DTOs;
-using Domain.Actividades;
-using Domain.Profesores;
+
+namespace Application.Actividades;
 
 public interface IActividadService
 {
-    Task<ActividadDTO> CrearActividadAsync(CrearActividadRequest request);
-    Task<ActividadDTO> EditarActividadAsync(Guid actividadId, EditarActividadRequest request);
-    Task<ActividadDTO> CambiarEstadoActividadAsync(Guid actividadId, EstadoActividad nuevoEstado);
-    Task<ActividadDTO> CambiarFechaYHoraActividadAsync(Guid actividadId, DateTime nuevaFechaYHora);
-    Task<ActividadDTO> CambiarSalaActividadAsync(Guid actividadId, Guid nuevaSalaId);
-
-    Task<ActividadDTO> AsignarProfesorActividadAsync(Guid actividadId, Guid profesorId);
-    Task<ICollection<ActividadDTO>> ListarActividadesAsync(TipoEspecialidad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null);
-    Task<ActividadDTO> ObtenerActividadPorIdAsync(Guid actividadId);
+    Task<ErrorOr<ActividadResponse>> CrearActividad(CrearActividadRequest request, CancellationToken ct = default);
+    Task<ErrorOr<ActividadResponse>> EditarActividad(Guid id, EditarActividadRequest request, CancellationToken ct = default);
+    Task<ErrorOr<Deleted>> EliminarActividad(Guid id, CancellationToken ct = default);
+    Task<ErrorOr<ActividadResponse>> ObtenerActividadPorId(Guid id, CancellationToken ct = default);
+    
+    
+    // Task<ErrorOr<ActividadResponse>> CambiarEstadoActividad(Guid id, EstadoActividad nuevoEstado, CancellationToken ct = default);
+    // Task<ErrorOr<ActividadResponse>> CambiarFechaYHoraActividad(Guid id, DateTime nuevaFechaYHora, CancellationToken ct = default);
+    // Task<ErrorOr<ActividadResponse>> CambiarSalaActividad(Guid id, Guid nuevaSalaId, CancellationToken ct = default);
+    // Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, Guid profesorId, CancellationToken ct = default);
 }
