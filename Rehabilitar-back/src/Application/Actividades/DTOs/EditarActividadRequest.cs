@@ -3,7 +3,6 @@ using Domain.Actividades;
 using Domain.Profesores;
 
 public record EditarActividadRequest(
-    Guid Id,
     string Nombre,
     string Descripcion,
     TipoEspecialidad Tipo,
