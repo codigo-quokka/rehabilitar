@@ -45,7 +45,7 @@ export function CalendarioPage() {
 
   const getActividadesForDay = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return actividades.filter((a) => a.fecha === dateStr);
+    return actividades.filter((a) => a.fechaYHora.startsWith(dateStr));
   };
 
   const monthNames = [
@@ -127,7 +127,7 @@ export function CalendarioPage() {
                             key={act.id}
                             className="text-xs p-1 bg-primary/10 text-primary rounded truncate"
                           >
-                            {act.horaInicio} {act.nombre}
+                            {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} {act.nombre}
                           </div>
                         ))}
                         {dayActividades.length > 2 && (

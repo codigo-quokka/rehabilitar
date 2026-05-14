@@ -1,14 +1,31 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table } from '../../../components/ui';
+import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
 
+
+
 export function UsuariosPage() {
+  const { user: currentUser } = useAuth();
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+
+  const filteredUsuarios = usuarios.filter(u => {
+    if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
+    if (statusFilter === 'active' && !u.activo) return false;
+    if (statusFilter === 'suspended' && u.activo) return false;
+    return true;
+  }).filter(u => u.id !== currentUser?.id);
 
   const fetchData = async () => {
     setLoading(true);
@@ -25,18 +42,29 @@ export function UsuariosPage() {
     fetchData();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+  const handleDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await usuariosApi.delete(id);
+      await usuariosApi.delete(userToDelete.id);
+      setUserToDelete(null);
       fetchData();
     } catch (err) {
     }
   };
 
-  const handleAptitud = async (id: string, aptitud: boolean) => {
+  const handleConfirmSuspender = async () => {
+    if (!userToSuspend) return;
     try {
-      await usuariosApi.confirmarAptitud(id, aptitud);
+      await usuariosApi.suspender(userToSuspend.id);
+      setUserToSuspend(null);
+      fetchData();
+    } catch (err) {
+    }
+  };
+
+  const handleReactivar = async (id: string) => {
+    try {
+      await usuariosApi.reactivar(id);
       fetchData();
     } catch (err) {
     }
@@ -55,20 +83,11 @@ export function UsuariosPage() {
       ),
     },
     {
-      key: 'aptitud',
-      header: 'Aptitud',
-      render: (u: User) => u.aptitudFisica ? (
-        <Badge variant="success">Apto</Badge>
-      ) : (
-        <Badge variant="warning">Pendiente</Badge>
-      ),
-    },
-    {
       key: 'estado',
       header: 'Estado',
       render: (u: User) => (
         <Badge variant={u.activo ? 'success' : 'danger'}>
-          {u.activo ? 'Activo' : 'Inactivo'}
+          {u.activo ? 'Activo' : 'Suspendido'}
         </Badge>
       ),
     },
@@ -77,15 +96,19 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedUser(u)}>
+          <Button variant="ghost" size="sm" className="bg-green-200 hover:bg-green-300" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
-          {!u.aptitudFisica && (
-            <Button variant="outline" size="sm" onClick={() => handleAptitud(u.id, true)}>
-              Aprobar
+          {u.activo ? (
+            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => setUserToSuspend(u)}>
+              Suspender
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u.id)}>
+              Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id)}>
+          <Button variant="ghost" size="sm" className="bg-red-300 hover:bg-red-400" onClick={() => setUserToDelete(u)}>
             Eliminar
           </Button>
         </div>
@@ -96,7 +119,26 @@ export function UsuariosPage() {
   return (
     <MainLayout title="Usuarios">
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todos los roles' },
+                ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))
+              ]}
+            />
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todos los estados' },
+                { value: 'active', label: 'Activos' },
+                { value: 'suspended', label: 'Suspendidos' }
+              ]}
+            />
+          </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
         </div>
 
@@ -104,7 +146,7 @@ export function UsuariosPage() {
           <p className="text-gray-500">Cargando...</p>
         ) : (
           <Card padding="none">
-            <Table columns={columns} data={usuarios} keyExtractor={(u) => u.id} />
+            <Table columns={columns} data={filteredUsuarios} keyExtractor={(u) => u.id} />
           </Card>
         )}
       </div>
@@ -118,6 +160,48 @@ export function UsuariosPage() {
           user={selectedUser}
           onClose={() => { setShowModal(false); setSelectedUser(null); fetchData(); }}
         />
+      </Modal>
+
+      <Modal
+        isOpen={!!userToSuspend}
+        onClose={() => setUserToSuspend(null)}
+        title="Confirmar suspensión"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas suspender este usuario?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="ghost" onClick={() => setUserToSuspend(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleConfirmSuspender}>
+              Suspender
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        title="Confirmar eliminación"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas eliminar este usuario?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button variant="ghost" onClick={() => setUserToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleDelete}>
+              Eliminar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </MainLayout>
   );
@@ -133,9 +217,8 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
-    telefono: user?.telefono || '',
-    documento: user?.documento || '',
     rol: user?.rol || 'registered_client',
+    especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -180,22 +263,25 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         required
       />
-      <Input
-        label="Teléfono"
-        value={formData.telefono}
-        onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-      />
-      <Input
-        label="Documento"
-        value={formData.documento}
-        onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
-      />
       <Select
         label="Rol"
         value={formData.rol}
-        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role })}
+        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role, especialidad: e.target.value !== 'professor' ? '' : formData.especialidad })}
         options={roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))}
       />
+      {formData.rol === 'professor' && (
+        <Select
+          label="Especialidad"
+          value={formData.especialidad}
+          onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+          options={[
+            { value: 'TrenSuperior', label: 'Tren Superior' },
+            { value: 'TrenMedio', label: 'Tren Medio' },
+            { value: 'TrenInferior', label: 'Tren Inferior' },
+          ]}
+          required
+        />
+      )}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
         <Button type="submit" loading={loading}>{user ? 'Actualizar' : 'Crear'}</Button>

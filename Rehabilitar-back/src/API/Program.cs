@@ -1,14 +1,21 @@
-using Infrastructure;
+using Infrastructure.Common;
 using Scalar.AspNetCore;
-using Microsoft.AspNetCore.Identity;
-using Domain;
+using API.Extensions;
+using Application.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
 
-builder.Services.AddControllers();
+ builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Esto hace que los Enums se manden como Strings en el JSON de salida
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -26,7 +33,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Seed de roles al iniciar la aplicación
-await SeedRolesAsync(app.Services);
+await app.UseSeedingAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -45,20 +52,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-async Task SeedRolesAsync(IServiceProvider serviceProvider)
-{
-    using var scope = serviceProvider.CreateScope();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-
-    var roles = new[] { "admin", "reception", "professor", "registered_client", "guest" };
-
-    foreach (var roleName in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(roleName))
-        {
-            await roleManager.CreateAsync(new Role(roleName));
-            Console.WriteLine($"Rol '{roleName}' creado exitosamente.");
-        }
-    }
-}

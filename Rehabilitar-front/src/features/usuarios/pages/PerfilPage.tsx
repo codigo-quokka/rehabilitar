@@ -28,7 +28,7 @@ export function PerfilPage() {
   };
 
   return (
-    <MainLayout title="Mi Perfil">
+    <MainLayout title="Mi perfil">
       <div className="max-w-2xl mx-auto">
         <Card>
           <div className="flex items-center gap-4 mb-6">
@@ -96,10 +96,7 @@ export function PerfilPage() {
                   <p className="text-sm text-gray-500">Aptitud física</p>
                   <p className="text-dark">{user?.aptitudFisica ? 'Aprobada' : 'Pendiente'}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Fecha de alta</p>
-                  <p className="text-dark">{user?.fechaAlta}</p>
-                </div>
+               
               </div>
               <div className="pt-4">
                 <Button onClick={() => setEditing(true)}>Editar perfil</Button>

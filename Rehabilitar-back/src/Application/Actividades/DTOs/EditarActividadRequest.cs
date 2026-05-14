@@ -1,14 +1,16 @@
 namespace Application.Actividades.DTOs;
-using Domain.Enums;
+using Domain.Actividades;
+using Domain.Profesores;
 
 public record EditarActividadRequest(
-    Guid Id,
     string Nombre,
     string Descripcion,
-    TipoActividad Tipo,
+    TipoEspecialidad Tipo,
     FrecuenciaActividad Frecuencia,
+    EstadoActividad Estado,
     DateTime FechaYHora,
     int CupoMaximo,
     Guid SalaId,
-    Guid? ProfesorId
+    Guid? ProfesorId,
+    Guid? SerieId
 );

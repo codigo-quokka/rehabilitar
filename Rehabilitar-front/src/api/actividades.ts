@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Actividad } from '../types';
+import { Actividad, CreateActividadRequest } from '../types';
 
 export const actividadesApi = {
   getAll: async (params?: { fecha?: string; categoria?: string; profesorId?: string }) => {
@@ -12,7 +12,7 @@ export const actividadesApi = {
     return response.data;
   },
 
-  create: async (data: Omit<Actividad, 'id' | 'inscritoss'>) => {
+  create: async (data: CreateActividadRequest) => {
     const response = await apiClient.post('/actividades', data);
     return response.data;
   },

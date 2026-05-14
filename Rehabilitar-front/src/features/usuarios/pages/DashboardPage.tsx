@@ -94,7 +94,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Próximas Actividades</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Próximas actividades</h3>
             {loading ? (
               <p className="text-gray-500">Cargando...</p>
             ) : actividades.length === 0 ? (
@@ -105,10 +105,10 @@ export function DashboardPage() {
                   <div key={act.id} className="flex items-center justify-between p-3 bg-bg-surface rounded-lg">
                     <div>
                       <p className="font-medium text-dark">{act.nombre}</p>
-                      <p className="text-sm text-gray-500">{act.horaInicio} - {act.horaFin}</p>
+                      <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <Badge variant={act.inscritoss >= act.capacidadMaxima ? 'warning' : 'success'}>
-                      {act.inscritoss}/{act.capacidadMaxima}
+                    <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
+                      {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
                     </Badge>
                   </div>
                 ))}
@@ -117,7 +117,7 @@ export function DashboardPage() {
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Mis Reservas</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Mis reservas</h3>
             {loading ? (
               <p className="text-gray-500">Cargando...</p>
             ) : reservas.length === 0 ? (

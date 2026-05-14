@@ -13,6 +13,7 @@ export interface User {
   fechaAptitud?: string;
   activo: boolean;
   fechaAlta: string;
+  especialidad?: string;
 }
 
 export interface AuthState {
@@ -21,19 +22,38 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
+export type TipoEspecialidad = 'TrenSuperior' | 'TrenMedio' | 'TrenInferior';
+export type FrecuenciaActividad = 'Recurrente' | 'Esporadica';
+export type EstadoActividad = 'Propuesta' | 'Aprobada' | 'EnCurso' | 'Finalizada' | 'Cancelada';
+
 export interface Actividad {
   id: string;
   nombre: string;
   descripcion: string;
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
-  capacidadMaxima: number;
-  inscritoss: number;
-  profesorId: string;
+  fechaYHora: string;
+  tipo: string;
+  frecuencia: string;
+  estado: string;
+  cupoMaximo: number;
+  cupoDisponible: number;
   salaId: string;
-  categoria: string;
-  activo: boolean;
+  salaNombre: string;
+  profesorId: string;
+  profesorNombre: string | null;
+  serieId: string;
+}
+
+export interface CreateActividadRequest {
+  nombre: string;
+  descripcion: string;
+  tipo: TipoEspecialidad;
+  frecuencia: FrecuenciaActividad;
+  estado: EstadoActividad;
+  fechaYHora: string;
+  cupoMaximo: number;
+  salaId: string;
+  profesorId?: string;
+  serieId?: string;
 }
 
 export interface Reserva {

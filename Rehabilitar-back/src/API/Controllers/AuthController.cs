@@ -24,9 +24,14 @@ public class AuthController : ControllerBase
             await _authService.RegisterAsync(request);
             return Ok(new { Message = "Usuario registrado exitosamente."});
         }
-        catch (Exception )
+        catch (DomainException e) // si es del dominio mostramos el error.
         {
-            return BadRequest(new { Error = "El e-mail ingresado ya se encuentra registrado"});
+            return BadRequest(new { Error = e.Message});
+        }
+        catch (Exception e) // si es un error posta no decimos nada :P (pero por ahora sí para debugear)
+        {
+            // return BadRequest(new { Error = "Ocurrió un error inesperado. Intente de nuevo."});
+            return BadRequest(new { Error = e.Message});
         }
     }
 

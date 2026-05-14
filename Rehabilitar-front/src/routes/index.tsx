@@ -14,6 +14,7 @@ import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
 import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
 import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
+import { MisClasesPage } from "../features/profesor/pages/MisClasesPage";
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
@@ -67,6 +68,16 @@ export const routes = [
       {
         path: "reservas",
         element: <ReservasPage />,
+      },
+      {
+        path: "mis-clases",
+        element: <ProtectedRoute allowedRoles={["professor"]} />,
+        children: [
+          {
+            index: true,
+            element: <MisClasesPage />,
+          },
+        ],
       },
       {
         path: "perfil",

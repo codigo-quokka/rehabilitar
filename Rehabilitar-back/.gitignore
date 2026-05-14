@@ -485,4 +485,6 @@ src/API/appsettings.*.json
 docs/
 
 *.db
+*.db-shm
+*.db-wal
 GEMINI.md

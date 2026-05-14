@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button, Input, Card } from "../../../components/ui";
 import { Notitoast } from "../../../components/Notitoast";
 import { authApi } from "../../../api";
+import { useAuth } from "../../../hooks/useAuth";
 import { useNotifications } from "../../../hooks/useNotifications";
 import logo from "../../../assets/logo.png";
 import axios from "axios";
@@ -18,6 +19,7 @@ export function RegisterPage() {
     dni: "",
     fechaNacimiento: "",
   });
+  const { isAuthenticated } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -25,8 +27,18 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
+  const MIN_PASSWORD_LENGTH = 6;
+  const MIN_DNI_LENGTH = 7;
+  const MAX_DNI_LENGTH = 8;
 
+  
   useEffect(() => {
+    
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
     if (showToast) {
       const timer = setTimeout(() => {
         if (toastType === "success") {
@@ -36,7 +48,7 @@ export function RegisterPage() {
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [showToast, toastType, navigate]);
+  }, [isAuthenticated, showToast, toastType, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,9 +68,17 @@ export function RegisterPage() {
       return;
     }
 
-    const MIN_PASSWORD_LENGTH = 6;
     if (formData.password.length < MIN_PASSWORD_LENGTH) {
       const msg = `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+
+    if (formData.dni.length < MIN_DNI_LENGTH || formData.dni.length > MAX_DNI_LENGTH) {
+      const msg = `El DNI ingresado es incorrecto.`;
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
@@ -165,7 +185,7 @@ export function RegisterPage() {
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  placeholder="+54 221 1234 567"              
+                  placeholder="+54 221 123 4567"              
                 />
 
                 <div className="grid grid-cols-2 gap-4">
@@ -176,6 +196,8 @@ export function RegisterPage() {
                     onChange={handleChange}
                     placeholder="12345678"
                     required
+                    minLength={MIN_DNI_LENGTH}
+                    maxLength={MAX_DNI_LENGTH}
                   />
                   <Input
                     label="Fecha de nacimiento"
@@ -195,6 +217,7 @@ export function RegisterPage() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
+                  minLength={MIN_PASSWORD_LENGTH}
                 />
 
                 <Input
