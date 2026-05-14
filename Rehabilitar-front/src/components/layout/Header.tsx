@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationTray } from './NotificationTray';
-import { Modal, Button } from '../ui';
+import { ConfirmActionModal } from '../ConfirmActionModal';
 import logo from '../../assets/logo.png';
 
 interface HeaderProps {
@@ -71,26 +71,14 @@ export function Header({ title }: HeaderProps) {
         </div>
       </header>
 
-      <Modal
+      <ConfirmActionModal
         isOpen={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={handleConfirmLogout}
         title="Confirmar cierre de sesión"
-        size="sm"
-      >
-        <div className="text-center">
-          <p className="text-gray-600 mb-6">
-            ¿Estás seguro de que deseas cerrar sesión?
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="ghost" onClick={() => setShowLogoutConfirm(false)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={handleConfirmLogout}>
-              Cerrar sesión
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        body="¿Estás seguro de que deseas cerrar sesión?"
+        confirmLabel="Cerrar sesión"
+      />
     </>
   );
 }
