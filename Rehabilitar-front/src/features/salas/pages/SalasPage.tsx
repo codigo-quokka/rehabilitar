@@ -8,6 +8,7 @@ import {
   Input,
   Table,
 } from "../../../components/ui";
+import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { salasApi } from "../../../api";
 import { Sala } from "../../../types";
 
@@ -143,29 +144,14 @@ export function SalasPage() {
           }}
         />
       </Modal>
-      <Modal
+      <ConfirmActionModal
         isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        title="Confirmar Eliminación"
-        size="sm"
-      >
-        <div className="text-center">
-          <p className="text-gray-600 mb-6">
-            ¿Estás seguro de que deseas eliminar la sala?
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => handleConfirmDelete(salaIdAEliminar)}
-            >
-              Eliminar
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={() => handleConfirmDelete(salaIdAEliminar)}
+        title="Confirmar eliminación"
+        body="¿Estás seguro de que deseas eliminar la sala?"
+        confirmLabel="Eliminar"
+      />
     </MainLayout>
   );
 }

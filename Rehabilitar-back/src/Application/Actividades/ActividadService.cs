@@ -48,7 +48,7 @@ public class ActividadService : IActividadService
 
         if (actividad == null) return Error.NotFound("Actividad no encontrada");   
 
-        var validacion = await ValidarActividad(actividad.Id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
+        var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
         
         if (validacion.IsError)
             return validacion.Errors;
