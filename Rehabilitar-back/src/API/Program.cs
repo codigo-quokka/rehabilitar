@@ -33,7 +33,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Seed de roles al iniciar la aplicación
-await app.UseIdentitySeedingAsync();
+await app.UseSeedingAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

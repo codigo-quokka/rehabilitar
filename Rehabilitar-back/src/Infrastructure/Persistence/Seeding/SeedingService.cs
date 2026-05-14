@@ -3,6 +3,10 @@ using Domain;
 using Domain.Clientes;
 using Domain.Profesores;
 using Application.Seeding;
+using Domain.Salas;
+using Microsoft.EntityFrameworkCore;
+using Domain.Actividades;
+using Domain.Reservas;
 
 namespace Infrastructure.Persistence.Seeding;
 
@@ -13,7 +17,9 @@ public class SeedingService : ISeedingService
     private readonly UserManager<User> _userManager;
     private readonly RehabilitarDbContext _dbContext;
 
-    public SeedingService(RoleManager<Role> roleManager, UserManager<User> userManager, RehabilitarDbContext dbContext)
+    public SeedingService(RoleManager<Role> roleManager,
+                        UserManager<User> userManager,
+                        RehabilitarDbContext dbContext)
     {
         _roleManager = roleManager;
         _userManager = userManager;
@@ -22,13 +28,37 @@ public class SeedingService : ISeedingService
 
     public async Task SeedAsync()
     {
+        System.Console.WriteLine();
+        System.Console.WriteLine("---------- SEEDING ----------");
+        System.Console.WriteLine();
         await SeedRolesAsync();
         await SeedAdminAsync("admin@rehabilitar.com", "Admin", "Administrador");
+        
         await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566");
         await SeedClienteAsync("Rocky", "Balboa", "rocky@balboa.com", "44555666", "542217778899");
+        await SeedClienteAsync("Mr", "Robot", "mr@robot.com", "55666777");
+        await SeedClienteAsync("Daenerys", "Targaryen", "daenerys@targaryen.com", "10111222", "541120204040");
+        await SeedClienteAsync("Marilina", "Bertoldi", "marilina@bertoldi.com", "22333444");
+        await SeedClienteAsync("Ricardo", "Mollo", "ricardo@mollo.com", "33444555", "541110102020");
+
         await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
         await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
         await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
+
+        await SeedSalaAsync("Sala A", 10);
+        await SeedSalaAsync("Sala B", 20);
+        await SeedSalaAsync("Sala C", 30);
+        await SeedSalaAsync("Sala D", 50);
+        await SeedSalaAsync("Sala E", 80);
+
+        // await SeedActividadAsync();
+
+        // await SeedReservaAsync();
+
+        System.Console.WriteLine();
+        System.Console.WriteLine("---------- FIN SEEDING ----------");
+        System.Console.WriteLine();
+
     }
 
     private async Task SeedRolesAsync()
@@ -143,6 +173,46 @@ public class SeedingService : ISeedingService
 
             return true;
         });    
+    }
+
+    private async Task SeedSalaAsync(string nombre, int capacidad, string? descripcion = null)
+    {
+        if (await _dbContext.Salas.AnyAsync(s => s.Nombre.Equals(nombre)))
+            return;
+
+        Sala sala = Sala.Create(nombre, capacidad, descripcion);
+        _dbContext.Salas.Add(sala);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task SeedActividadAsync(string nombre, string descripcion, TipoEspecialidad tipo,
+                                        FrecuenciaActividad frecuencia, EstadoActividad estado, DateTime fechaYHora,
+                                        int cupoMaximo, Guid salaId, Guid? profesorId = null, Guid? serieId = null)
+    {
+        if (await _dbContext.Actividades.AnyAsync(a =>
+            a.FechaYHora.Equals(fechaYHora) &&
+            a.SalaId.Equals(salaId)))
+                return;
+
+        Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
+                                            estado, fechaYHora, cupoMaximo, salaId,
+                                            profesorId, serieId);
+
+        _dbContext.Actividades.Add(actividad);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task SeedReservaAsync(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva)
+    {
+        if (await _dbContext.Reservas.AnyAsync(r =>
+            r.ClienteId.Equals(clienteId) &&
+            r.ActividadId.Equals(actividadId)))
+                return;
+
+        Reserva reserva = Reserva.Create(clienteId, actividadId, detallePago, estadoDeReserva);
+
+        _dbContext.Reservas.Add(reserva);
+        await _dbContext.SaveChangesAsync();
     }
 
     private async Task ExecuteWithTransactionAsync(Func<Task<bool>> action)

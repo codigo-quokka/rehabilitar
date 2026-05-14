@@ -28,6 +28,10 @@ Usuarios que pueden realizar reservas y ver sus actividades.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | Paul | Atreides | `paul@atreides.com` | `cliente` | 11222333 | 542214445566 | `registered_client` |
 | Rocky | Balboa | `rocky@balboa.com` | `cliente` | 44555666 | 542217778899 | `registered_client` |
+| Mr | Robot | `mr@robot.com` | `cliente` | 55666777 |  | `registered_client` |
+| Daenerys | Targaryen | `daenerys@targaryen.com` | `cliente` | 10111222 | 541120204040 | `registered_client` |
+| Marilina | Bertoldi | `marilina@bertoldi.com` | `cliente` | 22333444 |   | `registered_client` |
+| Ricardo | Mollo | `ricardo@mollo.com` | `cliente` | 33444555 | 541110102020 | `registered_client` |
 
 ---
 
@@ -40,6 +44,18 @@ Usuarios encargados de dictar las actividades y clases en las diferentes salas. 
 | Peter | Parker | `peter@parker.com` | `profesor` | TrenSuperior | `professor` |
 | Bruce | Wayne | `bruce@wayne.com` | `profesor` | TrenMedio | `professor` |
 | Clark | Kent | `clark@kent.com` | `profesor` | TrenInferior | `professor` |
+
+---
+
+## 4. Salas
+
+| Nombre | Capacidad | Descripción |
+| :--- | :--- | :--- |
+| Sala A | 10 |  |
+| Sala B | 20 |  |
+| Sala C | 30 |  |
+| Sala D | 50 |  |
+| Sala E | 80 |  |
 
 ---
 
