@@ -8,8 +8,10 @@ public record EditarActividadRequest(
     string Descripcion,
     TipoEspecialidad Tipo,
     FrecuenciaActividad Frecuencia,
+    EstadoActividad Estado,
     DateTime FechaYHora,
     int CupoMaximo,
     Guid SalaId,
-    Guid? ProfesorId
+    Guid? ProfesorId,
+    Guid? SerieId
 );

@@ -12,7 +12,7 @@ public class Actividad
 	public string Descripcion { get; private set; }
 
 	public TipoEspecialidad Tipo { get; private set; }
-	public FrecuenciaActividad Frecuencia { get; private set; }
+	public FrecuenciaActividad Frecuencia { get; private set; } // puede ser un value object
 	public EstadoActividad Estado { get; private set; }
 
 	public DateTime FechaYHora { get; private set; }
@@ -84,19 +84,36 @@ public class Actividad
 		}
 	}
 
-	public void AsignarProfesor(Guid profesorId)
+	public void ModificarActividad(Actividad OtraActividad)
+	{
+		CambiarEstado(OtraActividad.Estado);
+		CambiarFechaYHora(OtraActividad.FechaYHora);
+		CambiarSala(OtraActividad.SalaId);
+		EditarDetalles(OtraActividad.Nombre, OtraActividad.Descripcion, OtraActividad.Tipo);
+		this.CupoMaximo = OtraActividad.CupoMaximo;
+		AsignarProfesor(OtraActividad.ProfesorId ?? Guid.Empty);
+		if (OtraActividad.Frecuencia == FrecuenciaActividad.Recurrente)
+			HacerRecurrente(OtraActividad.SerieId);
+	}
+	private void HacerRecurrente(Guid? serieId)
+	{
+		Frecuencia = FrecuenciaActividad.Recurrente;
+		SerieId = serieId;
+	}
+
+	private void AsignarProfesor(Guid profesorId)
 	{
 		ProfesorId = profesorId;
 	}
 
-	public void CambiarEstado(EstadoActividad nuevoEstado) // quizas se deba refactorizar para validar transiciones de estado permitidas
+	private void CambiarEstado(EstadoActividad nuevoEstado) // quizas se deba refactorizar para validar transiciones de estado permitidas
 	{
 		if (Estado == EstadoActividad.Finalizada)
 			throw new InvalidOperationException("No se puede cambiar el estado de una actividad que ya está finalizada.");
 		Estado = nuevoEstado; 
 	}
 
-	public void CambiarFechaYHora(DateTime nuevaFechaYHora)
+	private void CambiarFechaYHora(DateTime nuevaFechaYHora)
 	{
 		FechaYHora =  (nuevaFechaYHora > DateTime.Now) ? 
 		nuevaFechaYHora : 
@@ -104,13 +121,13 @@ public class Actividad
 		//verificar que la nueva fecha y hora no entre en conflicto con otras actividades asignadas a la misma sala o profesor
 	}
 
-	public void CambiarSala(Guid nuevaSalaId)
+	private void CambiarSala(Guid nuevaSalaId)
 	{
 		throw new NotImplementedException();
 		//verificar disponibilidad de la sala en la fecha y hora antes de asignarla
 	}
 
-	public void EditarDetalles(string nuevoNombre, string nuevaDescripcion, TipoEspecialidad nuevoTipo)
+	private void EditarDetalles(string nuevoNombre, string nuevaDescripcion, TipoEspecialidad nuevoTipo)
 	{
 		throw new NotImplementedException();
 	}
