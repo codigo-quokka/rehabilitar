@@ -84,10 +84,21 @@ public class Actividad
 		}
 	}
 
+	public void CancelarActividad()
+	{
+		if (Estado == EstadoActividad.Finalizada)
+			throw new InvalidOperationException("No se puede cancelar una actividad que ya está finalizada.");
+		Estado = EstadoActividad.Cancelada;
+		// foreach (var reserva in Reservas.Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa))
+		// {
+		// 	reserva.CancelarReserva();
+		// }
+	}
+
 	public void ModificarActividad(Actividad OtraActividad)
 	{
 		CambiarEstado(OtraActividad.Estado);
-		CambiarFechaYHora(OtraActividad.FechaYHora);
+		FechaYHora = OtraActividad.FechaYHora;
 		CambiarSala(OtraActividad.SalaId);
 		EditarDetalles(OtraActividad.Nombre, OtraActividad.Descripcion, OtraActividad.Tipo);
 		this.CupoMaximo = OtraActividad.CupoMaximo;
@@ -113,23 +124,17 @@ public class Actividad
 		Estado = nuevoEstado; 
 	}
 
-	private void CambiarFechaYHora(DateTime nuevaFechaYHora)
-	{
-		FechaYHora =  (nuevaFechaYHora > DateTime.Now) ? 
-		nuevaFechaYHora : 
-		throw new ArgumentException("La fecha y hora de la actividad no puede ser en el pasado.");
-		//verificar que la nueva fecha y hora no entre en conflicto con otras actividades asignadas a la misma sala o profesor
-	}
 
 	private void CambiarSala(Guid nuevaSalaId)
 	{
-		throw new NotImplementedException();
-		//verificar disponibilidad de la sala en la fecha y hora antes de asignarla
+		SalaId = nuevaSalaId;
 	}
 
 	private void EditarDetalles(string nuevoNombre, string nuevaDescripcion, TipoEspecialidad nuevoTipo)
 	{
-		throw new NotImplementedException();
+		Nombre = nuevoNombre;
+		Descripcion = nuevaDescripcion;
+		Tipo = nuevoTipo;
 	}
 
 	public static Actividad Create(string nombre,
