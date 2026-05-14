@@ -11,6 +11,7 @@ export function Button({
   variant = "primary",
   size = "md",
   loading = false,
+  
   children,
   className = "",
   disabled,
@@ -27,7 +28,7 @@ export function Button({
     secondary: "bg-dark text-white hover:bg-secondary focus:ring-dark",
     outline:
       "border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
-    ghost: "text-dark hover:bg-gray-100 focus:ring-gray-300",
+    ghost: "border border-gray-300 text-dark hover:bg-gray-200 focus:ring-gray-300",
     danger: "bg-red-400 text-white hover:bg-red-800 focus:ring-red-500",
   };
 
@@ -39,7 +40,7 @@ export function Button({
 
   return (
     <button
-      className={`${baseStyles} ${focusStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseStyles} ${focusStyles} ${variants[variant]} cursor-pointer ${sizes[size]} ${className}`}
       disabled={disabled || loading}
       aria-disabled={disabled || loading}
       {...props}

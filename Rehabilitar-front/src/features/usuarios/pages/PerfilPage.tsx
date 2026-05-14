@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input } from '../../../components/ui';
+import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 
@@ -14,6 +15,9 @@ export function PerfilPage() {
     email: user?.email || '',
   });
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSave = async () => {
     if (!user) return;
@@ -108,9 +112,30 @@ export function PerfilPage() {
         <Card className="mt-6">
           <h3 className="text-lg font-semibold text-dark mb-4">Cambiar contraseña</h3>
           <div className="space-y-4 max-w-md">
-            <Input label="Contraseña actual" type="password" />
-            <Input label="Nueva contraseña" type="password" />
-            <Input label="Confirmar contraseña" type="password" />
+            <div className="relative">
+              <Input
+                label="Contraseña actual"
+                type={showCurrentPassword ? 'text' : 'password'}
+                className="pr-16"
+              />
+              <PrivacyEye show={showCurrentPassword} onToggle={() => setShowCurrentPassword(prev => !prev)} />
+            </div>
+            <div className="relative">
+              <Input
+                label="Nueva contraseña"
+                type={showNewPassword ? 'text' : 'password'}
+                className="pr-16"
+              />
+              <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
+            </div>
+            <div className="relative">
+              <Input
+                label="Confirmar contraseña"
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="pr-16"
+              />
+              <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
+            </div>
             <Button>Actualizar contraseña</Button>
           </div>
         </Card>

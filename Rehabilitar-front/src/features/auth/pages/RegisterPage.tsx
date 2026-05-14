@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Input, Card } from "../../../components/ui";
+import { PrivacyEye } from "../../../components/PrivacyEye";
 import { Notitoast } from "../../../components/Notitoast";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
@@ -22,6 +23,8 @@ export function RegisterPage() {
   const { isAuthenticated } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [toastMessage, setToastMessage] = useState("");
@@ -129,7 +132,7 @@ export function RegisterPage() {
           onClose={() => setShowToast(false)}
         />
       )}
-      <div className="min-h-screen bg-gradient-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
+      <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
             <img
@@ -209,26 +212,34 @@ export function RegisterPage() {
                   />
                 </div>
 
-                <Input
-                  label="Contraseña"
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  minLength={MIN_PASSWORD_LENGTH}
-                />
+                <div className="relative">
+                  <Input
+                    label="Contraseña"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    required
+                    minLength={MIN_PASSWORD_LENGTH}
+                    className="pr-16"
+                  />
+                  <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
+                </div>
 
-                <Input
-                  label="Confirmar contraseña"
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    label="Confirmar contraseña"
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    required
+                    className="pr-16"
+                  />
+                  <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
+                </div>
 
                 <Button
                   type="submit"
