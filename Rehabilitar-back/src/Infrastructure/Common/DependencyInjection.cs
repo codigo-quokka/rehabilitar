@@ -20,6 +20,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Resend;
+using Application.Profesores;
+using Infrastructure.Profesores;
 
 namespace Infrastructure.Common;
 
@@ -88,6 +90,7 @@ public static class DependencyInjection
         services.AddScoped<JwtService>();
         services.AddScoped<ISalaRepository, SalaRepository>();
         services.AddScoped<IActividadRepository, ActividadRepository>();
+        services.AddScoped<IProfesorRepository, ProfesorRepository>();
 
         return services;
     }
