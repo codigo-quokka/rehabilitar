@@ -1,17 +1,21 @@
+using Domain.Actividades;
+using Domain.Profesores;
+
 namespace Application.Actividades.DTOs;
 
-public record ActividadDTO(
+public record ActividadResponse(
     Guid Id,
     string Nombre,
     string Descripcion,
     DateTime FechaYHora,
-    string Tipo,
-    string Frecuencia,
-    string Estado,
+    TipoEspecialidad Tipo,
+    FrecuenciaActividad Frecuencia,
+    EstadoActividad Estado,
     int CupoMaximo,
     int CupoDisponible,
     Guid SalaId,
     string SalaNombre,
     Guid? ProfesorId,
-    string? ProfesorNombre
+    string? ProfesorNombre,
+    Guid? SerieId
 );

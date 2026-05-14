@@ -1,3 +1,4 @@
+using Application.Actividades;
 using Application.Salas;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ISalaService, SalaService>();
+        services.AddScoped<IActividadService, ActividadService>();
 
         return services;
     }

@@ -28,9 +28,10 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { Error = e.Message});
         }
-        catch (Exception) // si es un error posta no decimos nada :P
+        catch (Exception e) // si es un error posta no decimos nada :P (pero por ahora sí para debugear)
         {
-            return BadRequest(new { Error = "Ocurrió un error inesperado. Intente de nuevo."});
+            // return BadRequest(new { Error = "Ocurrió un error inesperado. Intente de nuevo."});
+            return BadRequest(new { Error = e.Message});
         }
     }
 

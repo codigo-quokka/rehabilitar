@@ -79,6 +79,9 @@ public class AuthService : IAuthService
         if (!user.EmailConfirmed)
             throw new EmailNotVerifiedException("Email no confirmado.");
 
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new DomainException("Usuario suspendido.");
+
         var token = _jwt.GenerateJwtToken(user);
 
         // Obtener rol del usuario
@@ -150,6 +153,6 @@ public class AuthService : IAuthService
             $"http://localhost:5173/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
         var emailResult = await _emailService.SendConfirmationEmail(user.Email!, verificationLink);
         if (emailResult.IsError)
-            throw new Exception("El usuario no pudo ser creado porque falló el correo de verificación.");
+            throw new Exception("El usuario no pudo ser creado porque falló el envío del correo de verificación.");
     }
 }

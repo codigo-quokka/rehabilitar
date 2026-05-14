@@ -9,7 +9,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
-builder.Services.AddControllers();
+ builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Esto hace que los Enums se manden como Strings en el JSON de salida
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -27,7 +33,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Seed de roles al iniciar la aplicación
-await app.UseIdentitySeedingAsync();
+await app.UseSeedingAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
