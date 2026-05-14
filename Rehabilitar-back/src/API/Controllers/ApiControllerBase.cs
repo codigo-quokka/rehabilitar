@@ -21,7 +21,11 @@ namespace API.Controllers
                 _ => StatusCodes.Status500InternalServerError
             };
 
-            return Problem(statusCode: statusCode, title: primerError.Description);
+            return StatusCode(statusCode, new
+            {
+                Error = primerError.Description,
+                ErrorCode = primerError.Code
+            });
         }
     }
 }
