@@ -35,6 +35,7 @@ export function ActividadesPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -180,9 +181,25 @@ export function ActividadesPage() {
                     </svg>
                     {act.salaNombre}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    {act.profesorNombre || "Sin profesor asignado"}
+                  </div>
                 </div>
 
-                {hasRole(["registered_client", "admin", "reception"]) && (
+                {hasRole(["registered_client", "reception"]) && (
                   <Button
                     variant={
                       act.cupoDisponible <= 0
@@ -198,6 +215,18 @@ export function ActividadesPage() {
                       : "Reservar"}
                   </Button>
                 )}
+                {hasRole(["admin"]) && (
+                  <Button
+                    variant="primary"
+                    className="w-full mt-auto"
+                    onClick={() => {
+                      setEditingActividad(act);
+                      setShowModal(true);
+                    }}
+                  >
+                    Modificar
+                  </Button>
+                )}
               </Card>
             ))}
           </div>
@@ -206,13 +235,18 @@ export function ActividadesPage() {
 
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="Nueva Actividad"
+        onClose={() => {
+          setShowModal(false);
+          setEditingActividad(null);
+        }}
+        title={editingActividad ? "Modificar Actividad" : "Nueva Actividad"}
         size="lg"
       >
         <ActividadForm
+          actividad={editingActividad || undefined}
           onClose={() => {
             setShowModal(false);
+            setEditingActividad(null);
             fetchData();
           }}
           salas={salas.filter(s => s.activo)}
@@ -227,22 +261,55 @@ interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
   profesores: User[];
+  actividad?: Actividad;
 }
 
-function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
-  const [formData, setFormData] = useState<CreateActividadRequest>({
-    nombre: "",
-    descripcion: "",
-    tipo: "TrenSuperior",
-    frecuencia: "Esporadica",
-    estado: "Propuesta",
-    fechaYHora: "",
-    cupoMaximo: 20,
-    salaId: "",
-    profesorId: undefined,
-  });
+function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
+  const isEditing = !!actividad;
+  const [formData, setFormData] = useState<CreateActividadRequest>(
+    actividad
+      ? {
+          nombre: actividad.nombre,
+          descripcion: actividad.descripcion,
+          tipo: actividad.tipo as CreateActividadRequest['tipo'],
+          frecuencia: actividad.frecuencia as CreateActividadRequest['frecuencia'],
+          estado: actividad.estado as CreateActividadRequest['estado'],
+          fechaYHora: actividad.fechaYHora.slice(0, 16),
+          cupoMaximo: actividad.cupoMaximo,
+          salaId: actividad.salaId,
+          profesorId: actividad.profesorId || undefined,
+        }
+      : {
+          nombre: "",
+          descripcion: "",
+          tipo: "TrenSuperior",
+          frecuencia: "Esporadica",
+          estado: "Propuesta",
+          fechaYHora: "",
+          cupoMaximo: 20,
+          salaId: "",
+          profesorId: undefined,
+        },
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDelete = async () => {
+    if (!actividad) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await actividadesApi.delete(actividad.id);
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al eliminar actividad';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,10 +328,14 @@ function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
           ? formData.fechaYHora + ':00'
           : formData.fechaYHora,
       };
-      await actividadesApi.create(payload);
+      if (isEditing && actividad) {
+        await actividadesApi.update(actividad.id, payload);
+      } else {
+        await actividadesApi.create(payload);
+      }
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al crear actividad';
+      const msg = err?.response?.data?.title || err?.response?.data || err?.message || `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
@@ -384,13 +455,38 @@ function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
           {error}
         </div>
       )}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={loading}>
-          Crear
-        </Button>
+      <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
+        {isEditing && !showDeleteConfirm && (
+          <Button
+            variant="ghost"
+            className="bg-red-300 hover:bg-red-400"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Eliminar
+          </Button>
+        )}
+        {showDeleteConfirm ? (
+          <div className="flex items-center gap-3 w-full justify-end">
+            <span className="text-sm text-gray-600 mr-auto">
+              ¿Estás seguro de eliminar esta actividad?
+            </span>
+            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" loading={loading} onClick={handleDelete}>
+              Eliminar
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={loading}>
+              {isEditing ? "Guardar" : "Crear"}
+            </Button>
+          </div>
+        )}
       </div>
     </form>
   );
