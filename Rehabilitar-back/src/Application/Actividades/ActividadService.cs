@@ -37,7 +37,7 @@ public class ActividadService : IActividadService
         
         Actividad actividad = Actividad.Create(request.Nombre, request.Descripcion, request.Tipo, request.Frecuencia, request.Estado, request.FechaYHora, request.CupoMaximo, request.SalaId, request.ProfesorId, request.SerieId );
         
-        _actividadRepo.CrearActividad(actividad);
+        _actividadRepo.Add(actividad);
         await _uow.SaveChangesAsync(ct);
         return await MapToDto(actividad,ct);
     }
@@ -75,7 +75,7 @@ public class ActividadService : IActividadService
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
-        _actividadRepo.EliminarActividad(actividad);
+        _actividadRepo.Remove(actividad);
         await _uow.SaveChangesAsync(ct);
         return Result.Deleted;
     }
@@ -89,16 +89,16 @@ public class ActividadService : IActividadService
 
     private async Task<ErrorOr<ActividadResponse>> MapToDto(Actividad actividad, CancellationToken ct = default)
     {
-        string nombreSala = await _salaRepo.ObtenerPorIdAsync(actividad.SalaId, ct) is Sala sala ? sala.Nombre : "Sala no encontrada";
+        string nombreSala = await _salaRepo.GetByIdAsync(actividad.SalaId, ct) is Sala sala ? sala.Nombre : "Sala no encontrada";
         string? nombreProfesor = null;
         if (actividad.ProfesorId.HasValue)
         {
-            var profesorResult = await _profesorRepo.obtenerPorIdAsync(actividad.ProfesorId.Value, ct);
+            var profesor = await _profesorRepo.GetByIdAsync(actividad.ProfesorId.Value, ct);
 
-            if (profesorResult.IsError)
-                return profesorResult.Errors;
+            if (profesor == null)
+                return Error.NotFound("Prfoesor.NotFound", "Profesor no encontrado.");
 
-            nombreProfesor = profesorResult.Value.User.FirstName + " " + profesorResult.Value.User.LastName;
+            nombreProfesor = profesor.User.FirstName + " " + profesor.User.LastName;
         }
 
         return new ActividadResponse(
@@ -124,7 +124,7 @@ public class ActividadService : IActividadService
         if (estado == EstadoActividad.Finalizada)
             return Error.Validation("No se puede crear o editar una actividad en estado finalizada.");
 
-        var sala = await _salaRepo.ObtenerPorIdAsync(salaId, ct);
+        var sala = await _salaRepo.GetByIdAsync(salaId, ct);
         
         if (sala == null) return Error.NotFound("Sala no encontrada");
 
@@ -137,12 +137,12 @@ public class ActividadService : IActividadService
         Profesor? profesor;
         if (profesorId.HasValue)
         {
-            var profesorResult = await _profesorRepo.obtenerPorIdAsync(profesorId.Value, ct);
+            profesor = await _profesorRepo.GetByIdAsync(profesorId.Value, ct);
 
-            if (profesorResult.IsError)
-                return profesorResult.Errors;
+            // if (profesorResult)
+            //     return profesorResult.Errors;
             
-            profesor = profesorResult.Value;
+            // profesor = profesorResult;
             
             if (profesor == null) 
                 return Error.NotFound("Profesor no encontrado");
