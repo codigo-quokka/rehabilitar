@@ -28,6 +28,11 @@ const tipoLabel: Record<string, string> = {
   TrenInferior: 'Tren Inferior',
 };
 
+const frecuenciaLabel: Record<string, string> = {
+  Esporadica: 'Esporádica',
+  Recurrente: 'Recurrente',
+};
+
 export function ActividadesPage() {
   const { user, hasRole } = useAuth();
   const [actividades, setActividades] = useState<Actividad[]>([]);
@@ -107,7 +112,10 @@ export function ActividadesPage() {
             {actividades.map((act) => (
               <Card key={act.id} className="flex flex-col">
                 <div className="flex items-start justify-between mb-3">
-                  <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                    <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
+                  </div>
                   <Badge
                     variant={
                       act.cupoDisponible <= 0
@@ -385,9 +393,17 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         <Select
           label="Tipo"
           value={formData.tipo}
-          onChange={(e) =>
-            setFormData({ ...formData, tipo: e.target.value as CreateActividadRequest['tipo'] })
-          }
+          onChange={(e) => {
+            const newTipo = e.target.value as CreateActividadRequest['tipo'];
+            const profesorValido = formData.profesorId && profesores.some(
+              (p) => p.id === formData.profesorId && (!p.especialidad || p.especialidad === newTipo)
+            );
+            setFormData({
+              ...formData,
+              tipo: newTipo,
+              profesorId: profesorValido ? formData.profesorId : undefined,
+            });
+          }}
           options={[
             { value: "TrenSuperior", label: "Tren Superior" },
             { value: "TrenMedio", label: "Tren Medio" },
@@ -444,10 +460,12 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         }
         options={[
           { value: "", label: "Sin profesor" },
-          ...profesores.map((p) => ({
-            value: p.id,
-            label: `${p.nombre} ${p.apellido}`,
-          })),
+          ...profesores
+            .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+            .map((p) => ({
+              value: p.id,
+              label: `${p.nombre} ${p.apellido}`,
+            })),
         ]}
       />
       {error && (
