@@ -1,5 +1,7 @@
 using Application.Actividades;
 using Application.Actividades.DTOs;
+using Domain.Actividades;
+using Domain.Profesores;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -13,6 +15,20 @@ public class ActividadesController : ApiControllerBase
     public ActividadesController(IActividadService actividadService)
     {
         _actividadService = actividadService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] TipoEspecialidad? tipo,
+        [FromQuery] FrecuenciaActividad? frecuencia,
+        [FromQuery] EstadoActividad? estado,
+        CancellationToken ct)
+    {
+        var result = await _actividadService.ListarActividades(tipo, frecuencia, estado, ct);
+        return result.Match(
+            actividades => Ok(actividades),
+            errores => Problem(errores)
+        );
     }
 
     [HttpPost]

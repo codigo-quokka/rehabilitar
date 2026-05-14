@@ -9,23 +9,37 @@ import {
   Select,
 } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
-import { actividadesApi, reservasApi, salasApi } from "../../../api";
-import { Actividad, Sala } from "../../../types";
+import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
+import { Actividad, Sala, User, CreateActividadRequest } from "../../../types";
+
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+};
+
+const tipoLabel: Record<string, string> = {
+  TrenSuperior: 'Tren Superior',
+  TrenMedio: 'Tren Medio',
+  TrenInferior: 'Tren Inferior',
+};
 
 export function ActividadesPage() {
   const { user, hasRole } = useAuth();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [salas, setSalas] = useState<Sala[]>([]);
+  const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(
-    null,
-  );
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [actsResult, salasResult] = await Promise.all([
+      const [actsResult, salasResult, usersResult] = await Promise.all([
         actividadesApi.getAll().catch(err => {
           console.error('Error fetching actividades:', err);
           return [];
@@ -34,13 +48,18 @@ export function ActividadesPage() {
           console.error('Error fetching salas:', err);
           return [];
         }),
+        usuariosApi.getAll().catch(err => {
+          console.error('Error fetching usuarios:', err);
+          return [];
+        }),
       ]);
       setActividades(actsResult);
       setSalas(salasResult);
+      setUsuarios(usersResult);
     } finally {
       setLoading(false);
     }
-};
+  };
 
   useEffect(() => {
     fetchData();
@@ -55,6 +74,7 @@ export function ActividadesPage() {
   };
 
   const canManage = hasRole(["admin", "reception"]);
+  const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
 
   return (
     <MainLayout title="Actividades">
@@ -86,15 +106,15 @@ export function ActividadesPage() {
             {actividades.map((act) => (
               <Card key={act.id} className="flex flex-col">
                 <div className="flex items-start justify-between mb-3">
-                  <Badge variant="info">{act.categoria}</Badge>
+                  <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                   <Badge
                     variant={
-                      act.inscritoss >= act.capacidadMaxima
+                      act.cupoDisponible <= 0
                         ? "warning"
                         : "success"
                     }
                   >
-                    {act.inscritoss}/{act.capacidadMaxima}
+                    {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
                   </Badge>
                 </div>
 
@@ -120,7 +140,7 @@ export function ActividadesPage() {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    {act.fecha}
+                    {formatDate(act.fechaYHora)}
                   </div>
                   <div className="flex items-center gap-2">
                     <svg
@@ -136,7 +156,7 @@ export function ActividadesPage() {
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    {act.horaInicio} - {act.horaFin}
+                    {formatTime(act.fechaYHora)}
                   </div>
                   <div className="flex items-center gap-2">
                     <svg
@@ -158,22 +178,22 @@ export function ActividadesPage() {
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    Sala #{act.salaId}
+                    {act.salaNombre}
                   </div>
                 </div>
 
                 {hasRole(["registered_client", "admin", "reception"]) && (
                   <Button
                     variant={
-                      act.inscritoss >= act.capacidadMaxima
+                      act.cupoDisponible <= 0
                         ? "outline"
                         : "primary"
                     }
                     className="w-full mt-auto"
-                    disabled={act.inscritoss >= act.capacidadMaxima}
+                    disabled={act.cupoDisponible <= 0}
                     onClick={() => handleReservar(act)}
                   >
-                    {act.inscritoss >= act.capacidadMaxima
+                    {act.cupoDisponible <= 0
                       ? "Completo"
                       : "Reservar"}
                   </Button>
@@ -196,6 +216,7 @@ export function ActividadesPage() {
             fetchData();
           }}
           salas={salas.filter(s => s.activo)}
+          profesores={profesores}
         />
       </Modal>
     </MainLayout>
@@ -205,32 +226,46 @@ export function ActividadesPage() {
 interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
+  profesores: User[];
 }
 
-function ActividadForm({ onClose, salas }: ActividadFormProps) {
-  const [formData, setFormData] = useState({
+function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
+  const [formData, setFormData] = useState<CreateActividadRequest>({
     nombre: "",
     descripcion: "",
-    fecha: "",
-    horaInicio: "",
-    horaFin: "",
-    capacidadMaxima: 20,
-    categoria: "rehabilitacion",
+    tipo: "TrenSuperior",
+    frecuencia: "Esporadica",
+    estado: "Propuesta",
+    fechaYHora: "",
+    cupoMaximo: 20,
     salaId: "",
+    profesorId: undefined,
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!formData.salaId) {
+      setError('Debe seleccionar una sala');
+      return;
+    }
+
     setLoading(true);
     try {
-      await actividadesApi.create({
+      const payload = {
         ...formData,
-        activo: true,
-        profesorId: "",
-      });
+        fechaYHora: formData.fechaYHora.includes(':') && !formData.fechaYHora.endsWith(':00')
+          ? formData.fechaYHora + ':00'
+          : formData.fechaYHora,
+      };
+      await actividadesApi.create(payload);
       onClose();
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al crear actividad';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
     }
@@ -259,12 +294,13 @@ function ActividadForm({ onClose, salas }: ActividadFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Fecha"
-          type="date"
-          value={formData.fecha}
-          onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+          label="Fecha y hora"
+          type="datetime-local"
+          value={formData.fechaYHora}
+          onChange={(e) =>
+            setFormData({ ...formData, fechaYHora: e.target.value })
+          }
           required
-          
         />
         <Select
           label="Sala"
@@ -274,50 +310,80 @@ function ActividadForm({ onClose, salas }: ActividadFormProps) {
           required
         />
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <Input
-          label="Hora inicio"
-          type="time"
-          value={formData.horaInicio}
+      <div className="grid grid-cols-2 gap-4">
+        <Select
+          label="Tipo"
+          value={formData.tipo}
           onChange={(e) =>
-            setFormData({ ...formData, horaInicio: e.target.value })
+            setFormData({ ...formData, tipo: e.target.value as CreateActividadRequest['tipo'] })
           }
-          required
+          options={[
+            { value: "TrenSuperior", label: "Tren Superior" },
+            { value: "TrenMedio", label: "Tren Medio" },
+            { value: "TrenInferior", label: "Tren Inferior" },
+          ]}
+        />
+        <Select
+          label="Frecuencia"
+          value={formData.frecuencia}
+          onChange={(e) =>
+            setFormData({ ...formData, frecuencia: e.target.value as CreateActividadRequest['frecuencia'] })
+          }
+          options={[
+            { value: "Esporadica", label: "Esporádica" },
+            { value: "Recurrente", label: "Recurrente" },
+          ]}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Select
+          label="Estado"
+          value={formData.estado}
+          onChange={(e) =>
+            setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
+          }
+          options={[
+            { value: "Propuesta", label: "Propuesta" },
+            { value: "Aprobada", label: "Aprobada" },
+            { value: "EnCurso", label: "En Curso" },
+            { value: "Cancelada", label: "Cancelada" },
+          ]}
         />
         <Input
-          label="Hora fin"
-          type="time"
-          value={formData.horaFin}
-          onChange={(e) =>
-            setFormData({ ...formData, horaFin: e.target.value })
-          }
-          required
-        />
-        <Input
-          label="Capacidad"
+          label="Cupo máximo"
           type="number"
-          value={formData.capacidadMaxima}
+          value={formData.cupoMaximo}
           onChange={(e) =>
             setFormData({
               ...formData,
-              capacidadMaxima: parseInt(e.target.value),
+              cupoMaximo: parseInt(e.target.value),
             })
           }
           required
         />
       </div>
       <Select
-        label="Categoría"
-        value={formData.categoria}
+        label="Profesor (opcional)"
+        value={formData.profesorId || ""}
         onChange={(e) =>
-          setFormData({ ...formData, categoria: e.target.value })
+          setFormData({
+            ...formData,
+            profesorId: e.target.value || undefined,
+          })
         }
         options={[
-          { value: "trensuperior", label: "Tren Superior" },
-          { value: "trenmedio", label: "Tren Medio" },
-          { value: "treninferior", label: "Tren Inferior" },
+          { value: "", label: "Sin profesor" },
+          ...profesores.map((p) => ({
+            value: p.id,
+            label: `${p.nombre} ${p.apellido}`,
+          })),
         ]}
       />
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="ghost" type="button" onClick={onClose}>
           Cancelar

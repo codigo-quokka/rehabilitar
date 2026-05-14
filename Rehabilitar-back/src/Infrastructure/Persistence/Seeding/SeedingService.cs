@@ -51,8 +51,23 @@ public class SeedingService : ISeedingService
         await SeedSalaAsync("Sala D", 50);
         await SeedSalaAsync("Sala E", 80);
 
-        // await SeedActividadAsync();
-
+        var salaA = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A");
+        var salaB = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B");
+        var salaC = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C");
+        var salaD = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D");
+        var salaE = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E");
+        var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
+        var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
+        var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
+        var now = DateTime.Today.AddDays(1);
+        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
+        await SeedActividadAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, peter.UserId);
+        await SeedActividadAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, salaC.Id, bruce.UserId);
+        await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(6).AddHours(14), 25, salaD.Id, bruce.UserId);
+        await SeedActividadAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddHours(8), 12, salaE.Id, clark.UserId);
+        await SeedActividadAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, salaA.Id, peter.UserId);
+        await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
+        await SeedActividadAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, salaC.Id, bruce.UserId);
         // await SeedReservaAsync();
 
         System.Console.WriteLine();
