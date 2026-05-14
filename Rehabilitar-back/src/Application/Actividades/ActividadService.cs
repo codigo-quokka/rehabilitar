@@ -80,6 +80,21 @@ public class ActividadService : IActividadService
         return Result.Deleted;
     }
 
+    public async Task<ErrorOr<List<ActividadResponse>>> ListarActividades(
+        TipoEspecialidad? tipo, FrecuenciaActividad? frecuencia, EstadoActividad? estado, CancellationToken ct)
+    {
+        var actividades = await _actividadRepo.ListarActividadesAsync(tipo, frecuencia, estado, ct);
+        var responses = new List<ActividadResponse>();
+        foreach (var actividad in actividades)
+        {
+            var mapped = await MapToDto(actividad, ct);
+            if (mapped.IsError)
+                return mapped.Errors;
+            responses.Add(mapped.Value);
+        }
+        return responses;
+    }
+
     public async Task<ErrorOr<ActividadResponse>> ObtenerActividadPorId(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);

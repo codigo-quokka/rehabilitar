@@ -105,10 +105,10 @@ export function DashboardPage() {
                   <div key={act.id} className="flex items-center justify-between p-3 bg-bg-surface rounded-lg">
                     <div>
                       <p className="font-medium text-dark">{act.nombre}</p>
-                      <p className="text-sm text-gray-500">{act.horaInicio} - {act.horaFin}</p>
+                      <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <Badge variant={act.inscritoss >= act.capacidadMaxima ? 'warning' : 'success'}>
-                      {act.inscritoss}/{act.capacidadMaxima}
+                    <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
+                      {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
                     </Badge>
                   </div>
                 ))}
