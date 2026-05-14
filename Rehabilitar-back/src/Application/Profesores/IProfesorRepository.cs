@@ -1,9 +1,9 @@
+using Application.Common.Interfaces;
 using Domain.Profesores;
 using ErrorOr;
 
 namespace Application.Profesores;
 
-public interface IProfesorRepository
+public interface IProfesorRepository : IRepositoryBase<Profesor>
 {
-    Task<ErrorOr<Profesor>> obtenerPorIdAsync(Guid userId, CancellationToken ct = default);
 }

@@ -1,31 +1,15 @@
 namespace Infrastructure.Actividades;
 using Application.Actividades;
-using Application.Actividades.DTOs;
-using Domain.Salas;
 using Domain.Actividades;
 using Infrastructure.Persistence;
 using Domain.Profesores;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Persistence.Repositories;
 
-public class ActividadRepository : IActividadRepository
+public class ActividadRepository : RepositoryBase<Actividad>, IActividadRepository
 {
-    private readonly RehabilitarDbContext _context;
 
-    public ActividadRepository(RehabilitarDbContext context)
-    {
-        _context = context;
-    }
-
-    public void CrearActividad(Actividad actividad, CancellationToken ct = default)
-    {
-        _context.Actividades.Add(actividad);
-    }
-
-
-    public void EliminarActividad(Actividad actividad, CancellationToken ct = default)
-    {
-        _context.Actividades.Remove(actividad);
-    }
+    public ActividadRepository(RehabilitarDbContext context) : base(context) { }
 
     public async Task<bool> ExisteActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime nuevaFechaYHora, Guid? actividadId,CancellationToken ct = default)
     { 
@@ -50,6 +34,7 @@ public class ActividadRepository : IActividadRepository
                 a.Id != actividadId,
                  ct); // chequear lógica
     }
+    
     public async Task<ICollection<Actividad>> ListarActividadesAsync(TipoEspecialidad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null, CancellationToken ct = default)
     {
         IQueryable<Actividad> query = _context.Actividades
