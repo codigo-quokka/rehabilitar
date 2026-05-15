@@ -1,29 +1,30 @@
-using Application.Auth;
 using Application.Auth.DTOs;
 using Application.Common.Interfaces;
 using Domain;
 using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Domain.Exceptions;
-using Infrastructure.Persistence;
+using Application.Clientes;
 
-namespace Infrastructure.Auth;
+namespace Application.Auth;
 
 public class AuthService : IAuthService
 {
-    private readonly UserManager<User> _userManager;
-    private readonly RehabilitarDbContext _dbContext;
+    private readonly UserManager<User> _userManager; // esto sería como repo de users
+    private readonly IUnitOfWork _uow; // uow lo traigo para hacer lo que hacía dbcontext
+    private readonly IClienteRepository _clienteRepo;
     private readonly IEmailService _emailService;
-    private readonly JwtService _jwt;
+    private readonly IJwtProvider _jwt;
 
     public AuthService(UserManager<User> userManager,
-                        RehabilitarDbContext dbContext,
+                        IClienteRepository clienteRepo,
+                        IUnitOfWork uow,
                         IEmailService emailService,
-                        JwtService jwt)
+                        IJwtProvider jwt)
     {
         _userManager = userManager;
-        _dbContext = dbContext;
+        _clienteRepo = clienteRepo;
+        _uow = uow;
         _emailService = emailService;
         _jwt = jwt;
     }
@@ -31,7 +32,7 @@ public class AuthService : IAuthService
     public async Task RegisterAsync(RegisterRequest request)
 
     {
-        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        await _uow.BeginTransactionAsync();
         
         try {
             var user = User.Create(
@@ -44,6 +45,7 @@ public class AuthService : IAuthService
             );
 
             var result = await _userManager.CreateAsync(user, request.Password);
+            Cliente c = CrearCliente(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
 
             if (!result.Succeeded)
             {
@@ -54,15 +56,15 @@ public class AuthService : IAuthService
             // Asignar rol de cliente registrado por defecto
             await _userManager.AddToRoleAsync(user, "registered_client");
 
-            await CreateClient(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
-
+            _clienteRepo.Add(c);
             await EnviarEmailDeVerificacion(user);
 
-            await transaction.CommitAsync();
+            await _uow.SaveChangesAsync();
+            await _uow.CommitTransactionAsync();
         }
         catch (Exception)
         {
-            await transaction.RollbackAsync();
+            await _uow.RollbackTransactionAsync();
             throw;
         }
     }
@@ -89,9 +91,9 @@ public class AuthService : IAuthService
         var rol = roles.FirstOrDefault() ?? "guest";
 
         // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
-        var cliente = await _dbContext.Clientes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        var cliente = await _clienteRepo.GetByIdAsync(user.Id);
+            // .AsNoTracking()
+            // .FirstOrDefaultAsync(c => c.UserId == user.Id);
 
         // Crear objeto UserResponse con los datos del usuario
         var userResponse = new UserResponse
@@ -138,12 +140,11 @@ public class AuthService : IAuthService
 
     // métodos privados para funcionalidades específicas:
 
-    private async Task CreateClient(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
+    private Cliente CrearCliente(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
     {
         var dniObj = new Dni(dni); // crear el value object (dni validado). 
         var c = Cliente.Create(userId, fechaNac, dniObj, telefono); // se manda a la factory.
-        _dbContext.Clientes.Add(c); // se guarda el cliente en la tabla de clientes.
-        await _dbContext.SaveChangesAsync(); // se persisten los cambios.
+        return c;
     }
 
     private async Task EnviarEmailDeVerificacion(User user)
