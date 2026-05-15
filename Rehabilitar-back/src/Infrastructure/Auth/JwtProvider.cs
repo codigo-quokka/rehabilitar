@@ -4,14 +4,15 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using Application.Common.Interfaces;
 
 namespace Infrastructure.Auth;
 
-public class JwtService
+public class JwtProvider : IJwtProvider 
 {
     private readonly IConfiguration _config;
 
-    public JwtService(IConfiguration config)
+    public JwtProvider(IConfiguration config)
     {
         _config = config;
     }
