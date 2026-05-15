@@ -488,3 +488,5 @@ docs/
 *.db-shm
 *.db-wal
 GEMINI.md
+
+*.csproj.lscache

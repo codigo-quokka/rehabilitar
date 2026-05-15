@@ -22,6 +22,7 @@ using Microsoft.IdentityModel.Tokens;
 using Resend;
 using Application.Profesores;
 using Infrastructure.Profesores;
+using Application.Clientes;
 
 namespace Infrastructure.Common;
 
@@ -82,15 +83,15 @@ public static class DependencyInjection
 
         // registro de servicios:
         services.AddScoped<ISeedingService, SeedingService>();
-        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IResend, ResendClient>();
-        services.AddScoped<JwtService>();
+        services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddScoped<ISalaRepository, SalaRepository>();
         services.AddScoped<IActividadRepository, ActividadRepository>();
         services.AddScoped<IProfesorRepository, ProfesorRepository>();
+        services.AddScoped<IClienteRepository, ClienteRepository>();
 
         return services;
     }
