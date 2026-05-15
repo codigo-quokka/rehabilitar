@@ -41,6 +41,8 @@ export function ActividadesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
+  const [frecuenciaFilter, setFrecuenciaFilter] = useState<string>('all');
+  const [tipoFilter, setTipoFilter] = useState<string>('all');
 
   const fetchData = async () => {
     setLoading(true);
@@ -82,14 +84,35 @@ export function ActividadesPage() {
   const canManage = hasRole(["admin", "reception"]);
   const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
 
+  const filteredActividades = actividades.filter(a => {
+    if (frecuenciaFilter !== 'all' && a.frecuencia !== frecuenciaFilter) return false;
+    if (tipoFilter !== 'all' && a.tipo !== tipoFilter) return false;
+    return true;
+  });
+
   return (
     <MainLayout title="Actividades">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="text-gray-500">
-            Explora las actividades disponibles y reserva tu lugar
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Select
+              value={frecuenciaFilter}
+              onChange={(e) => setFrecuenciaFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todas las frecuencias' },
+                ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
+              ]}
+            />
+            <Select
+              value={tipoFilter}
+              onChange={(e) => setTipoFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todas las especialidades' },
+                ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+              ]}
+            />
           </div>
-          {canManage && (
+          {hasRole(["admin"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -101,7 +124,7 @@ export function ActividadesPage() {
 
         {loading ? (
           <p className="text-gray-500">Cargando...</p>
-        ) : actividades.length === 0 ? (
+        ) : filteredActividades.length === 0 ? (
           <Card>
             <p className="text-gray-500 text-center py-8">
               No hay actividades disponibles
@@ -109,7 +132,7 @@ export function ActividadesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {actividades.map((act) => (
+            {filteredActividades.map((act) => (
               <Card key={act.id} className="flex flex-col">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex gap-2">
