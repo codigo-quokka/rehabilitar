@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Actividad, CreateActividadRequest } from '../types';
+import { Actividad, CreateActividadRequest, CreateActividadRecurrenteRequest } from '../types';
 
 export const actividadesApi = {
   getAll: async (params?: { fecha?: string; categoria?: string; profesorId?: string }) => {
@@ -19,6 +19,11 @@ export const actividadesApi = {
 
   update: async (id: string, data: Partial<Actividad>) => {
     const response = await apiClient.put(`/actividades/${id}`, data);
+    return response.data;
+  },
+
+  createRecurrente: async (data: CreateActividadRecurrenteRequest) => {
+    const response = await apiClient.post('/actividades/recurrente', data);
     return response.data;
   },
 

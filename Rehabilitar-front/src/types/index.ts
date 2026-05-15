@@ -56,6 +56,11 @@ export interface CreateActividadRequest {
   serieId?: string;
 }
 
+export interface CreateActividadRecurrenteRequest {
+  actividadBase: CreateActividadRequest;
+  fechaFinRecurrente: string;
+}
+
 export interface Reserva {
   id: string;
   usuarioId: string;
