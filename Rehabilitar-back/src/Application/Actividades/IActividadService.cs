@@ -20,6 +20,7 @@ public interface IActividadService
         FrecuenciaActividad? frecuencia = null,
         EstadoActividad? estado = null,
         CancellationToken ct = default);
+    Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(Guid actividadId, Guid clienteId, CancellationToken ct = default);
     
     Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
     Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default);
