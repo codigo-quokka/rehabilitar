@@ -1,7 +1,9 @@
 using ErrorOr;
 using Application.Actividades.DTOs;
+using Application.Reservas.DTOs;
 using Domain.Actividades;
 using Domain.Profesores;
+
 
 namespace Application.Actividades;
 
@@ -18,6 +20,7 @@ public interface IActividadService
         FrecuenciaActividad? frecuencia = null,
         EstadoActividad? estado = null,
         CancellationToken ct = default);
+    Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(Guid actividadId, Guid clienteId, CancellationToken ct = default);
     
     // Task<ErrorOr<ActividadResponse>> CambiarEstadoActividad(Guid id, EstadoActividad nuevoEstado, CancellationToken ct = default);
     // Task<ErrorOr<ActividadResponse>> CambiarFechaYHoraActividad(Guid id, DateTime nuevaFechaYHora, CancellationToken ct = default);
