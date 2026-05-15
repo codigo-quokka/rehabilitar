@@ -18,7 +18,7 @@ export function UsuariosPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['admin', 'reception', 'professor'];
 
   const filteredUsuarios = usuarios.filter(u => {
     if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
@@ -238,7 +238,7 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['admin', 'reception', 'professor'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
