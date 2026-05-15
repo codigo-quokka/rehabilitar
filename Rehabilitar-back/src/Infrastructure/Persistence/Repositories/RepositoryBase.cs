@@ -26,6 +26,6 @@ public abstract class RepositoryBase<T> : IRepositoryBase<T> where T: class
     public async Task<IEnumerable<T>> GetAllAsync(CancellationToken ct = default)
         => await _context.Set<T>().ToListAsync(ct);
 
-    public async Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await _context.Set<T>().FindAsync(new object[] { id }, ct);
 }

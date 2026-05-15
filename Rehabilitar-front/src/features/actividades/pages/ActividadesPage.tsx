@@ -10,7 +10,7 @@ import {
 } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
-import { Actividad, Sala, User, CreateActividadRequest } from "../../../types";
+import { Actividad, Sala, User, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -28,6 +28,18 @@ const tipoLabel: Record<string, string> = {
   TrenInferior: 'Tren Inferior',
 };
 
+const frecuenciaLabel: Record<string, string> = {
+  Esporadica: 'Esporádica',
+  Recurrente: 'Recurrente',
+};
+
+const estadoLabel: Record<string, string> = {
+  Propuesta: 'Propuesta',
+  Aprobada: 'Aprobada',
+  EnCurso: 'En Curso',
+  Cancelada: 'Cancelada',
+};
+
 export function ActividadesPage() {
   const { user, hasRole } = useAuth();
   const [actividades, setActividades] = useState<Actividad[]>([]);
@@ -35,6 +47,9 @@ export function ActividadesPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
+  const [frecuenciaFilter, setFrecuenciaFilter] = useState<string>('all');
+  const [tipoFilter, setTipoFilter] = useState<string>('all');
 
   const fetchData = async () => {
     setLoading(true);
@@ -76,14 +91,35 @@ export function ActividadesPage() {
   const canManage = hasRole(["admin", "reception"]);
   const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
 
+  const filteredActividades = actividades.filter(a => {
+    if (frecuenciaFilter !== 'all' && a.frecuencia !== frecuenciaFilter) return false;
+    if (tipoFilter !== 'all' && a.tipo !== tipoFilter) return false;
+    return true;
+  });
+
   return (
     <MainLayout title="Actividades">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="text-gray-500">
-            Explora las actividades disponibles y reserva tu lugar
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Select
+              value={frecuenciaFilter}
+              onChange={(e) => setFrecuenciaFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todas las frecuencias' },
+                ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
+              ]}
+            />
+            <Select
+              value={tipoFilter}
+              onChange={(e) => setTipoFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todas las especialidades' },
+                ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+              ]}
+            />
           </div>
-          {canManage && (
+          {hasRole(["admin"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -95,7 +131,7 @@ export function ActividadesPage() {
 
         {loading ? (
           <p className="text-gray-500">Cargando...</p>
-        ) : actividades.length === 0 ? (
+        ) : filteredActividades.length === 0 ? (
           <Card>
             <p className="text-gray-500 text-center py-8">
               No hay actividades disponibles
@@ -103,10 +139,22 @@ export function ActividadesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {actividades.map((act) => (
+            {filteredActividades.map((act) => (
               <Card key={act.id} className="flex flex-col">
                 <div className="flex items-start justify-between mb-3">
-                  <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                    <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
+                    {hasRole(["admin", "professor"]) && (
+                      <Badge variant={
+                        act.estado === 'Cancelada' ? 'warning' :
+                        act.estado === 'EnCurso' ? 'info' :
+                        act.estado === 'Aprobada' ? 'success' : 'default'
+                      } className={act.estado === 'Propuesta' ? 'bg-orange-200 text-orange-700' : ''}>
+                        {estadoLabel[act.estado] || act.estado}
+                      </Badge>
+                    )}
+                  </div>
                   <Badge
                     variant={
                       act.cupoDisponible <= 0
@@ -180,9 +228,25 @@ export function ActividadesPage() {
                     </svg>
                     {act.salaNombre}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    {act.profesorNombre || "Sin profesor asignado"}
+                  </div>
                 </div>
 
-                {hasRole(["registered_client", "admin", "reception"]) && (
+                {hasRole(["registered_client", "reception"]) && (
                   <Button
                     variant={
                       act.cupoDisponible <= 0
@@ -198,6 +262,18 @@ export function ActividadesPage() {
                       : "Reservar"}
                   </Button>
                 )}
+                {hasRole(["admin"]) && (
+                  <Button
+                    variant="primary"
+                    className="w-full mt-auto"
+                    onClick={() => {
+                      setEditingActividad(act);
+                      setShowModal(true);
+                    }}
+                  >
+                    Modificar
+                  </Button>
+                )}
               </Card>
             ))}
           </div>
@@ -206,13 +282,18 @@ export function ActividadesPage() {
 
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="Nueva Actividad"
+        onClose={() => {
+          setShowModal(false);
+          setEditingActividad(null);
+        }}
+        title={editingActividad ? "Modificar Actividad" : "Nueva Actividad"}
         size="lg"
       >
         <ActividadForm
+          actividad={editingActividad || undefined}
           onClose={() => {
             setShowModal(false);
+            setEditingActividad(null);
             fetchData();
           }}
           salas={salas.filter(s => s.activo)}
@@ -227,22 +308,57 @@ interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
   profesores: User[];
+  actividad?: Actividad;
 }
 
-function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
-  const [formData, setFormData] = useState<CreateActividadRequest>({
-    nombre: "",
-    descripcion: "",
-    tipo: "TrenSuperior",
-    frecuencia: "Esporadica",
-    estado: "Propuesta",
-    fechaYHora: "",
-    cupoMaximo: 20,
-    salaId: "",
-    profesorId: undefined,
-  });
+function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
+  const isEditing = !!actividad;
+  const [formData, setFormData] = useState<CreateActividadRequest>(
+    actividad
+      ? {
+          nombre: actividad.nombre,
+          descripcion: actividad.descripcion,
+          tipo: actividad.tipo as CreateActividadRequest['tipo'],
+          frecuencia: actividad.frecuencia as CreateActividadRequest['frecuencia'],
+          estado: actividad.estado as CreateActividadRequest['estado'],
+          fechaYHora: actividad.fechaYHora.slice(0, 16),
+          cupoMaximo: actividad.cupoMaximo,
+          salaId: actividad.salaId,
+          profesorId: actividad.profesorId || undefined,
+        }
+      : {
+          nombre: "",
+          descripcion: "",
+          tipo: "TrenSuperior" as CreateActividadRequest['tipo'],
+          frecuencia: "Esporadica",
+          estado: "Propuesta",
+          fechaYHora: "",
+          cupoMaximo: 20,
+          salaId: "",
+          profesorId: undefined,
+        },
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
+  const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
+
+  const handleDelete = async () => {
+    if (!actividad) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await actividadesApi.delete(actividad.id);
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al eliminar actividad';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,10 +377,27 @@ function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
           ? formData.fechaYHora + ':00'
           : formData.fechaYHora,
       };
-      await actividadesApi.create(payload);
+      if (isEditing && actividad) {
+        await actividadesApi.update(actividad.id, payload);
+      } else if (formData.frecuencia === 'Recurrente') {
+        if (!fechaFinRecurrente) {
+          setError('Debe seleccionar una fecha fin para la recurrencia');
+          setLoading(false);
+          return;
+        }
+        const recurrentePayload: CreateActividadRecurrenteRequest = {
+          actividadBase: payload,
+          fechaFinRecurrente: fechaFinRecurrente.includes(':') && !fechaFinRecurrente.endsWith(':00')
+            ? fechaFinRecurrente + ':00'
+            : fechaFinRecurrente,
+        };
+        await actividadesApi.createRecurrente(recurrentePayload);
+      } else {
+        await actividadesApi.create(payload);
+      }
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al crear actividad';
+      const msg = err?.response?.data?.title || err?.response?.data || err?.message || `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
@@ -273,124 +406,194 @@ function ActividadForm({ onClose, salas, profesores }: ActividadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        label="Nombre"
-        value={formData.nombre}
-        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-        required
-      />
-      <div>
-        <label className="block text-sm font-medium text-dark mb-1.5">
-          Descripción
-        </label>
-        <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
-          rows={3}
-          value={formData.descripcion}
-          onChange={(e) =>
-            setFormData({ ...formData, descripcion: e.target.value })
-          }
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Fecha y hora"
-          type="datetime-local"
-          value={formData.fechaYHora}
-          onChange={(e) =>
-            setFormData({ ...formData, fechaYHora: e.target.value })
-          }
-          required
-        />
-        <Select
-          label="Sala"
-          value={formData.salaId}
-          onChange={(e) => setFormData({ ...formData, salaId: e.target.value })}
-          options={salas.map((s) => ({ value: s.id, label: s.nombre }))}
-          required
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Tipo"
-          value={formData.tipo}
-          onChange={(e) =>
-            setFormData({ ...formData, tipo: e.target.value as CreateActividadRequest['tipo'] })
-          }
-          options={[
-            { value: "TrenSuperior", label: "Tren Superior" },
-            { value: "TrenMedio", label: "Tren Medio" },
-            { value: "TrenInferior", label: "Tren Inferior" },
-          ]}
-        />
-        <Select
-          label="Frecuencia"
-          value={formData.frecuencia}
-          onChange={(e) =>
-            setFormData({ ...formData, frecuencia: e.target.value as CreateActividadRequest['frecuencia'] })
-          }
-          options={[
-            { value: "Esporadica", label: "Esporádica" },
-            { value: "Recurrente", label: "Recurrente" },
-          ]}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Select
-          label="Estado"
-          value={formData.estado}
-          onChange={(e) =>
-            setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
-          }
-          options={[
-            { value: "Propuesta", label: "Propuesta" },
-            { value: "Aprobada", label: "Aprobada" },
-            { value: "EnCurso", label: "En Curso" },
-            { value: "Cancelada", label: "Cancelada" },
-          ]}
-        />
-        <Input
-          label="Cupo máximo"
-          type="number"
-          value={formData.cupoMaximo}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              cupoMaximo: parseInt(e.target.value),
-            })
-          }
-          required
-        />
-      </div>
-      <Select
-        label="Profesor (opcional)"
-        value={formData.profesorId || ""}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            profesorId: e.target.value || undefined,
-          })
-        }
-        options={[
-          { value: "", label: "Sin profesor" },
-          ...profesores.map((p) => ({
-            value: p.id,
-            label: `${p.nombre} ${p.apellido}`,
-          })),
-        ]}
-      />
+      {!stepFrecuencia ? (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Seleccione el tipo de frecuencia para la actividad:</p>
+          <Select
+            label="Frecuencia"
+            value=""
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                setFormData({ ...formData, frecuencia: val as CreateActividadRequest['frecuencia'] });
+                setStepFrecuencia(true);
+              }
+            }}
+            options={[
+              { value: "", label: "Seleccione una frecuencia..." },
+              { value: "Esporadica", label: "Esporádica" },
+              { value: "Recurrente", label: "Recurrente" },
+            ]}
+            required
+          />
+        </div>
+      ) : (
+        <>
+          <Input
+            label="Nombre"
+            value={formData.nombre}
+            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-dark mb-1.5">
+              Descripción
+            </label>
+            <textarea
+              className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+              rows={3}
+              value={formData.descripcion}
+              onChange={(e) =>
+                setFormData({ ...formData, descripcion: e.target.value })
+              }
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Fecha y hora"
+              type="datetime-local"
+              value={formData.fechaYHora}
+              onChange={(e) =>
+                setFormData({ ...formData, fechaYHora: e.target.value })
+              }
+              required
+            />
+            <Select
+              label="Sala"
+              value={formData.salaId}
+              onChange={(e) => setFormData({ ...formData, salaId: e.target.value })}
+              options={[
+                { value: "", label: "Seleccione una sala..." },
+                ...salas.map((s) => ({ value: s.id, label: s.nombre })),
+              ]}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Tipo"
+              value={formData.tipo}
+              onChange={(e) => {
+                const newTipo = e.target.value as CreateActividadRequest['tipo'];
+                const profesorValido = formData.profesorId && profesores.some(
+                  (p) => p.id === formData.profesorId && (!p.especialidad || p.especialidad === newTipo)
+                );
+                setFormData({
+                  ...formData,
+                  tipo: newTipo,
+                  profesorId: profesorValido ? formData.profesorId : undefined,
+                });
+              }}
+              options={[
+                { value: "TrenSuperior", label: "Tren Superior" },
+                { value: "TrenMedio", label: "Tren Medio" },
+                { value: "TrenInferior", label: "Tren Inferior" },
+              ]}
+            />
+            <Select
+              label="Estado"
+              value={formData.estado}
+              onChange={(e) =>
+                setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
+              }
+              options={
+                isEditing
+                  ? [
+                      { value: "Propuesta", label: "Propuesta" },
+                      { value: "Aprobada", label: "Aprobada" },
+                      { value: "EnCurso", label: "En Curso" },
+                      { value: "Cancelada", label: "Cancelada" },
+                    ]
+                  : [
+                      { value: "Propuesta", label: "Propuesta" },
+                      { value: "Aprobada", label: "Aprobada" },
+                      { value: "EnCurso", label: "En Curso" },
+                    ]
+              }
+            />
+          </div>
+          {formData.frecuencia === 'Recurrente' && !isEditing && (
+            <Input
+              label="Fecha fin de recurrencia"
+              type="datetime-local"
+              value={fechaFinRecurrente}
+              onChange={(e) => setFechaFinRecurrente(e.target.value)}
+              required
+            />
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Cupo máximo"
+              type="number"
+              value={formData.cupoMaximo}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  cupoMaximo: parseInt(e.target.value),
+                })
+              }
+              required
+            />
+            <Select
+              label="Profesor (opcional)"
+              value={formData.profesorId || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  profesorId: e.target.value || undefined,
+                })
+              }
+              options={[
+                { value: "", label: "Sin profesor" },
+                ...profesores
+                  .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+                  .map((p) => ({
+                    value: p.id,
+                    label: `${p.nombre} ${p.apellido}`,
+                  })),
+              ]}
+            />
+          </div>
+        </>
+      )}
+
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={loading}>
-          Crear
-        </Button>
+      <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
+        {isEditing && !showDeleteConfirm && (
+          <Button
+            variant="ghost"
+            className="bg-red-300 hover:bg-red-400"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Eliminar
+          </Button>
+        )}
+        {showDeleteConfirm ? (
+          <div className="flex items-center gap-3 w-full justify-end">
+            <span className="text-sm text-gray-600 mr-auto">
+              ¿Estás seguro de eliminar esta actividad?
+            </span>
+            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" loading={loading} onClick={handleDelete}>
+              Eliminar
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={loading}>
+              {isEditing ? "Guardar" : "Crear"}
+            </Button>
+          </div>
+        )}
       </div>
     </form>
   );
