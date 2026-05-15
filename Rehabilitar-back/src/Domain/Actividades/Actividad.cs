@@ -1,12 +1,15 @@
 namespace Domain.Actividades;
 
 using Domain.Clientes;
+using Domain.Exceptions;
 using Domain.Profesores;
 using Domain.Reservas;
 using Domain.Salas;
+using Domain.Enums;
 
 public class Actividad
 {
+	public Guid Version { get; private set; } = Guid.NewGuid(); // Para manejar concurrencia optimista, se actualiza cada vez que se modifica la actividad	
 	public Guid Id { get; private set; }
 	public string Nombre { get; private set; }
 	public string Descripcion { get; private set; }
@@ -17,7 +20,9 @@ public class Actividad
 
 	public DateTime FechaYHora { get; private set; }
 	public int CupoMaximo { get; private set; }
-	public int CupoDisponible => CupoMaximo - Reservas.Count(r => r.EstadoDeReserva == EstadoDeReserva.Activa);
+	public int CupoOcupado { get; private set;}
+	public int CupoEsperaOcupado { get; private set; }
+	public int CupoDisponible => CupoMaximo - CupoOcupado;
 	public decimal Precio { get; private set; } = 1000; // Debería venir de una configuración o de la actividad misma, se pone un monto fijo para simplificar
 
 	public Guid SalaId { get; private set; }
@@ -51,37 +56,88 @@ public class Actividad
 		Frecuencia = frecuencia;
 		Estado = estado;
 		FechaYHora = fechaYHora;
-		CupoMaximo = cupoMaximo; // después debería sacarse del cupo de las salas
+		CupoMaximo = cupoMaximo;
 		SalaId = salaId;
 		ProfesorId = profesorId;
         SerieId = (frecuencia == FrecuenciaActividad.Recurrente) ? serieId : null; // Para manejar actividades que forman parte de una serie (solo d tipo recurrente)
+		CupoOcupado = 0;
+		CupoEsperaOcupado = 0;
+		Reservas = new List<Reserva>();
 	}
 
-	public void AgregarReserva(Cliente cliente, DetallePago detallePago) // Definir el tipo de cliente, quizás haya que crear una clase Cliente que herede de User para diferenciarlo de otros tipos de usuarios (administradores, profesores, etc.)
+	public Reserva IniciarReserva(Cliente cliente)
 	{
-		if (CupoDisponible <= 0)
-		{
-			throw new InvalidOperationException("No hay cupo disponible para esta actividad.");
-		}
-
-		var reserva = Reserva.Create(cliente.UserId, this.Id, detallePago); // Crear la reserva con el ID del cliente y de la actividad, el detalle de pago y el estado inicial de activa	
-		//cliente.NuevaReserva(reserva); // implementar en cliente para agregar la reserva a su lista de reservas
+		Version = Guid.NewGuid(); // Actualizar la versión de la actividad para manejar concurrencia optimista
+		var reserva = Reserva.Create(cliente.UserId, this.Id, new DetallePago(this.Precio), EstadoDeReserva.Activa, cliente.TipoCliente);
 		Reservas.Add(reserva);
-		//ActualizarCupoDisponible(-1);
+		CupoOcupado++;
+		return reserva;
 	}
 
-	public void CancelarReserva( Guid reservaId)
+	public Reserva AgregarReserva(Cliente cliente, DetallePago detallePago, TipoCliente tipoCliente) // Definir el tipo de cliente, quizás haya que crear una clase Cliente que herede de User para diferenciarlo de otros tipos de usuarios (administradores, profesores, etc.)
 	{
-		if (CupoDisponible >= CupoMaximo)
-			throw new InvalidOperationException("El cupo disponible ya está al máximo, no se pueden cancelar más reservas.");
-		else
-		{	
-			var reserva = Reservas.FirstOrDefault(r => r.Id == reservaId);
-			if (reserva == null)
-				throw new KeyNotFoundException("Reserva no encontrada.");
-			reserva.CancelarReserva();
-			Reservas.Remove(reserva);
+		Version = Guid.NewGuid(); // Actualizar la versión de la actividad para manejar concurrencia optimista
+		Reserva reserva;
+		if (HayCupoDisponible())
+		{
+			reserva = Reserva.Create(cliente.UserId, this.Id, detallePago, EstadoDeReserva.Activa, tipoCliente); // no importa si esta suscrito o no, si hay cupo disponible se reserva directamente como activo
+			Reservas.Add(reserva);
+			CupoOcupado++;
 		}
+		else
+		{
+			reserva = Reserva.Create(cliente.UserId, this.Id, detallePago, EstadoDeReserva.EnEspera, tipoCliente);
+			Reservas.Add(reserva);
+			CupoEsperaOcupado++;
+		}
+		return reserva;
+	}
+
+	public Reserva CancelarReserva( Guid reservaId)
+	{
+		Version = Guid.NewGuid();
+
+        var reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada.");
+
+        if (reserva.EstadoDeReserva == EstadoDeReserva.Activa)
+		{
+			//Reservas.Remove(reserva); lo maneja EFCore (creo)
+			CupoOcupado--;
+			
+			if (CupoEsperaOcupado > 0) GestionarListaDeEspera();
+			
+		}
+		else if (reserva.EstadoDeReserva == EstadoDeReserva.EnEspera)
+		{
+			CupoEsperaOcupado--;
+		}
+		reserva.CancelarReserva();
+		return reserva;
+	}
+	private bool BuscarYPromoverReservaEnEspera(TipoCliente tipoCliente)
+	{
+		var reservaEnEspera = Reservas
+			.Where(r => r.EstadoDeReserva == EstadoDeReserva.EnEspera
+				&& r.TipoCliente == tipoCliente)
+			.OrderBy(r => r.FechaReserva)
+			.FirstOrDefault();
+		
+		if (reservaEnEspera != null)
+		{
+			reservaEnEspera.PromoverAActiva(); //primero hacer el chequeo
+			CupoEsperaOcupado--;
+			CupoOcupado++;
+			return true;
+		}
+		return false;
+	}
+
+	private void GestionarListaDeEspera()
+	{
+		bool lugarOcupado = BuscarYPromoverReservaEnEspera(TipoCliente.Suscrito);
+
+		if (!lugarOcupado) BuscarYPromoverReservaEnEspera(TipoCliente.Regular);
+		
 	}
 
 	public void CancelarActividad()
@@ -89,10 +145,13 @@ public class Actividad
 		if (Estado == EstadoActividad.Finalizada)
 			throw new InvalidOperationException("No se puede cancelar una actividad que ya está finalizada.");
 		Estado = EstadoActividad.Cancelada;
-		// foreach (var reserva in Reservas.Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa))
-		// {
-		// 	reserva.CancelarReserva();
-		// }
+
+		foreach (var reserva in Reservas.Where(r =>
+			r.EstadoDeReserva == EstadoDeReserva.Activa ||
+			r.EstadoDeReserva == EstadoDeReserva.EnEspera ))
+		{
+			reserva.CancelarReservaPorActividadCancelada();
+		}
 	}
 
 	public void ModificarActividad(Actividad OtraActividad)
@@ -152,4 +211,10 @@ public class Actividad
 			throw new ArgumentException("La fecha y hora de la actividad no puede ser en el pasado.");
 		return new Actividad(nombre, descripcion, tipo, frecuencia, estado, fechaYHora, cupoMaximo, salaId, profesorId, serieId);
 	}
+
+	internal bool HayCupoDisponible() => CupoDisponible > 0;
+
+	public bool EsRecurrente() => Frecuencia == FrecuenciaActividad.Recurrente;
+
+	public bool EsParteDeSerie(Guid serieId) => SerieId.HasValue && SerieId.Value == serieId;
 }

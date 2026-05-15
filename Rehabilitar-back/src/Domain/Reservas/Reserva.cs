@@ -1,12 +1,15 @@
 namespace Domain.Reservas;
 using Domain.Clientes;
 using Domain.Actividades;
+using Domain.Enums;
 
 public class Reserva
 {
     public Guid Id {get; init;}
     public Guid ClienteId {get; init;}
     public Guid ActividadId { get; init; }
+    public DateTime FechaReserva { get; private set; }
+    public TipoCliente TipoCliente { get; private set; }
 
     public Cliente Cliente {get; init;}
     public Actividad Actividad { get; init; }
@@ -18,13 +21,15 @@ public class Reserva
     private Reserva() { }
     #nullable enable
 
-    private Reserva(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva = EstadoDeReserva.Activa)
+    private Reserva(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva, TipoCliente tipoCliente)
     {
         Id = Guid.NewGuid();
         ClienteId = clienteId;
         ActividadId = actividadId;
+        FechaReserva = DateTime.UtcNow;
         DetallePago = detallePago; // Asumiendo un monto total fijo de 1000 para simplificar, esto debería venir de la actividad o de una configuración
         EstadoDeReserva = estadoDeReserva;
+        TipoCliente = tipoCliente;
     }
 
     public void CancelarReserva()
@@ -34,12 +39,17 @@ public class Reserva
         EstadoDeReserva = EstadoDeReserva.Cancelada;
     }
 
-    public void ReactivarReserva()
+    public void CancelarReservaPorActividadCancelada()
     {
-        if (EstadoDeReserva == EstadoDeReserva.Activa)
-            throw new InvalidOperationException("La reserva ya está activa.");
-        EstadoDeReserva = EstadoDeReserva.Activa;
+        throw new NotImplementedException();
     }
+
+    // public void ReactivarReserva()
+    // {
+    //     if (EstadoDeReserva == EstadoDeReserva.Activa)
+    //         throw new InvalidOperationException("La reserva ya está activa.");
+    //     EstadoDeReserva = EstadoDeReserva.Activa;
+    // }
 
     public void ActualizarDetallePago(decimal monto)
     {
@@ -48,8 +58,15 @@ public class Reserva
         DetallePago = DetallePago.RegistrarPago(monto);
     }
 
-    public static Reserva Create(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva = EstadoDeReserva.Activa)
+    internal void PromoverAActiva()
     {
-        return new Reserva(clienteId, actividadId, detallePago, estadoDeReserva);
+        if (EstadoDeReserva != EstadoDeReserva.EnEspera)
+            throw new InvalidOperationException("Solo las reservas en espera pueden ser promovidas a activas.");
+        EstadoDeReserva = EstadoDeReserva.Activa;
+    }
+
+    public static Reserva Create(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva, TipoCliente tipoCliente)
+    {
+        return new Reserva(clienteId, actividadId, detallePago, estadoDeReserva, tipoCliente);
     }
 }
