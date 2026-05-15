@@ -42,6 +42,89 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad,ct);
     }
 
+    public async Task<ErrorOr<ActividadResponse>> CrearActividadRecurrente(CrearActividadRecurrenteRequest request, CancellationToken ct = default)
+    {
+        Guid serieId = Guid.NewGuid();
+        
+        DateTime fechaInicio = request.ActividadBase.FechaYHora;
+        var fechas = GenerarFechasDeSerie(fechaInicio, request.FechaFinRecurrente);
+
+        var validacionLote = await ValidarLoteDeDisponibilidad(
+            fechas.Select(f => (f, (Guid?)null)),
+            request.ActividadBase.CupoMaximo,
+            request.ActividadBase.SalaId,
+            request.ActividadBase.ProfesorId,
+            request.ActividadBase.Tipo,
+            request.ActividadBase.Estado,
+            ct);
+
+        if (validacionLote.IsError)
+            return validacionLote.Errors;
+
+        var actividadesCreadas = fechas.Select(f => Actividad.Create(
+            request.ActividadBase.Nombre,
+            request.ActividadBase.Descripcion,
+            request.ActividadBase.Tipo,
+            request.ActividadBase.Frecuencia,
+            request.ActividadBase.Estado,
+            f,
+            request.ActividadBase.CupoMaximo,
+            request.ActividadBase.SalaId,
+            request.ActividadBase.ProfesorId,
+            serieId)).ToList();
+
+        foreach(Actividad a in actividadesCreadas) _actividadRepo.Add(a);
+        await _uow.SaveChangesAsync(ct);
+
+        return await MapToDto(actividadesCreadas.First(), ct);
+    }
+
+    public async Task<ErrorOr<ActividadResponse>> ModificarActividadRecurrente(EditarActividadRecurrenteRequest request, CancellationToken ct = default)
+    {
+        var actividades = await _actividadRepo.ListarPorSerieIdAsync(request.SerieId, ct);
+        var futuras = actividades.Where(a => a.FechaYHora > DateTime.Now).OrderBy(a => a.FechaYHora).ToList();
+
+        if (!futuras.Any()) return Error.NotFound("No se encontraron actividades futuras para esta serie.");
+
+        // Calcular el desplazamiento basado en la primera actividad futura
+        var desplazamiento = request.ActividadBase.FechaYHora - futuras.First().FechaYHora;
+
+        // Validar TODAS las actividades antes de modificar
+        var itemsAValidar = futuras.Select(a => (a.FechaYHora + desplazamiento, (Guid?)a.Id));
+        var validacionLote = await ValidarLoteDeDisponibilidad(
+            itemsAValidar,
+            request.ActividadBase.CupoMaximo,
+            request.ActividadBase.SalaId,
+            request.ActividadBase.ProfesorId,
+            request.ActividadBase.Tipo,
+            request.ActividadBase.Estado,
+            ct);
+
+        if (validacionLote.IsError) return validacionLote.Errors;
+
+        // Aplicar cambios
+        foreach (var act in futuras)
+        {
+            var nuevaFecha = act.FechaYHora + desplazamiento;
+            var datosEditados = Actividad.Create(
+                request.ActividadBase.Nombre,
+                request.ActividadBase.Descripcion,
+                request.ActividadBase.Tipo,
+                request.ActividadBase.Frecuencia,
+                request.ActividadBase.Estado,
+                nuevaFecha,
+                request.ActividadBase.CupoMaximo,
+                request.ActividadBase.SalaId,
+                request.ActividadBase.ProfesorId,
+                act.SerieId);
+            
+            act.ModificarActividad(datosEditados);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        return await MapToDto(futuras.First(), ct);
+    }
+
     public async Task<ErrorOr<ActividadResponse>> EditarActividad(Guid id, EditarActividadRequest request, CancellationToken ct = default)
     {
         Actividad? actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
@@ -75,6 +158,8 @@ public class ActividadService : IActividadService
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        actividad.CancelarActividad();
         _actividadRepo.Remove(actividad);
         await _uow.SaveChangesAsync(ct);
         return Result.Deleted;
@@ -147,17 +232,12 @@ public class ActividadService : IActividadService
             return Error.Validation($"Cupo máximo debe ser mayor a 0 y menor o igual a la capacidad de la sala ({sala.Capacidad})");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, ct))
-            return Error.Conflict("La sala no está disponible en la fecha y hora seleccionada");
+            return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
         if (profesorId.HasValue)
         {
             profesor = await _profesorRepo.GetByIdAsync(profesorId.Value, ct);
-
-            // if (profesorResult)
-            //     return profesorResult.Errors;
-            
-            // profesor = profesorResult;
             
             if (profesor == null) 
                 return Error.NotFound("Profesor no encontrado");
@@ -169,6 +249,36 @@ public class ActividadService : IActividadService
                 return Error.Conflict("El profesor no está disponible en la fecha y hora seleccionada");
         }
 
+        return Result.Success;
+    }
+
+    private List<DateTime> GenerarFechasDeSerie(DateTime fechaInicio, DateTime fechaLimite)
+    {
+        var fechas = new List<DateTime>();
+        for (DateTime fechaIteracion = fechaInicio; 
+             fechaIteracion <= fechaLimite; 
+             fechaIteracion = fechaIteracion.AddDays(7)) 
+        {
+            fechas.Add(fechaIteracion);
+        }
+        return fechas;
+    }
+
+    private async Task<ErrorOr<Success>> ValidarLoteDeDisponibilidad(
+        IEnumerable<(DateTime Fecha, Guid? ActividadId)> items,
+        int cupo,
+        Guid salaId,
+        Guid? profesorId,
+        TipoEspecialidad tipo,
+        EstadoActividad estado,
+        CancellationToken ct)
+    {
+        foreach (var item in items)
+        {
+            var validacion = await ValidarActividad(item.ActividadId, cupo, salaId, item.Fecha, profesorId, tipo, estado, ct);
+            if (validacion.IsError)
+                return validacion.Errors;
+        }
         return Result.Success;
     }
 }
