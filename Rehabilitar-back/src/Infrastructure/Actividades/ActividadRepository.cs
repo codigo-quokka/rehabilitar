@@ -52,6 +52,16 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
         List<Actividad> actividades = await query.ToListAsync();
         return actividades;
     }
+
+    public async Task<ICollection<Actividad>> ListarPorSerieIdAsync(Guid serieId, CancellationToken ct = default)
+    {
+        return await _context.Actividades
+                             .Where(a => a.SerieId == serieId)
+                             .Include(a => a.Sala)
+                             .Include(a => a.Profesor)
+                             .ThenInclude(p => p.User)
+                             .ToListAsync(ct);
+    }
     public async Task<Actividad> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
     {
         var actividad = await _context.Actividades
