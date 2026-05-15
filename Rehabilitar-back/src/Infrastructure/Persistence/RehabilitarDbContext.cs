@@ -89,6 +89,8 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
         {
             entity.ToTable("Actividades");
             entity.HasKey(a => a.Id);
+            entity.Property(a => a.Version)
+                  .IsConcurrencyToken(); // Para manejar concurrencia optimista
             entity.HasOne(a => a.Sala)
                   .WithMany(s => s.Actividades)
                   .HasForeignKey(a => a.SalaId)
