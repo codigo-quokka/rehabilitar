@@ -5,13 +5,16 @@ import { PrivacyEye } from "../../../components/PrivacyEye";
 import { useAuth } from "../../../hooks/useAuth";
 import logo from "../../../assets/logo.png";
 import { authApi } from "../../../api";
+import { Notitoast } from "../../../components/Notitoast";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resending, setResending] = useState(false);
   const { login } = useAuth();
@@ -27,9 +30,9 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setResendSuccess(false);
     setUnverifiedEmail("");
+    setShowToast(false);
     setLoading(true);
 
     try {
@@ -37,13 +40,20 @@ export function LoginPage() {
       navigate("/dashboard");
     } catch (err: any) {
       if (err.response?.data?.errorCode === "EMAIL_NOT_VERIFIED") {
-        setError(
-          err.response?.data?.message ||
-            "Debes confirmar tu correo para iniciar sesión.",
-        );
         setUnverifiedEmail(email);
+        setToastType("error");
+        setToastMessage(
+            "Debes confirmar tu correo para iniciar sesión. Verifica tu bandeja de entada.",
+        );
+        setShowToast(true);
+      } else if (err.response?.data?.error === "Usuario suspendido.") {
+        setToastType("error");
+        setToastMessage("Cuenta suspendida, deberás reactivala presencialmente.");
+        setShowToast(true);
       } else {
-        setError("Email o contraseña incorrectos");
+        setToastType("error");
+        setToastMessage("Email o contraseña incorrectos");
+        setShowToast(true);
       }
     } finally {
       setLoading(false);
@@ -52,15 +62,17 @@ export function LoginPage() {
 
   const handleResendEmail = async () => {
     setResending(true);
-    setError("");
     setResendSuccess(false);
+    setShowToast(false);
     try {
       await authApi.resendVerificationEmail(unverifiedEmail);
       setResendSuccess(true);
     } catch (err: any) {
-      setError(
+      setToastType("error");
+      setToastMessage(
         err.response?.data?.error || "Ocurrió un error al reenviar el correo.",
       );
+      setShowToast(true);
     } finally {
       setResending(false);
     }
@@ -86,20 +98,17 @@ export function LoginPage() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex flex-col space-y-2">
-                  <span>{error}</span>
-                  {unverifiedEmail && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleResendEmail}
-                      loading={resending}
-                      className="mt-2 text-xs py-2"
-                    >
-                      Reenviar correo de confirmación
-                    </Button>
-                  )}
+              {unverifiedEmail && !resendSuccess && (
+                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResendEmail}
+                    loading={resending}
+                    className="text-xs py-2 w-full"
+                  >
+                    Reenviar correo de confirmación
+                  </Button>
                 </div>
               )}
 
@@ -129,7 +138,10 @@ export function LoginPage() {
                   required
                   className="pr-16"
                 />
-                <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
+                <PrivacyEye
+                  show={showPassword}
+                  onToggle={() => setShowPassword((prev) => !prev)}
+                />
               </div>
 
               <div className="flex justify-end">
@@ -151,11 +163,11 @@ export function LoginPage() {
             </form>
 
             <div className="mt-8 pt-6 border-t border-border text-center">
-              <p className="text-gray-500">
-                ¿No tienes cuenta?{" "}
+              <p>
+                <span className="text-gray-500">¿No tienes cuenta? </span>
                 <Link
                   to="/register"
-                  className="text-primary hover:underline font-medium"
+                  className="inline text-black hover:underline font-medium cursor-pointer"
                 >
                   Regístrate
                 </Link>
@@ -168,6 +180,13 @@ export function LoginPage() {
           © 2026 RehabilitAR
         </p>
       </div>
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 using System.Text;
-using Application.Auth;
 using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
@@ -12,7 +11,6 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Actividades;
 using Infrastructure.Persistence.Seeding;
-using Infrastructure.Usuarios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -92,6 +90,7 @@ public static class DependencyInjection
         services.AddScoped<IActividadRepository, ActividadRepository>();
         services.AddScoped<IProfesorRepository, ProfesorRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
         return services;
     }

@@ -1,33 +1,44 @@
-using Application.Usuarios;
+using Application.Clientes;
+using Application.Common.Interfaces;
+using Application.Profesores;
 using Application.Usuarios.Requests;
 using Application.Usuarios.Responses;
 using Domain;
 using Domain.Profesores;
-using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Usuarios;
+namespace Application.Usuarios;
 
 public class UsuarioService : IUsuarioService
 {
     private readonly UserManager<User> _userManager;
     private readonly RoleManager<Role> _roleManager;
-    private readonly RehabilitarDbContext _dbContext;
+    private readonly IUsuarioRepository _usuarioRepo;
+    private readonly IClienteRepository _clienteRepo;
+    private readonly IProfesorRepository _profesorRepo;
+    private readonly IUnitOfWork _uow;
+
+    // private readonly RehabilitarDbContext _dbContext;
 
     public UsuarioService(
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
-        RehabilitarDbContext dbContext)
+        IUsuarioRepository usuarioRepo,
+        IClienteRepository clienteRepo,
+        IProfesorRepository profesorRepo,
+        IUnitOfWork uow)
     {
         _userManager = userManager;
         _roleManager = roleManager;
-        _dbContext = dbContext;
+        _usuarioRepo = usuarioRepo;
+        _clienteRepo = clienteRepo;
+        _profesorRepo = profesorRepo;
+        _uow = uow;
     }
 
     public async Task<IEnumerable<UsuarioResponse>> GetAllAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
+        var users = await _usuarioRepo.GetAllAsync();
         var result = new List<UsuarioResponse>();
 
         foreach (var user in users)
@@ -71,8 +82,8 @@ public class UsuarioService : IUsuarioService
         {
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
             var profesor = Profesor.Create(user.Id, especialidad);
-            _dbContext.Profesores.Add(profesor);
-            await _dbContext.SaveChangesAsync();
+            _profesorRepo.Add(profesor);
+            await _uow.SaveChangesAsync();
         }
 
         return await MapToResponse(user);
@@ -112,8 +123,7 @@ public class UsuarioService : IUsuarioService
 
         if (!string.IsNullOrEmpty(request.Especialidad))
         {
-            var profesor = await _dbContext.Profesores
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+            var profesor = await _profesorRepo.GetByIdAsync(user.Id);
 
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
 
@@ -124,10 +134,10 @@ public class UsuarioService : IUsuarioService
             else if (request.Rol == "professor")
             {
                 profesor = Profesor.Create(user.Id, especialidad);
-                _dbContext.Profesores.Add(profesor);
+                _profesorRepo.Add(profesor);
             }
 
-            await _dbContext.SaveChangesAsync();
+            await _uow.SaveChangesAsync();
         }
 
         return await MapToResponse(user);
@@ -172,13 +182,11 @@ public class UsuarioService : IUsuarioService
         var roles = await _userManager.GetRolesAsync(user);
         var rol = roles.FirstOrDefault() ?? "guest";
 
-        var cliente = await _dbContext.Clientes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        var cliente = await _clienteRepo.GetByIdAsync(user.Id);
+        // _dbContext.Clientes.AsNoTracking().FirstOrDefaultAsync(c => c.UserId == user.Id);
 
-        var profesor = await _dbContext.Profesores
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var profesor = await _profesorRepo.GetByIdAsync(user.Id);
+        // _dbContext.Profesores.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         return new UsuarioResponse
         {
