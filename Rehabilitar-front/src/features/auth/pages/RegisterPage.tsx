@@ -252,16 +252,16 @@ export function RegisterPage() {
               </form>
 
               <div className="mt-8 pt-6 border-t border-border text-center">
-                <p className="text-gray-500">
-                  ¿Ya tienes cuenta?{" "}
-                  <Link
-                    to="/login"
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Iniciar sesión
-                  </Link>
-                </p>
-              </div>
+              <p>
+                <span className="text-gray-500">¿Ya tienes cuenta? </span>
+                <Link
+                  to="/login"
+                  className="inline text-black hover:underline font-medium cursor-pointer"
+                >
+                 Iniciar sesión
+                </Link>
+              </p>
+            </div>
             </div>
           </Card>
         </div>

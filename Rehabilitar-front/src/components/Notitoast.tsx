@@ -46,7 +46,7 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
 
   return (
     <div
-      className={`fixed top-4 right-4 z-100 transition-all duration-300 ${
+      className={`fixed left-5 top-30 z-100 transition-all duration-300 ${
         isVisible
           ? "opacity-100 translate-x-0"
           : "opacity-0 translate-x-8"
@@ -58,13 +58,13 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
       >
         <div className={`p-1.5 rounded-full ${style.iconBg}`}>
           {type === "success" ? (
-            <svg className={`w-4 h-4 ${style.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            
           ) : (
-            <svg className={`w-4 h-4 ${style.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            
           )}
         </div>
         <p className={`text-sm font-medium ${style.text}`}>{message}</p>

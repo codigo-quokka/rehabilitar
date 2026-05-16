@@ -4,6 +4,8 @@ import { Card, Button, Badge, Modal, Input, Select, Table } from '../../../compo
 import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
+import { Notitoast } from '../../../components/Notitoast';
+import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 
 
@@ -17,6 +19,10 @@ export function UsuariosPage() {
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
@@ -48,17 +54,33 @@ export function UsuariosPage() {
       await usuariosApi.delete(userToDelete.id);
       setUserToDelete(null);
       fetchData();
+      setToastType('success');
+      setToastMessage('Usuario eliminado con éxito');
+      setShowToast(true);
     } catch (err) {
+      setUserToDelete(null);
+      const msg = (err as any)?.response?.data?.error || 'Error al eliminar usuario';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
     }
   };
 
   const handleConfirmSuspender = async () => {
     if (!userToSuspend) return;
     try {
-      await usuariosApi.suspender(userToSuspend.id);
+      const response = await usuariosApi.suspender(userToSuspend.id);
       setUserToSuspend(null);
       fetchData();
+      setToastType('success');
+      setToastMessage(response?.message || 'Cuenta suspendida con éxito');
+      setShowToast(true);
     } catch (err) {
+      setUserToSuspend(null);
+      const msg = (err as any)?.response?.data?.error || 'Error al suspender la cuenta';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
     }
   };
 
@@ -66,7 +88,13 @@ export function UsuariosPage() {
     try {
       await usuariosApi.reactivar(id);
       fetchData();
+      setToastType('success');
+      setToastMessage('Cuenta reactivada con éxito');
+      setShowToast(true);
     } catch (err) {
+      setToastType('error');
+      setToastMessage((err as any)?.response?.data?.error || 'Error al reactivar la cuenta');
+      setShowToast(true);
     }
   };
 
@@ -159,50 +187,34 @@ export function UsuariosPage() {
         <UsuarioForm
           user={selectedUser}
           onClose={() => { setShowModal(false); setSelectedUser(null); fetchData(); }}
+          onNotify={(type, message) => { setToastType(type); setToastMessage(message); setShowToast(true); }}
         />
       </Modal>
 
-      <Modal
-        isOpen={!!userToSuspend}
-        onClose={() => setUserToSuspend(null)}
+      <ConfirmActionModal
         title="Confirmar suspensión"
-        size="sm"
-      >
-        <div className="text-center">
-          <p className="text-gray-600 mb-6">
-            ¿Estás seguro de que deseas suspender este usuario?
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="ghost" onClick={() => setUserToSuspend(null)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={handleConfirmSuspender}>
-              Suspender
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        body="¿Estás seguro de que deseas suspender este usuario?"
+        confirmLabel="Suspender"
+        isOpen={!!userToSuspend}
+        onConfirm={handleConfirmSuspender}
+        onCancel={() => setUserToSuspend(null)}
+      />
 
-      <Modal
-        isOpen={!!userToDelete}
-        onClose={() => setUserToDelete(null)}
+      <ConfirmActionModal
         title="Confirmar eliminación"
-        size="sm"
-      >
-        <div className="text-center">
-          <p className="text-gray-600 mb-6">
-            ¿Estás seguro de que deseas eliminar este usuario?
-          </p>
-          <div className="flex justify-center gap-3">
-            <Button variant="ghost" onClick={() => setUserToDelete(null)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Eliminar
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        body="¿Estás seguro de que deseas eliminar este usuario?"
+        confirmLabel="Eliminar"
+        isOpen={!!userToDelete}
+        onConfirm={handleDelete}
+        onCancel={() => setUserToDelete(null)}
+      />
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </MainLayout>
   );
 }
@@ -210,9 +222,10 @@ export function UsuariosPage() {
 interface UsuarioFormProps {
   user: User | null;
   onClose: () => void;
+  onNotify?: (type: 'success' | 'error', message: string) => void;
 }
 
-function UsuarioForm({ user, onClose }: UsuarioFormProps) {
+function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const [formData, setFormData] = useState({
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
@@ -228,11 +241,15 @@ function UsuarioForm({ user, onClose }: UsuarioFormProps) {
     try {
       if (user) {
         await usuariosApi.update(user.id, formData);
+        onNotify?.('success', 'Usuario actualizado con éxito');
       } else {
         await usuariosApi.create(formData);
+        onNotify?.('success', 'Usuario creado con éxito');
       }
       onClose();
     } catch (err) {
+      const msg = (err as any)?.response?.data?.error || `Error al ${user ? 'actualizar' : 'crear'} usuario.`;
+      onNotify?.('error', msg);
     } finally {
       setLoading(false);
     }
