@@ -50,6 +50,7 @@ export function ActividadesPage() {
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
   const [frecuenciaFilter, setFrecuenciaFilter] = useState<string>('all');
   const [tipoFilter, setTipoFilter] = useState<string>('all');
+  const [profesorFilter, setProfesorFilter] = useState<string>('all');
 
   const fetchData = async () => {
     setLoading(true);
@@ -94,6 +95,7 @@ export function ActividadesPage() {
   const filteredActividades = actividades.filter(a => {
     if (frecuenciaFilter !== 'all' && a.frecuencia !== frecuenciaFilter) return false;
     if (tipoFilter !== 'all' && a.tipo !== tipoFilter) return false;
+    if (profesorFilter !== 'all' && a.profesorId !== profesorFilter) return false;
     return true;
   });
 
@@ -116,6 +118,14 @@ export function ActividadesPage() {
               options={[
                 { value: 'all', label: 'Todas las especialidades' },
                 ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+              ]}
+            />
+            <Select
+              value={profesorFilter}
+              onChange={(e) => setProfesorFilter(e.target.value)}
+              options={[
+                { value: 'all', label: 'Todos los profesores' },
+                ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
               ]}
             />
           </div>
