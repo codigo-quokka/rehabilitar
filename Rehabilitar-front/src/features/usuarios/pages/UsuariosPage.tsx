@@ -141,19 +141,19 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary-dark dark:bg-primary/30 dark:hover:bg-primary/40 dark:text-primary" onClick={() => setSelectedUser(u)}>
+          <Button variant="ghost" size="sm" className="bg-primary/40 hover:bg-primary/20 text-dark-green dark:hover:bg-primary dark:bg-dark-green" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
           {u.activo ? (
-            <Button variant="ghost" size="sm" className="bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-800/30 dark:hover:bg-amber-800/50 dark:text-amber-300" onClick={() => setUserToSuspend(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-800/30 dark:hover:bg-amber-800/50 dark:text-amber-300" onClick={() => handleReactivar(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-800/30 dark:hover:bg-red-800/50 dark:text-red-300" onClick={() => setUserToDelete(u)}>
+          <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
             Eliminar
           </Button>
         </div>
