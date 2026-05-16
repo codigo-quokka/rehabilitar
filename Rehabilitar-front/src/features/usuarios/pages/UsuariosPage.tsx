@@ -10,7 +10,8 @@ import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 
 export function UsuariosPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
+  const isReception = hasRole(['reception']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +32,7 @@ export function UsuariosPage() {
   const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
   const filteredUsuarios = usuarios.filter(u => {
+    if (isReception && u.rol !== 'registered_client') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
     if (filters.estado === 'active' && !u.activo) return false;
     if (filters.estado === 'suspended' && u.activo) return false;
@@ -153,9 +155,11 @@ export function UsuariosPage() {
               Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
-            Eliminar
-          </Button>
+          {!isReception && (
+            <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
+              Eliminar
+            </Button>
+          )}
         </div>
       ),
     },
@@ -168,14 +172,14 @@ export function UsuariosPage() {
           <div className="flex gap-2">
             <FilterDropdown
               filters={[
-                {
+                ...(!isReception ? [{
                   key: 'rol',
                   label: 'Rol',
                   options: [
                     { value: 'all', label: 'Todos los roles' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
                   ],
-                },
+                }] : []),
                 {
                   key: 'estado',
                   label: 'Estado',
