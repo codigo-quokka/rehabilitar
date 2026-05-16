@@ -98,7 +98,9 @@ export function ActividadesPage() {
   const filteredActividades = actividades.filter(a => {
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
-    if (filters.profesor !== 'all' && a.profesorId !== filters.profesor) return false;
+    if (filters.profesor === 'all') return true;
+    if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
+    if (a.profesorId !== filters.profesor) return false;
     return true;
   });
 
@@ -129,6 +131,7 @@ export function ActividadesPage() {
                 label: 'Profesor',
                 options: [
                   { value: 'all', label: 'Todos los profesores' },
+                  { value: 'unassigned', label: 'Sin asignar' },
                   ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
                 ],
               },
