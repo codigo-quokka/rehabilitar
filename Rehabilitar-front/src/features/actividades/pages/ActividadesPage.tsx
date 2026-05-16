@@ -190,11 +190,11 @@ export function ActividadesPage() {
                 <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
                   {act.nombre}
                 </h3>
-                <p className="text-gray-500 text-sm mb-4 flex-1">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex-1">
                   {act.descripcion}
                 </p>
 
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                   <div className="flex items-center gap-2">
                     <svg
                       className="w-4 h-4"
