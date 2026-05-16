@@ -17,6 +17,7 @@ export function UsuariosPage() {
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const roles: Role[] = ['admin', 'reception', 'professor'];
 
@@ -24,6 +25,11 @@ export function UsuariosPage() {
     if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
     if (statusFilter === 'active' && !u.activo) return false;
     if (statusFilter === 'suspended' && u.activo) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
+      if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
+    }
     return true;
   }).filter(u => u.id !== currentUser?.id);
 
@@ -137,6 +143,12 @@ export function UsuariosPage() {
                 { value: 'active', label: 'Activos' },
                 { value: 'suspended', label: 'Suspendidos' }
               ]}
+            />
+            <Input
+              placeholder="Buscar por nombre o email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ minWidth: '300px' }}
             />
           </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
