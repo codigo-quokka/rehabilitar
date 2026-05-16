@@ -83,7 +83,7 @@ export function Sidebar() {
          text-sm font-medium text-center
          ${
            isActive
-             ? 'bg-primary text-white shadow-sm'
+             ? 'bg-primary text-white shadow-sm dark:bg-dark-green'
              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-dark dark:hover:text-gray-100'
          }`
       }

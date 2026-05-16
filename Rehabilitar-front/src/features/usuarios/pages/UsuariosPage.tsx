@@ -339,7 +339,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
         />
       )}
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
+        <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>Cancelar</Button>
         <Button type="submit" loading={loading}>{user ? 'Actualizar' : 'Crear'}</Button>
       </div>
     </form>

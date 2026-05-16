@@ -75,7 +75,7 @@ export function ReservasPage() {
       header: 'Acciones',
       render: (r: Reserva) => (
         r.estado === 'confirmada' && (
-          <Button variant="ghost" size="sm" onClick={() => handleCancelar(r.id)}>
+          <Button variant="ghost" size="sm" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => handleCancelar(r.id)}>
             Cancelar
           </Button>
         )

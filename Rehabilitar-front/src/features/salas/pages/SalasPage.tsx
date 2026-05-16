@@ -77,7 +77,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-primary/20 hover:bg-primary/30 text-primary-dark"
+            className="bg-primary/40 hover:bg-primary/20 text-dark-green dark:hover:bg-primary dark:bg-dark-green"
             onClick={() => setSelectedSala(s)}
           >
             Editar
@@ -85,7 +85,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-amber-100 hover:bg-amber-200 text-amber-700"
+            className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500"
             onClick={() => handleToggle(s)}
           >
             {s.activo ? "Desactivar" : "Activar"}
@@ -93,7 +93,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-red-100 hover:bg-red-200 text-red-700"
+            className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500"
             onClick={() => HandleDeleteClick(s.id)}
           >
             Eliminar
@@ -217,7 +217,7 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         />
       </div>
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>
+        <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
           Cancelar
         </Button>
         <Button type="submit" loading={loading}>

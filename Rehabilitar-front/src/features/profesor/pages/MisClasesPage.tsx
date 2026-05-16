@@ -94,9 +94,10 @@ export function MisClasesPage() {
       render: (a: Actividad) => {
         const variant = a.estado === 'Cancelada' ? 'warning' :
           a.estado === 'EnCurso' ? 'info' :
-            a.estado === 'Aprobada' ? 'success' : 'default';
+            a.estado === 'Aprobada' ? 'success' :
+              a.estado === 'Propuesta' ? 'amber' : 'default';
         return (
-          <Badge variant={variant} className={a.estado === 'Propuesta' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' : ''}>
+          <Badge variant={variant}>
             {estadoLabel[a.estado] || a.estado}
           </Badge>
         );

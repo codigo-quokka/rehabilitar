@@ -74,7 +74,7 @@ export function PerfilPage() {
               />
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleSave} loading={loading}>Guardar</Button>
-                <Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
+                <Button variant="ghost" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setEditing(false)}>Cancelar</Button>
               </div>
             </div>
           ) : (

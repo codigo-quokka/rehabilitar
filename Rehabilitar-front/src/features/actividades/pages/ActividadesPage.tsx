@@ -170,8 +170,9 @@ export function ActividadesPage() {
                       <Badge variant={
                         act.estado === 'Cancelada' ? 'warning' :
                         act.estado === 'EnCurso' ? 'info' :
-                        act.estado === 'Aprobada' ? 'success' : 'default'
-                       } className={act.estado === 'Propuesta' ? 'bg-amber-100 text-amber-700' : ''}>
+                        act.estado === 'Aprobada' ? 'success' :
+                        act.estado === 'Propuesta' ? 'amber' : 'default'
+                       }>
                         {estadoLabel[act.estado] || act.estado}
                       </Badge>
                     )}
@@ -461,7 +462,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
               Descripción
             </label>
             <textarea
-              className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-dark dark:text-gray-100"
               rows={3}
               value={formData.descripcion}
               onChange={(e) =>
@@ -598,7 +599,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
             <span className="text-sm text-gray-600 mr-auto">
               ¿Estás seguro de eliminar esta actividad?
             </span>
-            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)}>
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setShowDeleteConfirm(false)}>
               Cancelar
             </Button>
             <Button variant="danger" loading={loading} onClick={handleDelete}>
@@ -607,7 +608,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
           </div>
         ) : (
           <div className="flex gap-3">
-            <Button variant="ghost" type="button" onClick={onClose}>
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
               Cancelar
             </Button>
             <Button type="submit" loading={loading}>
