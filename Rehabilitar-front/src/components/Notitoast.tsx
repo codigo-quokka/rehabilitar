@@ -67,7 +67,7 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
             
           )}
         </div>
-        <p className={`text-sm font-medium ${style.text}`}>{message}</p>
+        <p className={`whitespace-pre-line text-sm font-medium ${style.text}`}>{message}</p>
         <button
           onClick={handleClose}
           className={`p-1 rounded-lg hover:bg-black/5 transition-colors ${style.text} opacity-60 hover:opacity-100`}

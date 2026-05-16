@@ -42,7 +42,7 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
-  const MIN_PASSWORD_LENGTH = 8;
+  const MIN_PASSWORD_LENGTH = 6;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
@@ -84,7 +84,7 @@ export function RegisterPage() {
         if (toastType === "success") {
           navigate("/login");
         }
-      }, 1500);
+      }, 4300);
       return () => clearTimeout(timer);
     }
     return undefined;
@@ -176,7 +176,7 @@ export function RegisterPage() {
         fechaNacimiento: formData.fechaNacimiento,
         telefono: formData.telefono || undefined,
       });
-      const msg = "Cuenta creada correctamente. Redirigiendo...";
+      const msg = "¡Éxito! Revisa tu correo para poder inciar sesión por primera vez. \nRedirigiendo...";
       setToastType("success");
       setToastMessage(msg);
       setShowToast(true);
@@ -303,6 +303,11 @@ export function RegisterPage() {
                 <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
               </div>
 
+              <InformRequirements
+                value={formData.password}
+                requirements={passwordReqs}
+              />
+
               <div className="relative">
                 <Input
                   label="Confirmar contraseña"
@@ -322,10 +327,7 @@ export function RegisterPage() {
                 requirements={confirmPasswordReqs}
               />
 
-              <InformRequirements
-                value={formData.password}
-                requirements={passwordReqs}
-              />
+              
 
               <Button
                 type="submit"
