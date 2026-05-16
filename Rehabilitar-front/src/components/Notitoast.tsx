@@ -27,18 +27,18 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
 
   const styles = {
     success: {
-      bg: "bg-teal-50",
-      border: "border-teal-200",
-      iconBg: "bg-teal-100",
-      iconColor: "text-teal-600",
-      text: "text-teal-800",
+      bg: "bg-teal-50 dark:bg-teal-900/50",
+      border: "border-teal-200 dark:border-teal-700",
+      iconBg: "bg-teal-100 dark:bg-teal-800/50",
+      iconColor: "text-teal-600 dark:text-teal-400",
+      text: "text-teal-800 dark:text-teal-200",
     },
     error: {
-      bg: "bg-red-50",
-      border: "border-red-200",
-      iconBg: "bg-red-100",
-      iconColor: "text-red-600",
-      text: "text-red-800",
+      bg: "bg-red-50 dark:bg-red-900/50",
+      border: "border-red-200 dark:border-red-700",
+      iconBg: "bg-red-100 dark:bg-red-800/50",
+      iconColor: "text-red-600 dark:text-red-400",
+      text: "text-red-800 dark:text-red-200",
     },
   };
 

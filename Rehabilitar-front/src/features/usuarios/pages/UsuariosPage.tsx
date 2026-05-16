@@ -141,19 +141,19 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="bg-green-200 hover:bg-green-300" onClick={() => setSelectedUser(u)}>
+          <Button variant="ghost" size="sm" className="bg-primary/40 hover:bg-primary/20 text-dark-green dark:hover:bg-primary dark:bg-dark-green" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
           {u.activo ? (
-            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => setUserToSuspend(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="bg-red-300 hover:bg-red-400" onClick={() => setUserToDelete(u)}>
+          <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
             Eliminar
           </Button>
         </div>
@@ -194,7 +194,7 @@ export function UsuariosPage() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ minWidth: '300px' }}
+              className="min-w-[300px]"
             />
           </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
@@ -294,7 +294,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['admin', 'reception', 'professor'];
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -339,7 +339,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
         />
       )}
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
+        <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>Cancelar</Button>
         <Button type="submit" loading={loading}>{user ? 'Actualizar' : 'Crear'}</Button>
       </div>
     </form>

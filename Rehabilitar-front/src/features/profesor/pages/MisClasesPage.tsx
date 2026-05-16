@@ -83,7 +83,7 @@ export function MisClasesPage() {
       key: 'frecuencia',
       header: 'Frecuencia',
       render: (a: Actividad) => (
-        <Badge className="bg-secondary/20 text-secondary">
+        <Badge className="bg-secondary/20 dark:bg-secondary/30 text-secondary dark:text-secondary">
           {frecuenciaLabel[a.frecuencia] || a.frecuencia}
         </Badge>
       ),
@@ -94,9 +94,10 @@ export function MisClasesPage() {
       render: (a: Actividad) => {
         const variant = a.estado === 'Cancelada' ? 'warning' :
           a.estado === 'EnCurso' ? 'info' :
-            a.estado === 'Aprobada' ? 'success' : 'default';
+            a.estado === 'Aprobada' ? 'success' :
+              a.estado === 'Propuesta' ? 'amber' : 'default';
         return (
-          <Badge variant={variant} className={a.estado === 'Propuesta' ? 'bg-orange-200 text-orange-700' : ''}>
+          <Badge variant={variant}>
             {estadoLabel[a.estado] || a.estado}
           </Badge>
         );
@@ -118,11 +119,11 @@ export function MisClasesPage() {
       <div className="space-y-6">
         {loading ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">Cargando...</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Cargando...</p>
           </Card>
         ) : clases.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">No tienes clases asignadas</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">No tienes clases asignadas</p>
           </Card>
         ) : (
           <Card padding="none">

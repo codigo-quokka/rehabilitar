@@ -79,7 +79,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
+    <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <img
@@ -87,13 +87,13 @@ export function LoginPage() {
             alt="RehabilitAR"
             className="w-24 h-auto mx-auto mb-4"
           />
-          <h1 className="text-4xl font-bold text-dark">RehabilitAR</h1>
-          <p className="text-gray-500 mt-2 text-lg">Centro de Rehabilitación</p>
+          <h1 className="text-4xl font-bold text-dark dark:text-gray-100">RehabilitAR</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Centro de Rehabilitación</p>
         </div>
 
         <Card className="shadow-xl">
           <div className="p-2">
-            <h2 className="text-2xl font-semibold text-dark mb-8">
+            <h2 className="text-2xl font-semibold text-dark dark:text-gray-100 mb-8">
               Bienvenido
             </h2>
 
@@ -162,7 +162,7 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-border text-center">
+            <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
               <p>
                 <span className="text-gray-500">¿No tienes cuenta? </span>
                 <Link

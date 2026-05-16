@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-primary: #6DD3A8;
-  --color-primary-dark: #48B7A5;
-  --color-primary-darker: #309B9B;
-  --color-primary-darkest: #2C7E8B;
+  --color-primary: #4ABC8F;
+  --color-primary-dark: #3AAC80;
+  --color-primary-darker: #2E9B70;
+  --color-primary-darkest: #258A60;
   --color-secondary: #2F6274;
   --color-dark: #2F4858;
+  --color-dark-green: #1C6444;
 
-  --color-bg-main: #FBFBFB;
-  --color-bg-secondary: #F5F5F7;
-  --color-bg-surface: #F9F9FB;
-  --color-border: #E8E8ED;
+  --color-bg-main: #EAF2F8;
+  --color-bg-secondary: #E0EBF4;
+  --color-bg-surface: #F0F6FB;
+  --color-border: #D8E3ED;
 
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
