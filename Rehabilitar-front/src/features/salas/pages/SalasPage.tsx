@@ -77,7 +77,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-green-200 hover:bg-green-300"
+            className="bg-primary/20 hover:bg-primary/30 text-primary-dark"
             onClick={() => setSelectedSala(s)}
           >
             Editar
@@ -85,7 +85,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-orange-200 hover:bg-orange-300"
+            className="bg-amber-100 hover:bg-amber-200 text-amber-700"
             onClick={() => handleToggle(s)}
           >
             {s.activo ? "Desactivar" : "Activar"}
@@ -93,7 +93,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-red-300 hover:bg-red-400"
+            className="bg-red-100 hover:bg-red-200 text-red-700"
             onClick={() => HandleDeleteClick(s.id)}
           >
             Eliminar
@@ -204,11 +204,11 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         required
       />
       <div>
-        <label className="block text-sm font-medium text-dark mb-1.5">
+        <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
           Descripción
         </label>
         <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+          className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
           rows={3}
           value={formData.descripcion}
           onChange={(e) =>

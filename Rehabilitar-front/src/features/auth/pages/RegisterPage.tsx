@@ -199,157 +199,159 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <img
-            src={logo}
-            alt="RehabilitAR"
-            className="w-24 h-auto mx-auto mb-4"
-          />
-          <h1 className="text-4xl font-bold text-dark">RehabilitAR</h1>
-          <p className="text-gray-500 mt-2 text-lg">
-            Centro de Rehabilitación
-          </p>
-        </div>
-
-        <Card className="shadow-xl">
-          <div className="p-2">
-            <h2 className="text-2xl font-semibold text-dark mb-8">
-              Crear cuenta
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Nombre"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="Juan"
-                  required
-                />
-                <Input
-                  label="Apellido"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Pérez"
-                  required
-                />
-              </div>
-
-              <Input
-                label="Email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="tu@email.com"
-                required
-              />
-
-              <Input
-                label="Teléfono *"
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                placeholder="+54 221 123 4567"              
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Input
-                    label="DNI"
-                    type="text"
-                    name="dni"
-                    value={formData.dni}
-                    onChange={handleChange}
-                    onKeyDown={handleDniKeyDown}
-                    onPaste={handleDniPaste}
-                    placeholder="12345678"
-                    required
-                    minLength={MIN_DNI_LENGTH}
-                    maxLength={MAX_DNI_LENGTH}
-                  />
-                  <InformRequirements value={formData.dni} requirements={dniReqs} />
-                </div>
-                <div>
-                  <Input
-                    label="Fecha de nacimiento"
-                    type="date"
-                    name="fechaNacimiento"
-                    value={formData.fechaNacimiento}
-                    onChange={handleChange}
-                    required
-                  />
-                  <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
-                </div>
-              </div>
-
-              <div className="relative">
-                <Input
-                  label="Contraseña"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  minLength={MIN_PASSWORD_LENGTH}
-                  className="pr-16"
-                />
-                <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
-              </div>
-
-              <div className="relative">
-                <Input
-                  label="Confirmar contraseña"
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  className="pr-16"
-                />
-                <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
-              </div>
-
-              <InformRequirements
-                value={formData.confirmPassword}
-                requirements={confirmPasswordReqs}
-              />
-
-              <InformRequirements
-                value={formData.password}
-                requirements={passwordReqs}
-              />
-
-              <Button
-                type="submit"
-                className="w-full py-3 text-base"
-                loading={loading}
-                disabled={loading}
-              >
-                Crear cuenta
-              </Button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-border text-center">
-            <p>
-              <span className="text-gray-500">¿Ya tienes cuenta? </span>
-              <Link
-                to="/login"
-                className="inline text-black hover:underline font-medium cursor-pointer"
-              >
-               Iniciar sesión
-              </Link>
+    <>
+      <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-10">
+            <img
+              src={logo}
+              alt="RehabilitAR"
+              className="w-24 h-auto mx-auto mb-4"
+            />
+            <h1 className="text-4xl font-bold text-dark dark:text-gray-100">RehabilitAR</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">
+              Centro de Rehabilitación
             </p>
           </div>
-          </div>
-        </Card>
+
+          <Card className="shadow-xl">
+            <div className="p-2">
+              <h2 className="text-2xl font-semibold text-dark dark:text-gray-100 mb-8">
+                Crear cuenta
+              </h2>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Nombre"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="Juan"
+                    required
+                  />
+                  <Input
+                    label="Apellido"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Pérez"
+                    required
+                  />
+                </div>
+
+                <Input
+                  label="Email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="tu@email.com"
+                  required
+                />
+
+                <Input
+                  label="Teléfono *"
+                  type="tel"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleChange}
+                  placeholder="+54 221 123 4567"
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Input
+                      label="DNI"
+                      type="text"
+                      name="dni"
+                      value={formData.dni}
+                      onChange={handleChange}
+                      onKeyDown={handleDniKeyDown}
+                      onPaste={handleDniPaste}
+                      placeholder="12345678"
+                      required
+                      minLength={MIN_DNI_LENGTH}
+                      maxLength={MAX_DNI_LENGTH}
+                    />
+                    <InformRequirements value={formData.dni} requirements={dniReqs} />
+                  </div>
+                  <div>
+                    <Input
+                      label="Fecha de nacimiento"
+                      type="date"
+                      name="fechaNacimiento"
+                      value={formData.fechaNacimiento}
+                      onChange={handleChange}
+                      required
+                    />
+                    <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Input
+                    label="Contraseña"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    required
+                    minLength={MIN_PASSWORD_LENGTH}
+                    className="pr-16"
+                  />
+                  <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
+                </div>
+
+                <div className="relative">
+                  <Input
+                    label="Confirmar contraseña"
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    required
+                    className="pr-16"
+                  />
+                  <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
+                </div>
+
+                <InformRequirements
+                  value={formData.confirmPassword}
+                  requirements={confirmPasswordReqs}
+                />
+
+                <InformRequirements
+                  value={formData.password}
+                  requirements={passwordReqs}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full py-3 text-base"
+                  loading={loading}
+                  disabled={loading}
+                >
+                  Crear cuenta
+                </Button>
+              </form>
+
+              <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
+                <p>
+                  <span className="text-gray-500">¿Ya tienes cuenta? </span>
+                  <Link
+                    to="/login"
+                    className="inline text-black dark:text-gray-100 hover:underline font-medium cursor-pointer"
+                  >
+                    Iniciar sesión
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
       {showToast && (
         <Notitoast
@@ -358,6 +360,6 @@ export function RegisterPage() {
           onClose={handleCloseToast}
         />
       )}
-    </div>
+    </>
   );
 }

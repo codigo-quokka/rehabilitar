@@ -72,7 +72,7 @@ export function Sidebar() {
   const visibleItems = menuItems.filter((item) => user && hasRole(item.roles));
 
   return (
-    <nav className="bg-white border-b border-border px-6 py-3 flex items-center gap-3">
+    <nav className="bg-white dark:text-gray-100 dark:bg-gray-900 border-b border-border dark:border-gray-700 px-6 py-3 flex items-center gap-3">
   {visibleItems.map((item) => (
     <NavLink
       key={item.path}
@@ -84,7 +84,7 @@ export function Sidebar() {
          ${
            isActive
              ? 'bg-primary text-white shadow-sm'
-             : 'text-gray-600 hover:bg-gray-100 hover:text-dark'
+             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-dark dark:hover:text-gray-100'
          }`
       }
     >

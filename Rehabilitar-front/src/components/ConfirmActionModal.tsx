@@ -13,7 +13,7 @@ export function ConfirmActionModal({ title, body, confirmLabel, onConfirm, onCan
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={title} size="sm">
       <div className="text-center">
-        <p className="text-gray-600 mb-6">{body}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{body}</p>
         <div className="flex justify-center gap-3">
           <Button variant="ghost" onClick={onCancel}>
             Cancelar

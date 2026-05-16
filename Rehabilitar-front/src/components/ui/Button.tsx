@@ -24,12 +24,12 @@ export function Button({
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary";
 
   const variants = {
-    primary: "bg-primary text-blue hover:bg-primary-dark focus:ring-primary",
+    primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
     secondary: "bg-dark text-white hover:bg-secondary focus:ring-dark",
     outline:
       "border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
-    ghost: "border border-gray-300 text-dark hover:bg-gray-200 focus:ring-gray-300",
-    danger: "bg-red-400 text-white hover:bg-red-800 focus:ring-red-500",
+    ghost: "border border-gray-300 dark:border-gray-600 text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 focus:ring-gray-300",
+    danger: "bg-red-400 text-white hover:bg-red-800 focus:ring-red-500 dark:bg-red-600",
   };
 
   const sizes = {

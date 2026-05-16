@@ -141,19 +141,19 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="bg-green-200 hover:bg-green-300" onClick={() => setSelectedUser(u)}>
+          <Button variant="ghost" size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary-dark dark:bg-primary/30 dark:hover:bg-primary/40 dark:text-primary" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
           {u.activo ? (
-            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => setUserToSuspend(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-800/30 dark:hover:bg-amber-800/50 dark:text-amber-300" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u)}>
+            <Button variant="ghost" size="sm" className="bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-800/30 dark:hover:bg-amber-800/50 dark:text-amber-300" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="bg-red-300 hover:bg-red-400" onClick={() => setUserToDelete(u)}>
+          <Button variant="ghost" size="sm" className="bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-800/30 dark:hover:bg-red-800/50 dark:text-red-300" onClick={() => setUserToDelete(u)}>
             Eliminar
           </Button>
         </div>
@@ -194,7 +194,7 @@ export function UsuariosPage() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ minWidth: '300px' }}
+              className="min-w-[300px]"
             />
           </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
@@ -294,7 +294,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['admin', 'reception', 'professor'];
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

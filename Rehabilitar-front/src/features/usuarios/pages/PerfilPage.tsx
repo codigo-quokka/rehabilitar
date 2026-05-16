@@ -42,7 +42,7 @@ export function PerfilPage() {
               </span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-dark">{user?.nombre} {user?.apellido}</h2>
+              <h2 className="text-xl font-semibold text-dark dark:text-gray-100">{user?.nombre} {user?.apellido}</h2>
               <p className="text-gray-500 capitalize">{user?.rol?.replace('_', ' ')}</p>
             </div>
           </div>
@@ -81,24 +81,24 @@ export function PerfilPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="text-dark">{user?.email}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                  <p className="text-dark dark:text-gray-100">{user?.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Teléfono</p>
-                  <p className="text-dark">{user?.telefono || 'No registrado'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Teléfono</p>
+                  <p className="text-dark dark:text-gray-100">{user?.telefono || 'No registrado'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Documento</p>
-                  <p className="text-dark">{user?.documento || 'No registrado'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Documento</p>
+                  <p className="text-dark dark:text-gray-100">{user?.documento || 'No registrado'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Fecha de nacimiento</p>
-                  <p className="text-dark">{user?.fechaNacimiento || 'No registrada'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Fecha de nacimiento</p>
+                  <p className="text-dark dark:text-gray-100">{user?.fechaNacimiento || 'No registrada'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Aptitud física</p>
-                  <p className="text-dark">{user?.aptitudFisica ? 'Aprobada' : 'Pendiente'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Aptitud física</p>
+                  <p className="text-dark dark:text-gray-100">{user?.aptitudFisica ? 'Aprobada' : 'Pendiente'}</p>
                 </div>
                
               </div>
@@ -110,7 +110,7 @@ export function PerfilPage() {
         </Card>
 
         <Card className="mt-6">
-          <h3 className="text-lg font-semibold text-dark mb-4">Cambiar contraseña</h3>
+          <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Cambiar contraseña</h3>
           <div className="space-y-4 max-w-md">
             <div className="relative">
               <Input
