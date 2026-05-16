@@ -41,6 +41,16 @@ public class ActividadesController : ApiControllerBase
         );
     }
 
+    [HttpPost("recurrente")]
+    public async Task<IActionResult> CreateRecurrent([FromBody] CrearActividadRecurrenteRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.CrearActividadRecurrente(request, ct);
+        return result.Match(
+            actividad => CreatedAtAction(nameof(GetById), new { id = actividad.Id }, actividad),
+            errores => Problem(errores)
+        );
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
@@ -55,6 +65,19 @@ public class ActividadesController : ApiControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] EditarActividadRequest request, CancellationToken ct)
     {
         var result = await _actividadService.EditarActividad(id, request, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPut("serie/{serieId:guid}")]
+    public async Task<IActionResult> UpdateSerie(Guid serieId, [FromBody] EditarActividadRecurrenteRequest request, CancellationToken ct)
+    {
+        if (serieId != request.SerieId)
+            return BadRequest("El ID de la serie en la URL no coincide con el del cuerpo de la solicitud.");
+
+        var result = await _actividadService.ModificarActividadRecurrente(request, ct);
         return result.Match(
             actividad => Ok(actividad),
             errores => Problem(errores)
