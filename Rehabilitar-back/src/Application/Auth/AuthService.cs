@@ -157,6 +157,9 @@ public class AuthService : IAuthService
         if (user == null)
             return Error.NotFound("Usuario no encontrado.");
 
+        if (await _userManager.CheckPasswordAsync(user, request.NewPassword))
+            return Error.Validation("La nueva contraseña no puede ser idéntica a la actual.");
+
         var result = await _userManager.ResetPasswordAsync(user, request.PasswordResetToken, request.NewPassword);
         if (!result.Succeeded)
         {
