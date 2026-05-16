@@ -33,6 +33,7 @@ public class SeedingService : ISeedingService
         System.Console.WriteLine();
         await SeedRolesAsync();
         await SeedAdminAsync("admin@rehabilitar.com", "Admin", "Administrador");
+        await SeedReceptionAsync("recepcion@rehabilitar.com", "Recepcion", "Receptionist");
         
         await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566");
         await SeedClienteAsync("Rocky", "Balboa", "rocky@balboa.com", "44555666", "542217778899");
@@ -114,6 +115,31 @@ public class SeedingService : ISeedingService
             System.Console.WriteLine("Error al seedear admin.");
         }
 
+    }
+
+    private async Task SeedReceptionAsync(string receptionEmail, string receptionFirstName, string receptionLastName)
+    {
+        var receptionUser = await _userManager.FindByEmailAsync(receptionEmail);
+        if (receptionUser != null)
+            return;
+
+        receptionUser = User.Create(
+            firstName: receptionFirstName,
+            lastName: receptionLastName,
+            email: receptionEmail
+        );
+
+        var result = await _userManager.CreateAsync(receptionUser, "recepcionista");
+
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(receptionUser, "reception");
+            await ConfirmarEmail(receptionUser);
+        }
+        else
+        {
+            System.Console.WriteLine("Error al seedear recepcionista.");
+        }
     }
 
     private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null)
