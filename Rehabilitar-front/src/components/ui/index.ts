@@ -5,3 +5,4 @@ export { Select } from './Select';
 export { Badge } from './Badge';
 export { Modal } from './Modal';
 export { Table } from './Table';
+export { FilterDropdown } from './FilterDropdown';

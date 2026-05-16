@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '../../../components/layout';
-import { Card, Button, Badge, Modal, Input, Select, Table } from '../../../components/ui';
+import { Card, Button, Badge, Modal, Input, Select, Table, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
 import { usuariosApi } from '../../../api';
 import { User, Role } from '../../../types';
@@ -15,16 +15,18 @@ export function UsuariosPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filters, setFilters] = useState({
+    rol: 'all',
+    estado: 'all',
+  });
 
   const roles: Role[] = ['admin', 'reception', 'professor'];
 
   const filteredUsuarios = usuarios.filter(u => {
-    if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
-    if (statusFilter === 'active' && !u.activo) return false;
-    if (statusFilter === 'suspended' && u.activo) return false;
+    if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
+    if (filters.estado === 'active' && !u.activo) return false;
+    if (filters.estado === 'suspended' && u.activo) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
@@ -127,22 +129,29 @@ export function UsuariosPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'Todos los roles' },
-                ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))
+            <FilterDropdown
+              filters={[
+                {
+                  key: 'rol',
+                  label: 'Rol',
+                  options: [
+                    { value: 'all', label: 'Todos los roles' },
+                    ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
+                  ],
+                },
+                {
+                  key: 'estado',
+                  label: 'Estado',
+                  options: [
+                    { value: 'all', label: 'Todos los estados' },
+                    { value: 'active', label: 'Activos' },
+                    { value: 'suspended', label: 'Suspendidos' },
+                  ],
+                },
               ]}
-            />
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'Todos los estados' },
-                { value: 'active', label: 'Activos' },
-                { value: 'suspended', label: 'Suspendidos' }
-              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ rol: 'all', estado: 'all' })}
             />
             <Input
               placeholder="Buscar por nombre o email..."
