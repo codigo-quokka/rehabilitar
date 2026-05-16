@@ -23,15 +23,11 @@ export function UsuariosPage() {
     estado: 'all',
   });
 
-<<<<<<< HEAD
-  const roles: Role[] = ['admin', 'reception', 'professor'];
-=======
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
   const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
->>>>>>> e3fed1edccecfcf311af1a4e143638ddcc847574
 
   const filteredUsuarios = usuarios.filter(u => {
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
