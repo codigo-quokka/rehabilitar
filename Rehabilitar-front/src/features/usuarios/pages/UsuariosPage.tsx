@@ -17,6 +17,7 @@ export function UsuariosPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
+  const [userToReactivar, setUserToReactivar] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filters, setFilters] = useState({
     rol: 'all',
@@ -92,16 +93,24 @@ export function UsuariosPage() {
     }
   };
 
-  const handleReactivar = async (id: string) => {
+  const handleReactivar = (user: User) => {
+    setUserToReactivar(user);
+  };
+
+  const handleConfirmReactivar = async () => {
+    if (!userToReactivar) return;
     try {
-      await usuariosApi.reactivar(id);
+      await usuariosApi.reactivar(userToReactivar.id);
+      setUserToReactivar(null);
       fetchData();
       setToastType('success');
       setToastMessage('Cuenta reactivada con éxito');
       setShowToast(true);
     } catch (err) {
+      setUserToReactivar(null);
+      const msg = (err as any)?.response?.data?.error || 'Error al reactivar la cuenta';
       setToastType('error');
-      setToastMessage((err as any)?.response?.data?.error || 'Error al reactivar la cuenta');
+      setToastMessage(msg);
       setShowToast(true);
     }
   };
@@ -140,7 +149,7 @@ export function UsuariosPage() {
               Suspender
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u.id)}>
+            <Button variant="ghost" size="sm" className="bg-orange-200 hover:bg-orange-300" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
@@ -220,7 +229,14 @@ export function UsuariosPage() {
         onConfirm={handleConfirmSuspender}
         onCancel={() => setUserToSuspend(null)}
       />
-
+      <ConfirmActionModal
+        title="Confirmar reactivación"
+        body="¿Estás seguro de que deseas reactivar este usuario?"
+        confirmLabel="Reactivar"
+        isOpen={!!userToReactivar}
+        onConfirm={handleConfirmReactivar}
+        onCancel={() => setUserToReactivar(null)}
+      />
       <ConfirmActionModal
         title="Confirmar eliminación"
         body="¿Estás seguro de que deseas eliminar este usuario?"
@@ -229,6 +245,8 @@ export function UsuariosPage() {
         onConfirm={handleDelete}
         onCancel={() => setUserToDelete(null)}
       />
+
+      
       {showToast && (
         <Notitoast
           type={toastType}

@@ -152,6 +152,8 @@ refactor: extract utility functions
 chore: organize project structure
 ```
 
+> When asked for a commit message, always follow this standard: `type(scope): description` in lowercase English.
+
 ---
 
 ## Current Project State
