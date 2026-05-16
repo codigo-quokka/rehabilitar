@@ -42,7 +42,7 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
-  const MIN_PASSWORD_LENGTH = 8;
+  const MIN_PASSWORD_LENGTH = 6;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
@@ -84,7 +84,7 @@ export function RegisterPage() {
         if (toastType === "success") {
           navigate("/login");
         }
-      }, 1500);
+      }, 4300);
       return () => clearTimeout(timer);
     }
     return undefined;
@@ -176,7 +176,7 @@ export function RegisterPage() {
         fechaNacimiento: formData.fechaNacimiento,
         telefono: formData.telefono || undefined,
       });
-      const msg = "Cuenta creada correctamente. Redirigiendo...";
+      const msg = "¡Éxito! Revisa tu correo para poder inciar sesión por primera vez. \nRedirigiendo...";
       setToastType("success");
       setToastMessage(msg);
       setShowToast(true);
@@ -259,37 +259,27 @@ export function RegisterPage() {
                   placeholder="+54 221 123 4567"
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Input
-                      label="DNI"
-                      type="text"
-                      name="dni"
-                      value={formData.dni}
-                      onChange={handleChange}
-                      onKeyDown={handleDniKeyDown}
-                      onPaste={handleDniPaste}
-                      placeholder="12345678"
-                      required
-                      minLength={MIN_DNI_LENGTH}
-                      maxLength={MAX_DNI_LENGTH}
-                    />
-                    <InformRequirements value={formData.dni} requirements={dniReqs} />
-                  </div>
-                  <div>
-                    <Input
-                      label="Fecha de nacimiento"
-                      type="date"
-                      name="fechaNacimiento"
-                      value={formData.fechaNacimiento}
-                      onChange={handleChange}
-                      required
-                    />
-                    <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
-                  </div>
-                </div>
+              <Input
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="tu@email.com"
+                required
+              />
 
-                <div className="relative">
+              <Input
+                label="Teléfono (opcional)"
+                type="tel"
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleChange}
+                placeholder="+54 221 123 4567"              
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <Input
                     label="Contraseña"
                     type={showPassword ? "text" : "password"}
@@ -323,35 +313,53 @@ export function RegisterPage() {
                   requirements={confirmPasswordReqs}
                 />
 
-                <InformRequirements
-                  value={formData.password}
-                  requirements={passwordReqs}
+              <InformRequirements
+                value={formData.password}
+                requirements={passwordReqs}
+              />
+
+              <div className="relative">
+                <Input
+                  label="Confirmar contraseña"
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  className="pr-16"
                 />
 
-                <Button
-                  type="submit"
-                  className="w-full py-3 text-base"
-                  loading={loading}
-                  disabled={loading}
-                >
-                  Crear cuenta
-                </Button>
-              </form>
+              <InformRequirements
+                value={formData.confirmPassword}
+                requirements={confirmPasswordReqs}
+              />
 
-              <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
-                <p>
-                  <span className="text-gray-500">¿Ya tienes cuenta? </span>
-                  <Link
-                    to="/login"
-                    className="inline text-black dark:text-gray-100 hover:underline font-medium cursor-pointer"
-                  >
-                    Iniciar sesión
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+              
+
+              <Button
+                type="submit"
+                className="w-full py-3 text-base"
+                loading={loading}
+                disabled={loading}
+              >
+                Crear cuenta
+              </Button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-border text-center">
+            <p>
+              <span className="text-gray-500">¿Ya tienes cuenta? </span>
+              <Link
+                to="/login"
+                className="inline text-black hover:underline font-medium cursor-pointer"
+              >
+               Iniciar sesión
+              </Link>
+            </p>
+          </div>
+          </div>
+        </Card>
       </div>
       {showToast && (
         <Notitoast

@@ -43,7 +43,7 @@ export function LoginPage() {
         setUnverifiedEmail(email);
         setToastType("error");
         setToastMessage(
-            "Debes confirmar tu correo para iniciar sesión. Verifica tu bandeja de entada.",
+            "Debes confirmar tu correo para iniciar sesión. \nVerifica tu bandeja de entada.",
         );
         setShowToast(true);
       } else if (err.response?.data?.error === "Usuario suspendido.") {
