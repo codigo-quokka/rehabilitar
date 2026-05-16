@@ -194,7 +194,7 @@ export function UsuariosPage() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-[300px]"
+              className="min-w-[500px]"
             />
           </div>
           <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
