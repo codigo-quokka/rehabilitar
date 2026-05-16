@@ -19,11 +19,11 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-border dark:border-gray-700">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3 text-left text-sm font-medium text-dark${col.width ? ` ${col.width}` : ''}`}
+                className={`px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100${col.width ? ` ${col.width}` : ''}`}
               >
                 {col.header}
               </th>
@@ -39,9 +39,9 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
             </tr>
           ) : (
             data.map((item) => (
-              <tr key={keyExtractor(item)} className="border-b border-border/50 hover:bg-gray-50">
+              <tr key={keyExtractor(item)} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 text-sm text-dark${col.width ? ` ${col.width}` : ''}`}>
+                  <td key={col.key} className={`px-4 py-3 text-sm text-dark dark:text-gray-100${col.width ? ` ${col.width}` : ''}`}>
                     {col.render ? col.render(item) : (item as Record<string, unknown>)[col.key] as ReactNode}
                   </td>
                 ))}

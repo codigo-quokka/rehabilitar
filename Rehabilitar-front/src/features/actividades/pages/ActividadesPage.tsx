@@ -170,8 +170,9 @@ export function ActividadesPage() {
                       <Badge variant={
                         act.estado === 'Cancelada' ? 'warning' :
                         act.estado === 'EnCurso' ? 'info' :
-                        act.estado === 'Aprobada' ? 'success' : 'default'
-                      } className={act.estado === 'Propuesta' ? 'bg-orange-200 text-orange-700' : ''}>
+                        act.estado === 'Aprobada' ? 'success' :
+                        act.estado === 'Propuesta' ? 'amber' : 'default'
+                       }>
                         {estadoLabel[act.estado] || act.estado}
                       </Badge>
                     )}
@@ -187,14 +188,14 @@ export function ActividadesPage() {
                   </Badge>
                 </div>
 
-                <h3 className="text-lg font-semibold text-dark mb-2">
+                <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
                   {act.nombre}
                 </h3>
-                <p className="text-gray-500 text-sm mb-4 flex-1">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex-1">
                   {act.descripcion}
                 </p>
 
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                   <div className="flex items-center gap-2">
                     <svg
                       className="w-4 h-4"
@@ -457,11 +458,11 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
             required
           />
           <div>
-            <label className="block text-sm font-medium text-dark mb-1.5">
+            <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
               Descripción
             </label>
             <textarea
-              className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-dark dark:text-gray-100"
               rows={3}
               value={formData.descripcion}
               onChange={(e) =>
@@ -587,7 +588,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         {isEditing && !showDeleteConfirm && (
           <Button
             variant="ghost"
-            className="bg-red-300 hover:bg-red-400"
+            className="bg-red-100 hover:bg-red-200 text-red-700"
             onClick={() => setShowDeleteConfirm(true)}
           >
             Eliminar
@@ -598,7 +599,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
             <span className="text-sm text-gray-600 mr-auto">
               ¿Estás seguro de eliminar esta actividad?
             </span>
-            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)}>
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setShowDeleteConfirm(false)}>
               Cancelar
             </Button>
             <Button variant="danger" loading={loading} onClick={handleDelete}>
@@ -607,7 +608,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
           </div>
         ) : (
           <div className="flex gap-3">
-            <Button variant="ghost" type="button" onClick={onClose}>
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
               Cancelar
             </Button>
             <Button type="submit" loading={loading}>

@@ -57,10 +57,10 @@ export function DashboardPage() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-dark">
+            <h1 className="text-3xl font-bold text-dark dark:text-gray-100">
               ¡Bienvenido, {user?.nombre}!
             </h1>
-            <p className="text-gray-500 mt-1 text-lg">Aquí está el resumen de tu día</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">Aquí está el resumen de tu día</p>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Próximas actividades</h3>
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Próximas actividades</h3>
             {loading ? (
               <p className="text-gray-500">Cargando...</p>
             ) : actividades.length === 0 ? (
@@ -102,9 +102,9 @@ export function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {actividades.map((act) => (
-                  <div key={act.id} className="flex items-center justify-between p-3 bg-bg-surface rounded-lg">
+                  <div key={act.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <p className="font-medium text-dark">{act.nombre}</p>
+                      <p className="font-medium text-dark dark:text-gray-100">{act.nombre}</p>
                       <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
@@ -117,7 +117,7 @@ export function DashboardPage() {
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Mis reservas</h3>
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas</h3>
             {loading ? (
               <p className="text-gray-500">Cargando...</p>
             ) : reservas.length === 0 ? (
@@ -125,9 +125,9 @@ export function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {reservas.map((res) => (
-                  <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface rounded-lg">
+                  <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <p className="font-medium text-dark">Actividad #{res.actividadId}</p>
+                      <p className="font-medium text-dark dark:text-gray-100">Actividad #{res.actividadId}</p>
                       <p className="text-sm text-gray-500">{res.fechaReserva}</p>
                     </div>
                     <Badge

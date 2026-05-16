@@ -77,7 +77,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-green-200 hover:bg-green-300"
+            className="bg-primary/40 hover:bg-primary/20 text-dark-green dark:hover:bg-primary dark:bg-dark-green"
             onClick={() => setSelectedSala(s)}
           >
             Editar
@@ -85,7 +85,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-orange-200 hover:bg-orange-300"
+            className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500"
             onClick={() => handleToggle(s)}
           >
             {s.activo ? "Desactivar" : "Activar"}
@@ -93,7 +93,7 @@ export function SalasPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-red-300 hover:bg-red-400"
+            className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500"
             onClick={() => HandleDeleteClick(s.id)}
           >
             Eliminar
@@ -204,11 +204,11 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         required
       />
       <div>
-        <label className="block text-sm font-medium text-dark mb-1.5">
+        <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
           Descripción
         </label>
         <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+          className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
           rows={3}
           value={formData.descripcion}
           onChange={(e) =>
@@ -217,7 +217,7 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         />
       </div>
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>
+        <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
           Cancelar
         </Button>
         <Button type="submit" loading={loading}>

@@ -8,7 +8,7 @@ export function PrivacyEye({ show, onToggle }: PrivacyEyeProps) {
     <button
       type="button"
       onClick={onToggle}
-      className="absolute right-3 top-11 text-gray-500 hover:text-primary px-2 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+      className="absolute right-3 top-11 text-gray-500 dark:text-gray-400 hover:text-primary px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
       aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
     >
       {show ? (
