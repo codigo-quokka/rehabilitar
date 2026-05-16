@@ -31,6 +31,20 @@ export function UsuariosPage() {
 
   const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
+  const tipoLabel: Record<string, string> = {
+    TrenSuperior: 'Tren Superior',
+    TrenMedio: 'Tren Medio',
+    TrenInferior: 'Tren Inferior',
+  };
+
+  const rolLabel: Record<string, string> = {
+    admin: 'Admin',
+    reception: 'Recepción',
+    professor: 'Profesor',
+    registered_client: 'Cliente',
+    guest: 'Invitado',
+  };
+
   const filteredUsuarios = usuarios.filter(u => {
     if (isReception && u.rol !== 'registered_client') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
@@ -124,9 +138,14 @@ export function UsuariosPage() {
       key: 'rol',
       header: 'Rol',
       render: (u: User) => (
-        <Badge variant={u.rol === 'admin' ? 'danger' : u.rol === 'professor' ? 'info' : 'default'}>
-          {u.rol.replace('_', ' ')}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={u.rol === 'admin' ? 'danger' : u.rol === 'professor' ? 'info' : u.rol === 'reception' ? 'amber' : 'default'}>
+            {rolLabel[u.rol] || u.rol.replace('_', ' ')}
+          </Badge>
+          {u.rol === 'professor' && u.especialidad && (
+            <Badge variant="success">{tipoLabel[u.especialidad] || u.especialidad}</Badge>
+          )}
+        </div>
       ),
     },
     {
