@@ -7,6 +7,7 @@ import {
   Modal,
   Input,
   Select,
+  FilterDropdown,
 } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
@@ -48,8 +49,11 @@ export function ActividadesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
-  const [frecuenciaFilter, setFrecuenciaFilter] = useState<string>('all');
-  const [tipoFilter, setTipoFilter] = useState<string>('all');
+  const [filters, setFilters] = useState({
+    frecuencia: 'all',
+    tipo: 'all',
+    profesor: 'all',
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -92,8 +96,11 @@ export function ActividadesPage() {
   const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
 
   const filteredActividades = actividades.filter(a => {
-    if (frecuenciaFilter !== 'all' && a.frecuencia !== frecuenciaFilter) return false;
-    if (tipoFilter !== 'all' && a.tipo !== tipoFilter) return false;
+    if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
+    if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
+    if (filters.profesor === 'all') return true;
+    if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
+    if (a.profesorId !== filters.profesor) return false;
     return true;
   });
 
@@ -101,24 +108,38 @@ export function ActividadesPage() {
     <MainLayout title="Actividades">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <Select
-              value={frecuenciaFilter}
-              onChange={(e) => setFrecuenciaFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'Todas las frecuencias' },
-                ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
-              ]}
-            />
-            <Select
-              value={tipoFilter}
-              onChange={(e) => setTipoFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'Todas las especialidades' },
-                ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
-              ]}
-            />
-          </div>
+          <FilterDropdown
+            filters={[
+              {
+                key: 'frecuencia',
+                label: 'Frecuencia',
+                options: [
+                  { value: 'all', label: 'Todas las frecuencias' },
+                  ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
+                ],
+              },
+              {
+                key: 'tipo',
+                label: 'Especialidad',
+                options: [
+                  { value: 'all', label: 'Todas las especialidades' },
+                  ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+                ],
+              },
+              {
+                key: 'profesor',
+                label: 'Profesor',
+                options: [
+                  { value: 'all', label: 'Todos los profesores' },
+                  { value: 'unassigned', label: 'Sin asignar' },
+                  ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
+                ],
+              },
+            ]}
+            values={filters}
+            onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+            onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all' })}
+          />
           {hasRole(["admin"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
