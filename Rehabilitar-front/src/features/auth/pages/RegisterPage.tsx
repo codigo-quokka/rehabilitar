@@ -250,7 +250,7 @@ export function RegisterPage() {
               />
 
               <Input
-                label="Teléfono *"
+                label="Teléfono (opcional)"
                 type="tel"
                 name="telefono"
                 value={formData.telefono}
