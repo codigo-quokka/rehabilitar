@@ -1,7 +1,7 @@
 using Application.Auth;
 using Application.Auth.DTOs;
+using Application.Common.Interfaces;
 using Domain.Exceptions;
-// using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -11,10 +11,32 @@ namespace API.Controllers;
 public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IDocumentScannerService _documentScannerService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IDocumentScannerService documentScannerService)
     {
         _authService = authService;
+        _documentScannerService = documentScannerService;
+    }
+
+    [HttpPost("scan-dni")]
+    public async Task<IActionResult> ScanDni(IFormFile frontImage)
+    {
+        if (frontImage == null || frontImage.Length == 0)
+            return BadRequest(new { Error = "Por favor provea una imagen válida." });
+
+        var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(frontImage.FileName).ToLowerInvariant();
+        if (!validExtensions.Contains(ext))
+            return BadRequest(new { Error = "Formato de imagen no soportado." });
+
+        using var stream = frontImage.OpenReadStream();
+        var result = await _documentScannerService.ScanDniAsync(stream);
+        
+        if (result.IsValidId)
+            return Ok(result);
+            
+        return BadRequest(new { Error = result.ErrorMessage ?? "No se pudo leer el DNI." });
     }
 
     [HttpPost("register")]

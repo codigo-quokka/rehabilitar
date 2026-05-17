@@ -12,6 +12,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useNotifications } from "../../../hooks/useNotifications";
 import logo from "../../../assets/logo.png";
 import axios from "axios";
+import { DniScanner } from "../components/DniScanner";
 
 const passwordReqs: Requirement[] = [
   { label: "Al menos 6 caracteres", test: (v) => v.length >= 6 },
@@ -28,6 +29,7 @@ const dniReqs: Requirement[] = [
 ];
 
 export function RegisterPage() {
+  const [phase, setPhase] = useState<'scan' | 'form'>('scan');
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -120,6 +122,19 @@ export function RegisterPage() {
     const newValue =
       formData.dni.slice(0, start) + cleaned + formData.dni.slice(end);
     setFormData({ ...formData, dni: newValue.slice(0, MAX_DNI_LENGTH) });
+  };
+
+  const handleScanComplete = (data: any) => {
+    setFormData(prev => ({
+      ...prev,
+      firstName: data.firstName || prev.firstName,
+      lastName: data.lastName || prev.lastName,
+      dni: data.dniNumber || prev.dni,
+      fechaNacimiento: data.fechaNacimiento || prev.fechaNacimiento
+    }));
+    
+    addNotification("DNI leído exitosamente. Verificá que los datos sean correctos.", "success");
+    setPhase('form');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,134 +251,141 @@ export function RegisterPage() {
                 Crear cuenta
               </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Nombre"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="Juan"
-                    required
-                  />
-                  <Input
-                    label="Apellido"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Pérez"
-                    required
-                  />
-                </div>
-
-                <Input
-                  label="Email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="tu@email.com"
-                  required
+              {phase === 'scan' ? (
+                <DniScanner 
+                  onScanComplete={handleScanComplete} 
+                  onManualEntry={() => setPhase('form')} 
                 />
-
-                <Input
-                  label="Teléfono (opcional)"
-                  type="tel"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  placeholder="+54 221 123 4567"
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
-                      label="DNI"
-                      type="text"
-                      name="dni"
-                      value={formData.dni}
+                      label="Nombre"
+                      name="firstName"
+                      value={formData.firstName}
                       onChange={handleChange}
-                      onKeyDown={handleDniKeyDown}
-                      onPaste={handleDniPaste}
-                      placeholder="12345678"
-                      required
-                      minLength={MIN_DNI_LENGTH}
-                      maxLength={MAX_DNI_LENGTH}
-                    />
-                    <InformRequirements
-                      value={formData.dni}
-                      requirements={dniReqs}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      label="Fecha de nacimiento"
-                      type="date"
-                      name="fechaNacimiento"
-                      value={formData.fechaNacimiento}
-                      onChange={handleChange}
+                      placeholder="Juan"
                       required
                     />
-                    <InformRequirements
-                      value={formData.fechaNacimiento}
-                      requirements={edadReqs}
+                    <Input
+                      label="Apellido"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      placeholder="Pérez"
+                      required
                     />
                   </div>
-                </div>
 
-                <div className="relative">
                   <Input
-                    label="Contraseña"
-                    type={showPassword ? "text" : "password"}
-                    name="password"
+                    label="Email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="tu@email.com"
+                    required
+                  />
+
+                  <Input
+                    label="Teléfono (opcional)"
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleChange}
+                    placeholder="+54 221 123 4567"
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Input
+                        label="DNI"
+                        type="text"
+                        name="dni"
+                        value={formData.dni}
+                        onChange={handleChange}
+                        onKeyDown={handleDniKeyDown}
+                        onPaste={handleDniPaste}
+                        placeholder="12345678"
+                        required
+                        minLength={MIN_DNI_LENGTH}
+                        maxLength={MAX_DNI_LENGTH}
+                      />
+                      <InformRequirements
+                        value={formData.dni}
+                        requirements={dniReqs}
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        label="Fecha de nacimiento"
+                        type="date"
+                        name="fechaNacimiento"
+                        value={formData.fechaNacimiento}
+                        onChange={handleChange}
+                        required
+                      />
+                      <InformRequirements
+                        value={formData.fechaNacimiento}
+                        requirements={edadReqs}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Input
+                      label="Contraseña"
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      minLength={MIN_PASSWORD_LENGTH}
+                      className="pr-16"
+                    />
+                    <PrivacyEye
+                      show={showPassword}
+                      onToggle={() => setShowPassword((prev) => !prev)}
+                    />
+                  </div>
+                  <InformRequirements
                     value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    className="pr-16"
+                    requirements={passwordReqs}
                   />
-                  <PrivacyEye
-                    show={showPassword}
-                    onToggle={() => setShowPassword((prev) => !prev)}
-                  />
-                </div>
-                <InformRequirements
-                  value={formData.password}
-                  requirements={passwordReqs}
-                />
 
-                <div className="relative">
-                  <Input
-                    label="Confirmar contraseña"
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
+                  <div className="relative">
+                    <Input
+                      label="Confirmar contraseña"
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      className="pr-16"
+                    />
+                    <PrivacyEye
+                      show={showConfirmPassword}
+                      onToggle={() => setShowConfirmPassword((prev) => !prev)}
+                    />
+                  </div>
+
+                  <InformRequirements
                     value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                    className="pr-16"
+                    requirements={confirmPasswordReqs}
                   />
-                  <PrivacyEye
-                    show={showConfirmPassword}
-                    onToggle={() => setShowConfirmPassword((prev) => !prev)}
-                  />
-                </div>
 
-                <InformRequirements
-                  value={formData.confirmPassword}
-                  requirements={confirmPasswordReqs}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full py-3 text-base"
-                  loading={loading}
-                  disabled={loading}
-                >
-                  Crear cuenta
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    className="w-full py-3 text-base"
+                    loading={loading}
+                    disabled={loading}
+                  >
+                    Crear cuenta
+                  </Button>
+                </form>
+              )}
 
               <div className="mt-8 pt-6 border-t border-border text-center">
                 <p>
