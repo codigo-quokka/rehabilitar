@@ -6,6 +6,7 @@ using Application.Common.Interfaces;
 using Domain.Reservas;
 using Domain.Actividades;
 using Domain.Exceptions;
+using Domain.Enums;
 
 namespace Application.Reservas;
 
