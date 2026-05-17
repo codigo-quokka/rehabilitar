@@ -10,6 +10,15 @@ export const authApi = {
     return response.data;
   },
 
+  scanDni: async (file: File) => {
+    const formData = new FormData();
+    formData.append('frontImage', file);
+    const response = await apiClient.post('/auth/scan-dni', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
   register: async (data: RegisterData) => {
     const response = await apiClient.post('/auth/register', {
       firstName: data.firstName,
