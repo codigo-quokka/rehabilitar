@@ -292,7 +292,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
-    rol: user?.rol || 'Cliente Registrado',
+    rol: user?.rol || 'Administrador',
     especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
@@ -317,7 +317,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
+  const roles: Role[] = ['Administrador', 'Recepción', 'Profesor'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
