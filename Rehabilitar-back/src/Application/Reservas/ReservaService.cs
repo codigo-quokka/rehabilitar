@@ -3,7 +3,6 @@ using ErrorOr;
 using Application.Actividades;
 using Application.Clientes;
 using Application.Common.Interfaces;
-using Domain.Enums;
 using Domain.Reservas;
 using Domain.Actividades;
 using Domain.Exceptions;
@@ -119,6 +118,16 @@ public class ReservaService : IReservaService
             }
         }
         return Error.Failure();
+    }
+
+    public async Task<ErrorOr<ReservaDTO>> ObtenerReservaPorId(Guid id, CancellationToken ct = default)
+    {
+        var reserva = await _reservaRepo.GetByIdAsync(id, ct);
+
+        if (reserva == null)
+            return Error.NotFound("Reserva no encontrada");
+
+        return MapToReservaDTO(reserva);
     }
 
     public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)

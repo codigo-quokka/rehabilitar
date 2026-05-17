@@ -39,6 +39,17 @@ public class ReservasController : ApiControllerBase
         return BadRequest("Debe especificar usuarioId o actividadId en la consulta.");
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    {
+        var result = await _reservaService.ObtenerReservaPorId(id, ct);
+
+        return result.Match(
+            reserva => Ok(reserva),
+            errores => Problem(errores)
+        );
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ReservarActividadRequest request, CancellationToken ct)
     {
