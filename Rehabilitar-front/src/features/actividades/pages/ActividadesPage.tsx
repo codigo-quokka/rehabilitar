@@ -255,31 +255,33 @@ export function ActividadesPage() {
                 {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
               </button>
             </div>
-            {!filterOpen && (
+            <div className={filterOpen ? 'invisible' : ''}>
               <Input
                 placeholder="Buscar por nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="min-w-125 h-12"
               />
+            </div>
+          </div>
+          <div className={filterOpen ? 'invisible' : ''}>
+            {hasRole(["Administrador"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Nueva Actividad
+              </Button>
+            )}
+            {hasRole(["Profesor"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Proponer Actividad
+              </Button>
             )}
           </div>
-          {!filterOpen && hasRole(["Administrador"]) && (
-            <Button
-              className="px-6 py-3 justify-center whitespace-nowrap h-12"
-              onClick={() => setShowModal(true)}
-            >
-              Nueva Actividad
-            </Button>
-          )}
-          {!filterOpen && hasRole(["Profesor"]) && (
-            <Button
-              className="px-6 py-3 justify-center whitespace-nowrap h-12"
-              onClick={() => setShowModal(true)}
-            >
-              Proponer Actividad
-            </Button>
-          )}
         </div>
 
         {loading ? (
