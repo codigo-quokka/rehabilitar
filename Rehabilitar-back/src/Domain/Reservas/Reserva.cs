@@ -32,7 +32,12 @@ public class Reserva
         TipoCliente = tipoCliente;
     }
 
-    public void CancelarReserva()
+    public void Confirmar(EstadoDeReserva nuevoEstado)
+    {
+        EstadoDeReserva = nuevoEstado;
+    }
+
+    public void Cancelar()
     {
         if (EstadoDeReserva == EstadoDeReserva.Cancelada)
             throw new InvalidOperationException("La reserva ya está cancelada.");
@@ -41,7 +46,7 @@ public class Reserva
 
     public void CancelarReservaPorActividadCancelada()
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //hay que darle RehabiliCoins a los clientes (implementar rehabilicoins)
     }
 
     // public void ReactivarReserva()
