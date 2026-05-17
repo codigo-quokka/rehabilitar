@@ -16,4 +16,12 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
         .AsNoTracking() // con tracking o sin tracking? si necesito las reservas de un cliente probablemente ese cliente deba poder modificarlas, entonces sería sin tracking. Si se modifican así lo cambio.
         .ToListAsync();
     }
+
+    public async Task<IEnumerable<Reserva>> GetReservasDeActividadPorIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Reservas
+        .Where(r => r.ActividadId == id)
+        .AsNoTracking()
+        .ToListAsync();
+    }
 }
