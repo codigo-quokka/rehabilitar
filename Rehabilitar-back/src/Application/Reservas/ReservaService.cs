@@ -3,7 +3,6 @@ using ErrorOr;
 using Application.Actividades;
 using Application.Clientes;
 using Application.Common.Interfaces;
-using Domain.Enums;
 using Domain.Reservas;
 using Domain.Actividades;
 using Domain.Exceptions;
@@ -12,18 +11,21 @@ namespace Application.Reservas;
 
 public class ReservaService : IReservaService
 {
+    private readonly IReservaRepository _reservaRepo;
     private readonly IActividadRepository _actividadRepo;
     private readonly IClienteRepository _clienteRepo;
     private readonly IUnitOfWork _uow;
 
-    public ReservaService(IActividadRepository actividadRepo, IClienteRepository clienteRepo, IUnitOfWork uow)
+    public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
+                        IClienteRepository clienteRepo, IUnitOfWork uow)
     {
+        _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
         _clienteRepo = clienteRepo;
         _uow = uow;
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(Guid actividadId, Guid clienteId, TipoCliente tipoCliente,  CancellationToken ct)
+    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
     {
         int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
         int delayPerRetry = 100; // Milisegundos opcionales
@@ -32,13 +34,13 @@ public class ReservaService : IReservaService
         {
             try
             {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
                 if (cliente == null) return Error.NotFound("Cliente no encontrado");
 
-                Reserva reserva = actividad.IniciarReserva(cliente, tipoCliente);
+                Reserva reserva = actividad.IniciarReserva(cliente, request.TipoCliente);
                 //  metodo redirigirAPago. cuando sale ya se tine info del pago
                 //ConfirmarReserva
                 //si el cliente tiene creditos va a agregar reserva con el pago al 100. sino tendría que ir a iniciar reserva
@@ -65,34 +67,82 @@ public class ReservaService : IReservaService
         return Error.NotFound("Error inesperado al procesar la reserva.");
     }
 
-    public async void ReservarActividadesRecurrentes(ICollection<Actividad> actividades, Guid clienteId, TipoCliente tipoCliente, CancellationToken ct)
+    public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
-        foreach (Actividad a in actividades)
+        foreach (Actividad a in request.Actividades)
         {
-            await ReservarActividadAsync(a.Id, clienteId, tipoCliente, ct);
+            ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
+                a.Id, 
+                request.ClienteId,
+                request.TipoCliente
+            );
+            await ReservarActividadAsync(nuevaReserva, ct);
         }
+        return Result.Success;
     }
 
-    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
+    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, decimal monto, CancellationToken ct = default)
     {
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
         for (int i = 0; i < 3; i++) {
             try {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
-                actividad.ConfirmarReserva(reservaId); // Lógica de dominio
+                
+                actividad.ProcesarPagoReserva(reservaId, monto); // Lógica de dominio actualizada
                 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
-               return Result.Success;
-           } catch (ConcurrencyException) {
-               if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
-               await Task.Delay(new Random().Next(10, 100)); // Espera aleatoria
-           }
-       }
-       return Error.Failure();
-   }
+                return Result.Success;
+            } catch (ConcurrencyException) {
+                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                await Task.Delay(new Random().Next(10, 100), ct); // Espera aleatoria
+            }
+        }
+        return Error.Failure();
+    }
 
-    private ErrorOr<ReservaDTO> MapToReservaDTO(Reserva reserva, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> CancelarReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct = default)
+    {
+        for (int i = 0; i < 3; i++) {
+            try {
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+                if (actividad == null) return Error.NotFound("Actividad no encontrada");
+                
+                actividad.CancelarReserva(reservaId); // Lógica de dominio
+                
+                await _uow.SaveChangesAsync(ct);
+                return Result.Deleted;
+            } catch (ConcurrencyException) {
+                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                await Task.Delay(new Random().Next(10, 100), ct);
+            }
+        }
+        return Error.Failure();
+    }
+
+    public async Task<ErrorOr<ReservaDTO>> ObtenerReservaPorId(Guid id, CancellationToken ct = default)
+    {
+        var reserva = await _reservaRepo.GetByIdAsync(id, ct);
+
+        if (reserva == null)
+            return Error.NotFound("Reserva no encontrada");
+
+        return MapToReservaDTO(reserva);
+    }
+
+    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
+    {
+        var reservas = await _reservaRepo.GetReservasDeClientePorIdAsync(id, ct);
+        return reservas.Select(MapToReservaDTO).ToList();
+    }
+
+    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default)
+    {
+        var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(id, ct);
+        return reservas.Select(MapToReservaDTO).ToList();
+    }
+
+    private static ReservaDTO MapToReservaDTO(Reserva reserva)
     {
         return new ReservaDTO(
             reserva.Id,

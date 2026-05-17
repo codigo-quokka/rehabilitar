@@ -4,6 +4,7 @@ using Application.Salas;
 using Application.Seeding;
 using Application.Usuarios;
 using Application.Actividades;
+using Application.Reservas;
 using Domain;
 using Infrastructure.Email;
 using Infrastructure.Auth;
@@ -91,6 +92,7 @@ public static class DependencyInjection
         services.AddScoped<IProfesorRepository, ProfesorRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IReservaRepository, ReservaRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
 
         return services;

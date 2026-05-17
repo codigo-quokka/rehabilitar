@@ -61,6 +61,13 @@ public class Reserva
         if (DetallePago.MontoPendiente < monto)
             throw new InvalidOperationException("El monto a pagar excede el monto pendiente.");
         DetallePago = DetallePago.RegistrarPago(monto);
+
+        // REGLA DE NEGOCIO: Si se cubre al menos el 50%, la reserva intenta pasar a Activa
+        decimal señaRequerida = DetallePago.MontoTotal / 2;
+        if (DetallePago.MontoPagado >= señaRequerida && EstadoDeReserva == EstadoDeReserva.PendienteDePago)
+        {
+            Confirmar(EstadoDeReserva.Activa);
+        }
     }
 
     internal void PromoverAActiva()

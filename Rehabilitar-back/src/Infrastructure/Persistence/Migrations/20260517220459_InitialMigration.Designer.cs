@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RehabilitarDbContext))]
-    [Migration("20260511051349_initial")]
-    partial class initial
+    [Migration("20260517220459_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,7 +26,13 @@ namespace Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("CupoEsperaOcupado")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("CupoMaximo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CupoOcupado")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Descripcion")
@@ -60,6 +66,10 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Tipo")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -120,6 +130,12 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("EstadoDeReserva")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TipoCliente")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ActividadId");
@@ -156,7 +172,7 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Roles", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Sala", b =>
+            modelBuilder.Entity("Domain.Salas.Sala", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -176,6 +192,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
 
                     b.ToTable("Salas", (string)null);
                 });
@@ -359,7 +378,7 @@ namespace Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProfesorId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Domain.Sala", "Sala")
+                    b.HasOne("Domain.Salas.Sala", "Sala")
                         .WithMany("Actividades")
                         .HasForeignKey("SalaId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -496,7 +515,7 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("ActividadesAsignadas");
                 });
 
-            modelBuilder.Entity("Domain.Sala", b =>
+            modelBuilder.Entity("Domain.Salas.Sala", b =>
                 {
                     b.Navigation("Actividades");
                 });

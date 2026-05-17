@@ -22,9 +22,10 @@ public class ActividadesController : ApiControllerBase
         [FromQuery] TipoEspecialidad? tipo,
         [FromQuery] FrecuenciaActividad? frecuencia,
         [FromQuery] EstadoActividad? estado,
+        [FromQuery] Guid? profesorId,
         CancellationToken ct)
     {
-        var result = await _actividadService.ListarActividades(tipo, frecuencia, estado, ct);
+        var result = await _actividadService.ListarActividades(tipo, frecuencia, estado, profesorId, ct);
         return result.Match(
             actividades => Ok(actividades),
             errores => Problem(errores)

@@ -19,6 +19,7 @@ public interface IActividadService
         TipoEspecialidad? tipo = null,
         FrecuenciaActividad? frecuencia = null,
         EstadoActividad? estado = null,
+        Guid? profesorId = null,
         CancellationToken ct = default);
     
     Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
