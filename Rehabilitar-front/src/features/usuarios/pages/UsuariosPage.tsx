@@ -215,16 +215,18 @@ export function UsuariosPage() {
               onApply={() => setFilters({ rol: 'all', estado: 'all' })}
               onOpenChange={setFilterOpen}
             />
-            {!filterOpen && (
+            <div className={filterOpen ? 'invisible' : ''}>
               <Input
                 placeholder="Buscar por nombre o email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="min-w-125"
               />
-            )}
+            </div>
           </div>
-          {!filterOpen && !isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
+          <div className={filterOpen ? 'invisible' : ''}>
+            {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
+          </div>
         </div>
 
         {loading ? (
