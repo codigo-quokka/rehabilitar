@@ -68,6 +68,20 @@ public class ReservaService : IReservaService
         return Error.NotFound("Error inesperado al procesar la reserva.");
     }
 
+    public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct)
+    {
+        foreach (Actividad a in request.Actividades)
+        {
+            ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
+                a.Id, 
+                request.ClienteId,
+                request.TipoCliente
+            );
+            await ReservarActividadAsync(nuevaReserva, ct);
+        }
+        return Result.Success;
+    }
+
     public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
     {
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
