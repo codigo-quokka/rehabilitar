@@ -60,7 +60,7 @@ export function DashboardPage() {
             <h1 className="text-3xl font-bold text-dark dark:text-gray-100">
               ¡Bienvenido, {user?.nombre}!
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">Aquí está el resumen de tu día</p>
+            <p className="text-dark dark:text-gray-400 mt-1 text-lg">Aquí está el resumen de tu día</p>
           </div>
         </div>
 
