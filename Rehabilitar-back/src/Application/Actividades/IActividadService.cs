@@ -19,8 +19,5 @@ public interface IActividadService
         EstadoActividad? estado = null,
         CancellationToken ct = default);
     
-    // Task<ErrorOr<ActividadResponse>> CambiarEstadoActividad(Guid id, EstadoActividad nuevoEstado, CancellationToken ct = default);
-    // Task<ErrorOr<ActividadResponse>> CambiarFechaYHoraActividad(Guid id, DateTime nuevaFechaYHora, CancellationToken ct = default);
-    // Task<ErrorOr<ActividadResponse>> CambiarSalaActividad(Guid id, Guid nuevaSalaId, CancellationToken ct = default);
-    // Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, Guid profesorId, CancellationToken ct = default);
+    Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
 }

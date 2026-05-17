@@ -112,7 +112,7 @@ public class Actividad
 		SerieId = serieId;
 	}
 
-	private void AsignarProfesor(Guid profesorId)
+	public void AsignarProfesor(Guid profesorId)
 	{
 		ProfesorId = profesorId;
 	}

@@ -36,4 +36,9 @@ export const actividadesApi = {
     const response = await apiClient.get('/actividades/profesor', { params: { profesorId } });
     return response.data;
   },
+
+  asignarProfesor: async (id: string, profesorId: string) => {
+    const response = await apiClient.put(`/actividades/${id}/asignar-profesor`, { profesorId });
+    return response.data;
+  },
 };

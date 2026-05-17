@@ -314,6 +314,22 @@ export function ActividadesPage() {
                     Modificar
                   </Button>
                 )}
+                {hasRole(["professor"]) && act.estado === 'Propuesta' && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
+                  <Button
+                    variant="outline"
+                    className="w-full mt-auto"
+                    onClick={async () => {
+                      try {
+                        await actividadesApi.asignarProfesor(act.id, user!.id);
+                        fetchData();
+                      } catch (err) {
+                        console.error('Error al tomar la actividad', err);
+                      }
+                    }}
+                  >
+                    Tomar actividad
+                  </Button>
+                )}
               </Card>
             ))}
           </div>
