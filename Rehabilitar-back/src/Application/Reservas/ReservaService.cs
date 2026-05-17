@@ -69,6 +69,8 @@ public class ReservaService : IReservaService
 
     public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
+        if (request.Actividades.Count() < 4 && request.TipoCliente == TipoCliente.Abonado)
+            return Error.Validation("se debe tener mas de 4 actividades para reservar como abonado");
         foreach (Actividad a in request.Actividades)
         {
             ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
