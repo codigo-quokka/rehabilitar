@@ -9,13 +9,12 @@ using Application.Reservas.DTOs;
 using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Application.Actividades;
 
-
 public class ActividadService : IActividadService
 {
+    const decimal MONTO = 1000;
     public readonly IActividadRepository _actividadRepo;
     public readonly ISalaRepository _salaRepo;
     public readonly IProfesorRepository _profesorRepo;
@@ -42,7 +41,7 @@ public class ActividadService : IActividadService
         if (validacion.IsError)
             return validacion.Errors;
         
-        Actividad actividad = Actividad.Create(request.Nombre, request.Descripcion, request.Tipo, request.Frecuencia, request.Estado, request.FechaYHora, request.CupoMaximo, request.SalaId, request.ProfesorId, request.SerieId );
+        Actividad actividad = Actividad.Create(request.Nombre, request.Descripcion, request.Tipo, request.Frecuencia, request.Estado, request.FechaYHora, request.CupoMaximo, MONTO, request.SalaId, request.ProfesorId, request.SerieId);
         
         _actividadRepo.Add(actividad);
         await _uow.SaveChangesAsync(ct);
@@ -76,6 +75,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.Estado,
             f,
             request.ActividadBase.CupoMaximo,
+            MONTO,
             request.ActividadBase.SalaId,
             request.ActividadBase.ProfesorId,
             serieId)).ToList();
@@ -121,6 +121,7 @@ public class ActividadService : IActividadService
                 request.ActividadBase.Estado,
                 nuevaFecha,
                 request.ActividadBase.CupoMaximo,
+                MONTO,
                 request.ActividadBase.SalaId,
                 request.ActividadBase.ProfesorId,
                 act.SerieId);
@@ -151,9 +152,10 @@ public class ActividadService : IActividadService
             request.Estado,
             request.FechaYHora,
             request.CupoMaximo,
+            MONTO,
             request.SalaId,
             request.ProfesorId,
-            request.SerieId
+            request.SerieId 
         );
 
         actividad.ModificarActividad(actividadEditada);
@@ -194,58 +196,7 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad, ct);
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(Guid actividadId, Guid clienteId, CancellationToken ct)
-    {
-        int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
-        int delayPerRetry = 100; // Milisegundos opcionales
-
-        for (int i = 0; i < maxRetries; i++)
-        {
-            try
-            {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
-                if (actividad == null) return Error.NotFound("Actividad no encontrada");
-
-                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
-                if (cliente == null) return Error.NotFound("Cliente no encontrado");
-
-                var reserva = actividad.AgregarReserva(cliente, new DetallePago(actividad.Precio,));
-
-                // Aquí es donde EF Core comparará el 'Version' (Concurrency Token)
-                await _uow.SaveChangesAsync(ct);
-
-                return MapToReservaDTO(reserva);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // ¡CONFLICTO DETECTADO!
-                if (i == maxRetries - 1)
-                    throw new ApplicationException("El sistema está muy ocupado. Por favor, intenta de nuevo en unos segundos.");
-
-                // Esperar un momento aleatorio (jitter) ayuda a reducir colisiones en el reintento
-                await Task.Delay(new Random().Next(10, delayPerRetry), ct);
-
-                // En el próximo loop, 'ObtenerPorIdAsync' traerá la versión actualizada de la DB
-            }
-        }
-
-        throw new ApplicationException("Error inesperado al procesar la reserva.");
-    }
-
-    private ErrorOr<ReservaDTO> MapToReservaDTO(Reserva reserva, CancellationToken ct = default)
-    {
-        return new ReservaDTO(
-            reserva.Id,
-            reserva.ClienteId,
-            reserva.ActividadId,
-            reserva.FechaReserva,
-            reserva.TipoCliente,
-            reserva.EstadoDeReserva,
-            reserva.DetallePago.MontoTotal,
-            reserva.DetallePago.MontoPendiente
-        );
-    }
-
+    
     private async Task<ErrorOr<ActividadResponse>> MapToDto(Actividad actividad, CancellationToken ct = default)
     {
         string nombreSala = await _salaRepo.GetByIdAsync(actividad.SalaId, ct) is Sala sala ? sala.Nombre : "Sala no encontrada";
