@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MainLayout } from "../../../components/layout";
 import {
   Card,
@@ -59,6 +59,11 @@ export function ActividadesPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [dateFilterApplied, setDateFilterApplied] = useState(false);
+  const dateFromRef = useRef<HTMLInputElement>(null);
+  const dateToRef = useRef<HTMLInputElement>(null);
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
@@ -106,6 +111,11 @@ export function ActividadesPage() {
 
   const filteredActividades = actividades.filter(a => {
     if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (dateFilterApplied) {
+      const actDate = new Date(a.fechaYHora);
+      if (dateFrom && actDate < new Date(dateFrom)) return false;
+      if (dateTo && actDate > new Date(dateTo + 'T23:59:59')) return false;
+    }
     if (hasRole(['Cliente Registrado']) && a.estado !== 'Aprobada') return false;
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
@@ -175,31 +185,103 @@ export function ActividadesPage() {
               onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
               onOpenChange={setFilterOpen}
             />
-            {!filterOpen && (
+            <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
+              <div className="flex items-center gap-1 w-[90px]">
+                <button
+                  type="button"
+                  onClick={() => dateFromRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateFrom ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateFrom.split('-')[0]}</span>
+                      <span className="block">{dateFrom.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Desde</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateFromRef}
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <div className="flex items-center gap-1 w-[90px]">
+                <button
+                  type="button"
+                  onClick={() => dateToRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateTo ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateTo.split('-')[0]}</span>
+                      <span className="block">{dateTo.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Hasta</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateToRef}
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (dateFilterApplied) {
+                    setDateFrom('');
+                    setDateTo('');
+                    setDateFilterApplied(false);
+                  } else {
+                    setDateFilterApplied(true);
+                  }
+                }}
+                disabled={!dateFilterApplied && !dateFrom && !dateTo}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-[76px]"
+              >
+                {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
+              </button>
+            </div>
+            <div className={filterOpen ? 'invisible' : ''}>
               <Input
                 placeholder="Buscar por nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125"
+                className="min-w-125 h-12"
               />
+            </div>
+          </div>
+          <div className={filterOpen ? 'invisible' : ''}>
+            {hasRole(["Administrador"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Nueva Actividad
+              </Button>
+            )}
+            {hasRole(["Profesor"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Proponer Actividad
+              </Button>
             )}
           </div>
-          {!filterOpen && hasRole(["Administrador"]) && (
-            <Button
-              className="px-6 py-3 justify-center whitespace-nowrap"
-              onClick={() => setShowModal(true)}
-            >
-              Nueva Actividad
-            </Button>
-          )}
-          {!filterOpen && hasRole(["Profesor"]) && (
-            <Button
-              className="px-6 py-3 justify-center whitespace-nowrap"
-              onClick={() => setShowModal(true)}
-            >
-              Proponer Actividad
-            </Button>
-          )}
         </div>
 
         {loading ? (
