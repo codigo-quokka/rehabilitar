@@ -3,7 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button, Input, Card } from "../../../components/ui";
 import { PrivacyEye } from "../../../components/PrivacyEye";
 import { Notitoast } from "../../../components/Notitoast";
-import { InformRequirements, type Requirement } from "../../../components/InformRequirements";
+import {
+  InformRequirements,
+  type Requirement,
+} from "../../../components/InformRequirements";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
 import { useNotifications } from "../../../hooks/useNotifications";
@@ -14,7 +17,10 @@ const passwordReqs: Requirement[] = [
   { label: "Al menos 6 caracteres", test: (v) => v.length >= 6 },
   { label: "Al menos una minúscula", test: (v) => /[a-z]/.test(v) },
   { label: "Al menos un número", test: (v) => /[0-9]/.test(v) },
-  { label: "Al menos un carácter especial", test: (v) => /[^a-zA-Z0-9]/.test(v) },
+  {
+    label: "Al menos un carácter especial",
+    test: (v) => /[^a-zA-Z0-9]/.test(v),
+  },
 ];
 
 const dniReqs: Requirement[] = [
@@ -42,18 +48,21 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
-  const MIN_PASSWORD_LENGTH = 8;
+  const MIN_PASSWORD_LENGTH = 6;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
   const handleCloseToast = useCallback(() => setShowToast(false), []);
 
-  const confirmPasswordReqs = useMemo<Requirement[]>(() => [
-    {
-      label: "Las contraseñas coinciden",
-      test: (v) => v.length > 0 && v === formData.password,
-    },
-  ], [formData.password]);
+  const confirmPasswordReqs = useMemo<Requirement[]>(
+    () => [
+      {
+        label: "Las contraseñas coinciden",
+        test: (v) => v.length > 0 && v === formData.password,
+      },
+    ],
+    [formData.password],
+  );
 
   const edadReqs: Requirement[] = [
     {
@@ -65,15 +74,14 @@ export function RegisterPage() {
         const age = today.getFullYear() - birth.getFullYear();
         const hasBirthdayPassed =
           today.getMonth() > birth.getMonth() ||
-          (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+          (today.getMonth() === birth.getMonth() &&
+            today.getDate() >= birth.getDate());
         return age > 18 || (age === 18 && hasBirthdayPassed);
       },
     },
   ];
 
-  
   useEffect(() => {
-    
     if (isAuthenticated) {
       navigate("/dashboard", { replace: true });
       return;
@@ -84,7 +92,7 @@ export function RegisterPage() {
         if (toastType === "success") {
           navigate("/login");
         }
-      }, 1500);
+      }, 4300);
       return () => clearTimeout(timer);
     }
     return undefined;
@@ -104,12 +112,13 @@ export function RegisterPage() {
 
   const handleDniPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const cleaned = e.clipboardData.getData('text').replace(/\D/g, '');
+    const cleaned = e.clipboardData.getData("text").replace(/\D/g, "");
     if (!cleaned) return;
     const input = e.currentTarget;
     const start = input.selectionStart ?? formData.dni.length;
     const end = input.selectionEnd ?? formData.dni.length;
-    const newValue = formData.dni.slice(0, start) + cleaned + formData.dni.slice(end);
+    const newValue =
+      formData.dni.slice(0, start) + cleaned + formData.dni.slice(end);
     setFormData({ ...formData, dni: newValue.slice(0, MAX_DNI_LENGTH) });
   };
 
@@ -119,7 +128,8 @@ export function RegisterPage() {
     setShowToast(false);
 
     if (formData.password !== formData.confirmPassword) {
-      const msg = "Las contraseñas no coinciden. Por favor, ingrésalas de nuevo.";
+      const msg =
+        "Las contraseñas no coinciden. Por favor, ingrésalas de nuevo.";
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
@@ -146,12 +156,15 @@ export function RegisterPage() {
     }
 
     if (formData.fechaNacimiento) {
-      const [y, m, d] = formData.fechaNacimiento.split('-').map(Number);
+      const [y, m, d] = formData.fechaNacimiento.split("-").map(Number);
       const today = new Date();
       const birthDate = new Date(y, m - 1, d);
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
         age--;
       }
       if (age < 18) {
@@ -176,7 +189,8 @@ export function RegisterPage() {
         fechaNacimiento: formData.fechaNacimiento,
         telefono: formData.telefono || undefined,
       });
-      const msg = "Cuenta creada correctamente. Redirigiendo...";
+      const msg =
+        "¡Éxito! Revisa tu correo para poder inciar sesión por primera vez. \nRedirigiendo...";
       setToastType("success");
       setToastMessage(msg);
       setShowToast(true);
@@ -208,7 +222,9 @@ export function RegisterPage() {
               alt="RehabilitAR"
               className="w-24 h-auto mx-auto mb-4"
             />
-            <h1 className="text-4xl font-bold text-dark dark:text-gray-100">RehabilitAR</h1>
+            <h1 className="text-4xl font-bold text-dark dark:text-gray-100">
+              RehabilitAR
+            </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">
               Centro de Rehabilitación
             </p>
@@ -251,7 +267,7 @@ export function RegisterPage() {
                 />
 
                 <Input
-                  label="Teléfono *"
+                  label="Teléfono (opcional)"
                   type="tel"
                   name="telefono"
                   value={formData.telefono}
@@ -274,7 +290,10 @@ export function RegisterPage() {
                       minLength={MIN_DNI_LENGTH}
                       maxLength={MAX_DNI_LENGTH}
                     />
-                    <InformRequirements value={formData.dni} requirements={dniReqs} />
+                    <InformRequirements
+                      value={formData.dni}
+                      requirements={dniReqs}
+                    />
                   </div>
                   <div>
                     <Input
@@ -285,7 +304,10 @@ export function RegisterPage() {
                       onChange={handleChange}
                       required
                     />
-                    <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
+                    <InformRequirements
+                      value={formData.fechaNacimiento}
+                      requirements={edadReqs}
+                    />
                   </div>
                 </div>
 
@@ -301,8 +323,15 @@ export function RegisterPage() {
                     minLength={MIN_PASSWORD_LENGTH}
                     className="pr-16"
                   />
-                  <PrivacyEye show={showPassword} onToggle={() => setShowPassword(prev => !prev)} />
+                  <PrivacyEye
+                    show={showPassword}
+                    onToggle={() => setShowPassword((prev) => !prev)}
+                  />
                 </div>
+                <InformRequirements
+                  value={formData.password}
+                  requirements={passwordReqs}
+                />
 
                 <div className="relative">
                   <Input
@@ -315,17 +344,15 @@ export function RegisterPage() {
                     required
                     className="pr-16"
                   />
-                  <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
+                  <PrivacyEye
+                    show={showConfirmPassword}
+                    onToggle={() => setShowConfirmPassword((prev) => !prev)}
+                  />
                 </div>
 
                 <InformRequirements
                   value={formData.confirmPassword}
                   requirements={confirmPasswordReqs}
-                />
-
-                <InformRequirements
-                  value={formData.password}
-                  requirements={passwordReqs}
                 />
 
                 <Button
@@ -338,12 +365,12 @@ export function RegisterPage() {
                 </Button>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
+              <div className="mt-8 pt-6 border-t border-border text-center">
                 <p>
                   <span className="text-gray-500">¿Ya tienes cuenta? </span>
                   <Link
                     to="/login"
-                    className="inline text-black dark:text-gray-100 hover:underline font-medium cursor-pointer"
+                    className="inline text-black hover:underline font-medium cursor-pointer"
                   >
                     Iniciar sesión
                   </Link>

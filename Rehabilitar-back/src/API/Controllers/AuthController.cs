@@ -1,13 +1,14 @@
 using Application.Auth;
 using Application.Auth.DTOs;
 using Domain.Exceptions;
+// using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
 
@@ -96,12 +97,39 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("resend-verification-email")]
-    public async Task<IActionResult> ResendVerificationEmail([FromBody]ResendVerificationEmailRequest request)
+    public async Task<IActionResult> ResendVerificationEmail([FromBody]EmailRequest request)
     {
         var result = await _authService.ResendVerificationEmailAsync(request);
         if (result)
             return Ok(new { Message = "Correo de verificación reenviado exitosamente." });
 
         return BadRequest(new { Error = "Usuario no existente o ya verificado."});
+    }
+
+    [HttpPost("recover")]
+    public async Task<IActionResult> SendResetPasswordEmail([FromBody]EmailRequest request)
+    {
+        var result = await _authService.SendResetPasswordEmailAsync(request);
+
+        return result.Match(
+            Success => Ok(),
+            errors => Problem(errors)
+        );
+    }
+
+    [HttpPost("reset")]
+    public async Task<IActionResult> ResetPassword([FromBody]ResetPasswordRequest request)
+    {
+        var result = await _authService.ResetPasswordAsync(request);
+        // if (result)
+        //     return Ok(new { Message = "Correo de verificación reenviado exitosamente." });
+
+        // return BadRequest(new { Error = "Usuario no existente o ya verificado." });
+
+        return result.Match(
+            Success => Ok(),
+            errors => Problem(errors)
+        );
+
     }
 }
