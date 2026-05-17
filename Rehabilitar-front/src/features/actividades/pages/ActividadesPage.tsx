@@ -186,7 +186,7 @@ export function ActividadesPage() {
               onOpenChange={setFilterOpen}
             />
             <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
-              <div className="flex items-center gap-1 w-[90px]">
+              <div className="flex items-center gap-1 w-22.5">
                 <button
                   type="button"
                   onClick={() => dateFromRef.current?.showPicker()}
@@ -212,7 +212,7 @@ export function ActividadesPage() {
                   className="sr-only"
                 />
               </div>
-              <div className="flex items-center gap-1 w-[90px]">
+              <div className="flex items-center gap-1 w-22.5">
                 <button
                   type="button"
                   onClick={() => dateToRef.current?.showPicker()}
@@ -250,7 +250,7 @@ export function ActividadesPage() {
                   }
                 }}
                 disabled={!dateFilterApplied && !dateFrom && !dateTo}
-                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-[76px]"
+                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-19"
               >
                 {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
               </button>

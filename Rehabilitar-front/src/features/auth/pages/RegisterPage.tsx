@@ -56,6 +56,8 @@ export function RegisterPage() {
 
   const handleCloseToast = useCallback(() => setShowToast(false), []);
 
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+
   const confirmPasswordReqs = useMemo<Requirement[]>(
     () => [
       {
@@ -328,6 +330,8 @@ export function RegisterPage() {
                         name="fechaNacimiento"
                         value={formData.fechaNacimiento}
                         onChange={handleChange}
+                        min="1900-01-01"
+                        max={todayStr}
                         required
                       />
                       <InformRequirements
