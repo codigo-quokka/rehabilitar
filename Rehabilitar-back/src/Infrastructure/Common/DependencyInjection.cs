@@ -39,11 +39,11 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedEmail = true;
 
             // config password: de momento contraseña simple para poder testear 
-            options.Password.RequiredLength = 6;
-            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireDigit = true;
             options.Password.RequiredUniqueChars = 0;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequireUppercase = true;
         })
         .AddEntityFrameworkStores<RehabilitarDbContext>()
         .AddDefaultTokenProviders();
