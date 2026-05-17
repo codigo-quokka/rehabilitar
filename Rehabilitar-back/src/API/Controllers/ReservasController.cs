@@ -73,7 +73,7 @@ public class ReservasController : ApiControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Cancelar(Guid id, [FromQuery] Guid actividadId, CancellationToken ct)
+    public async Task<IActionResult> Cancelar([FromQuery] Guid actividadId, Guid id, CancellationToken ct)
     {
         var result = await _reservaService.CancelarReservaAsync(actividadId, id, ct);
 

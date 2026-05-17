@@ -42,7 +42,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                                               .Include(a => a.Profesor)
                                               .ThenInclude(p => p.User)
                                               .AsQueryable();
-        if (tipo.HasValue) // esta lógica ta rara
+        if (tipo.HasValue)
             query = query.Where(a => a.Tipo == tipo.Value);
         if (frecuencia.HasValue)
             query = query.Where(a => a.Frecuencia == frecuencia.Value);

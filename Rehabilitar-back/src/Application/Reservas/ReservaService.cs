@@ -26,7 +26,7 @@ public class ReservaService : IReservaService
         _uow = uow;
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct)
+    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
     {
         int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
         int delayPerRetry = 100; // Milisegundos opcionales
@@ -68,7 +68,7 @@ public class ReservaService : IReservaService
         return Error.NotFound("Error inesperado al procesar la reserva.");
     }
 
-    public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct)
+    public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
         foreach (Actividad a in request.Actividades)
         {
@@ -82,7 +82,7 @@ public class ReservaService : IReservaService
         return Result.Success;
     }
 
-    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, decimal monto, CancellationToken ct)
+    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, decimal monto, CancellationToken ct = default)
     {
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
         for (int i = 0; i < 3; i++) {
@@ -102,7 +102,7 @@ public class ReservaService : IReservaService
         return Error.Failure();
     }
 
-    public async Task<ErrorOr<Deleted>> CancelarReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
+    public async Task<ErrorOr<Deleted>> CancelarReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct = default)
     {
         for (int i = 0; i < 3; i++) {
             try {
