@@ -113,6 +113,12 @@ export interface EmailVerificationData {
   confirmationToken: string;
 }
 
+export interface ResetPasswordData {
+  userId: string;
+  passwordResetToken: string;
+  newPassword: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;

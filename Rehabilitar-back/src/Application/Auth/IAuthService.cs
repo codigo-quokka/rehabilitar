@@ -1,4 +1,5 @@
 using Application.Auth.DTOs;
+using ErrorOr;
 
 namespace Application.Auth;
 
@@ -10,5 +11,9 @@ public interface IAuthService
 
     Task<bool> VerifyEmailAsync(VerifyEmailRequest request);
 
-    Task<bool> ResendVerificationEmailAsync(ResendVerificationEmailRequest email);
+    Task<bool> ResendVerificationEmailAsync(EmailRequest email);
+
+    Task<ErrorOr<Success>> SendResetPasswordEmailAsync(EmailRequest email);
+
+    Task<ErrorOr<Success>> ResetPasswordAsync(ResetPasswordRequest request);
 }
