@@ -117,6 +117,11 @@ public class Actividad
 		ProfesorId = profesorId;
 	}
 
+	public void RemoverProfesor()
+	{
+		ProfesorId = null;
+	}
+
 	private void CambiarEstado(EstadoActividad nuevoEstado) // quizas se deba refactorizar para validar transiciones de estado permitidas
 	{
 		if (Estado == EstadoActividad.Finalizada)

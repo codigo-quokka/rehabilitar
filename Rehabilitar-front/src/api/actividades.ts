@@ -41,4 +41,9 @@ export const actividadesApi = {
     const response = await apiClient.put(`/actividades/${id}/asignar-profesor`, { profesorId });
     return response.data;
   },
+
+  removerProfesor: async (id: string, profesorId: string) => {
+    const response = await apiClient.put(`/actividades/${id}/remover-profesor`, { profesorId });
+    return response.data;
+  },
 };
