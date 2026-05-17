@@ -54,6 +54,7 @@ export function ActividadesPage() {
     frecuencia: 'all',
     tipo: 'all',
     profesor: 'all',
+    sala: 'all',
     estado: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,6 +110,7 @@ export function ActividadesPage() {
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
     if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
+    if (filters.sala !== 'all' && a.salaId !== filters.sala) return false;
     if (filters.profesor === 'all') return true;
     if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
     if (a.profesorId !== filters.profesor) return false;
@@ -124,36 +126,44 @@ export function ActividadesPage() {
               filters={[
                 {
                   key: 'frecuencia',
-                  label: '',
+                  label: 'Frecuencia',
                   options: [
-                    { value: 'all', label: 'Todas las frecuencias' },
+                    { value: 'all', label: 'Todas' },
                     ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
                   ],
                 },
                 {
                   key: 'tipo',
-                  label: '',
+                  label: 'Especialidad',
                   options: [
-                    { value: 'all', label: 'Todas las especialidades' },
+                    { value: 'all', label: 'Todas' },
                     ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
                   ],
                 },
                 {
                   key: 'profesor',
-                  label: '',
+                  label: 'Profesor',
                   options: [
-                    { value: 'all', label: 'Todos los profesores' },
+                    { value: 'all', label: 'Todos' },
                     { value: 'unassigned', label: 'Sin asignar' },
                     ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
+                  ],
+                },
+                {
+                  key: 'sala',
+                  label: 'Sala',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    ...salas.map((s) => ({ value: s.id, label: s.nombre })),
                   ],
                 },
                 ...(!hasRole(['Cliente Registrado'])
                   ? [
                       {
                         key: 'estado',
-                        label: '',
+                        label: 'Estado',
                         options: [
-                          { value: 'all', label: 'Todos los estados' },
+                          { value: 'all', label: 'Todos' },
                           ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
                         ],
                       },
@@ -162,7 +172,7 @@ export function ActividadesPage() {
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', estado: 'all' })}
+              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
               onOpenChange={setFilterOpen}
             />
             {!filterOpen && (

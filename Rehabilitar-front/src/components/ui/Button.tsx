@@ -30,7 +30,7 @@ export function Button({
       "border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
     ghost: "border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100",
     verde:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-primary/50 hover:bg-primary/70 text-dark-green dark:hover:bg-darkest-green dark:bg-dark-green",
-    naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-600 hover:text-amber-800 dark:bg-amber-600 dark:hover:bg-amber-700",
+    naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-600 hover:text-amber-800 dark:hover:text-gray-200 dark:bg-amber-600 dark:hover:bg-amber-700",
     rojo:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-red-200 hover:bg-red-300 text-red-800 dark:bg-red-700 dark:hover:bg-red-900",
     danger: "bg-red-400 text-white hover:bg-red-800 focus:ring-red-500 dark:bg-red-600",
   };
