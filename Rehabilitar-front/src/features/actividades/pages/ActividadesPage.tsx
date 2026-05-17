@@ -319,9 +319,9 @@ export function ActividadesPage() {
                     Modificar
                   </Button>
                 )}
-                {hasRole(["professor"]) && act.estado === 'Propuesta' && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
+                {hasRole(["professor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
                   <Button
-                    variant="outline"
+                    variant="verde"
                     className="w-full mt-auto"
                     onClick={async () => {
                       try {

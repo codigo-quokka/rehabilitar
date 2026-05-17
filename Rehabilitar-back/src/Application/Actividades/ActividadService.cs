@@ -194,9 +194,6 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-        if (actividad.Estado != EstadoActividad.Propuesta)
-            return Error.Validation("Solo se pueden tomar actividades en estado Propuesta.");
-
         if (actividad.ProfesorId.HasValue && actividad.ProfesorId.Value != Guid.Empty)
             return Error.Conflict("La actividad ya tiene un profesor asignado.");
 
@@ -211,6 +208,22 @@ public class ActividadService : IActividadService
             return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
+        await _uow.SaveChangesAsync(ct);
+        return await MapToDto(actividad, ct);
+    }
+
+    public async Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        if (actividad.ProfesorId != request.ProfesorId)
+            return Error.Validation("No puedes darte de baja de una actividad que no tienes asignada.");
+
+        if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
+            return Error.Validation("No puedes darte de baja de una actividad finalizada o cancelada.");
+
+        actividad.RemoverProfesor();
         await _uow.SaveChangesAsync(ct);
         return await MapToDto(actividad, ct);
     }

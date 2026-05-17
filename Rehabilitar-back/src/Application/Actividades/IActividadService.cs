@@ -22,4 +22,5 @@ public interface IActividadService
         CancellationToken ct = default);
     
     Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
+    Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default);
 }
