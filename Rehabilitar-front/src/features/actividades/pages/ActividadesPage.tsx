@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
 import { Actividad, Sala, User, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
+import { Notitoast } from "../../../components/Notitoast";
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -55,6 +56,10 @@ export function ActividadesPage() {
     profesor: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -338,8 +343,21 @@ export function ActividadesPage() {
           }}
           salas={salas.filter(s => s.activo)}
           profesores={profesores}
+          onError={(msg) => {
+            setToastType('error');
+            setToastMessage(msg);
+            setShowToast(true);
+          }}
         />
       </Modal>
+
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </MainLayout>
   );
 }
@@ -349,9 +367,10 @@ interface ActividadFormProps {
   salas: Sala[];
   profesores: User[];
   actividad?: Actividad;
+  onError: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
+function ActividadForm({ onClose, salas, profesores, actividad, onError }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["admin"]);
@@ -381,7 +400,6 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         },
   );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
@@ -389,13 +407,12 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
   const handleDelete = async () => {
     if (!actividad) return;
     setLoading(true);
-    setError(null);
     try {
       await actividadesApi.delete(actividad.id);
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al eliminar actividad';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
+      onError(msg);
     } finally {
       setLoading(false);
       setShowDeleteConfirm(false);
@@ -404,10 +421,9 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (!formData.salaId) {
-      setError('Debe seleccionar una sala');
+      onError('Debe seleccionar una sala');
       return;
     }
 
@@ -423,7 +439,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         await actividadesApi.update(actividad.id, payload);
       } else if (formData.frecuencia === 'Recurrente') {
         if (!fechaFinRecurrente) {
-          setError('Debe seleccionar una fecha fin para la recurrencia');
+          onError('Debe seleccionar una fecha fin para la recurrencia');
           setLoading(false);
           return;
         }
@@ -439,8 +455,8 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
       }
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
+      onError(msg);
     } finally {
       setLoading(false);
     }
@@ -599,11 +615,6 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         </>
       )}
 
-      {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
       <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
         {isEditing && !showDeleteConfirm && (
           <Button

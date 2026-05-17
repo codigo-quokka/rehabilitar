@@ -79,7 +79,7 @@ public class SeedingService : ISeedingService
 
     private async Task SeedRolesAsync()
     {
-        var roles = new[] { "admin", "reception", "professor", "registered_client", "guest" };
+        var roles = new[] { "admin", "reception", "professor", "registered_client" };
 
         foreach (var roleName in roles)
         {

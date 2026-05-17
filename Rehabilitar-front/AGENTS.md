@@ -52,7 +52,7 @@ src/
 
 ## Authentication
 
-- 5 roles: admin, reception, professor, registered_client, guest
+- 4 roles: admin, reception, professor, registered_client
 - Role-based route protection
 - Token stored in localStorage
 
@@ -221,12 +221,11 @@ chore: organize project structure
 - **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS v4
 - Enfoque en accesibilidad WCAG 2.2
 
-### Roles de usuario (5)
+### Roles de usuario (4)
 - `admin` - Administrador del sistema
 - `reception` - Personal de recepción
 - `professor` - Profesor/Instructor
 - `registered_client` - Cliente registrado
-- `guest` - Invitado
 
 ### Componentes y páginas implementadas (Frontend)
 | Componente/Página | Descripción |

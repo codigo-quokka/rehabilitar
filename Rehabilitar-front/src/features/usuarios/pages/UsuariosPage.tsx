@@ -29,7 +29,7 @@ export function UsuariosPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client'];
 
   const tipoLabel: Record<string, string> = {
     TrenSuperior: 'Tren Superior',
@@ -42,7 +42,7 @@ export function UsuariosPage() {
     reception: 'Recepción',
     professor: 'Profesor',
     registered_client: 'Cliente',
-    guest: 'Invitado',
+
   };
 
   const filteredUsuarios = usuarios.filter(u => {
@@ -317,7 +317,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

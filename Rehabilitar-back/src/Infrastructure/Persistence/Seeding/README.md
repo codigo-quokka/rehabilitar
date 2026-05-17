@@ -67,4 +67,4 @@ Además de los usuarios, el sistema asegura la existencia de los siguientes role
 * `reception` (No hay usuarios asignados por defecto)
 * `professor`
 * `registered_client`
-* `guest`
+
