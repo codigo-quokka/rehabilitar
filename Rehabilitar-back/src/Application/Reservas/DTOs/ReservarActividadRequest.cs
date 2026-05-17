@@ -1,6 +1,8 @@
+using Domain.Enums;
+
 namespace Application.Reservas.DTOs;
 
 public record class ReservarActividadRequest(
-    string ActividadId,
-    string ClienteId,
-    string TipoCliente);
+    Guid ActividadId,
+    Guid ClienteId,
+    TipoCliente TipoCliente);
