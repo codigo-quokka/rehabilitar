@@ -38,7 +38,6 @@ public static class DependencyInjection
             options.User.RequireUniqueEmail = true;
             options.SignIn.RequireConfirmedEmail = true;
 
-            // config password: de momento contraseña simple para poder testear 
             options.Password.RequiredLength = 8;
             options.Password.RequireDigit = true;
             options.Password.RequiredUniqueChars = 0;
