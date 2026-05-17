@@ -16,11 +16,16 @@ interface FilterDropdownProps {
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
   onApply: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function FilterDropdown({ filters, values, onChange, onApply }: FilterDropdownProps) {
+export function FilterDropdown({ filters, values, onChange, onApply, onOpenChange }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,7 +74,7 @@ export function FilterDropdown({ filters, values, onChange, onApply }: FilterDro
           <div className="flex items-end">
             <Button
               type="button"
-              variant="verde"
+              variant="primary"
               onClick={() => {
                 onApply();
                 setIsOpen(false);

@@ -57,6 +57,7 @@ export function ActividadesPage() {
     estado: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
@@ -162,15 +163,18 @@ export function ActividadesPage() {
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
               onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', estado: 'all' })}
+              onOpenChange={setFilterOpen}
             />
-            <Input
-              placeholder="Buscar por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-125"
-            />
+            {!filterOpen && (
+              <Input
+                placeholder="Buscar por nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125"
+              />
+            )}
           </div>
-          {hasRole(["Administrador"]) && (
+          {!filterOpen && hasRole(["Administrador"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -178,7 +182,7 @@ export function ActividadesPage() {
               Nueva Actividad
             </Button>
           )}
-          {hasRole(["Profesor"]) && (
+          {!filterOpen && hasRole(["Profesor"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}

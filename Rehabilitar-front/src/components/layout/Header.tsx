@@ -21,7 +21,6 @@ export function Header({ title }: HeaderProps) {
 
   const handleConfirmLogout = async () => {
     await logout();
-    window.location.href = '/login';
   };
 
   return (

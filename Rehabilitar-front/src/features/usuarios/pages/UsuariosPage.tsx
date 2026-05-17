@@ -20,6 +20,7 @@ export function UsuariosPage() {
   const [userToSuspend, setUserToSuspend] = useState<User | null>(null);
   const [userToReactivar, setUserToReactivar] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     rol: 'all',
     estado: 'all',
@@ -212,15 +213,18 @@ export function UsuariosPage() {
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
               onApply={() => setFilters({ rol: 'all', estado: 'all' })}
+              onOpenChange={setFilterOpen}
             />
-            <Input
-              placeholder="Buscar por nombre o email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-125"
-            />
+            {!filterOpen && (
+              <Input
+                placeholder="Buscar por nombre o email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125"
+              />
+            )}
           </div>
-          {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
+          {!filterOpen && !isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
         </div>
 
         {loading ? (
