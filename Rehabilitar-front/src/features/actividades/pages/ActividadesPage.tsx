@@ -104,6 +104,7 @@ export function ActividadesPage() {
 
   const filteredActividades = actividades.filter(a => {
     if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (hasRole(['Cliente Registrado']) && a.estado !== 'Aprobada') return false;
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
     if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
@@ -145,14 +146,18 @@ export function ActividadesPage() {
                     ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
                   ],
                 },
-                {
-                  key: 'estado',
-                  label: '',
-                  options: [
-                    { value: 'all', label: 'Todos los estados' },
-                    ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
-                  ],
-                },
+                ...(!hasRole(['Cliente Registrado'])
+                  ? [
+                      {
+                        key: 'estado',
+                        label: '',
+                        options: [
+                          { value: 'all', label: 'Todos los estados' },
+                          ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
+                        ],
+                      },
+                    ]
+                  : []),
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
@@ -199,7 +204,7 @@ export function ActividadesPage() {
                   <div className="flex gap-2">
                     <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                     <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
-                    {hasRole(["Administrador", "Profesor"]) && (
+                    {hasRole(["Administrador", "Profesor", "Recepción"]) && (
                       <Badge variant={
                         act.estado === 'Cancelada' ? 'warning' :
                         act.estado === 'EnCurso' ? 'info' :
