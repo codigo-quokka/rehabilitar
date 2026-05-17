@@ -93,6 +93,12 @@ public class ReservaService : IReservaService
         return reservas.Select(MapToReservaDTO).ToList();
     }
 
+    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default)
+    {
+        var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(id, ct);
+        return reservas.Select(MapToReservaDTO).ToList();
+    }
+
     private static ReservaDTO MapToReservaDTO(Reserva reserva)
     {
         return new ReservaDTO(
