@@ -98,8 +98,8 @@ export function ActividadesPage() {
     } catch (err) {}
   };
 
-  const canManage = hasRole(["admin", "reception"]);
-  const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
+  const canManage = hasRole(["Administrador", "Recepción"]);
+  const profesores = usuarios.filter(u => u.rol === 'Profesor' && u.activo);
 
   const filteredActividades = actividades.filter(a => {
     if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -152,10 +152,10 @@ export function ActividadesPage() {
               placeholder="Buscar por nombre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-[500px]"
+              className="min-w-125"
             />
           </div>
-          {hasRole(["admin"]) && (
+          {hasRole(["Administrador"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -163,7 +163,7 @@ export function ActividadesPage() {
               Nueva Actividad
             </Button>
           )}
-          {hasRole(["professor"]) && (
+          {hasRole(["Profesor"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -189,7 +189,7 @@ export function ActividadesPage() {
                   <div className="flex gap-2">
                     <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                     <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
-                    {hasRole(["admin", "professor"]) && (
+                    {hasRole(["Administrador", "Profesor"]) && (
                       <Badge variant={
                         act.estado === 'Cancelada' ? 'warning' :
                         act.estado === 'EnCurso' ? 'info' :
@@ -291,7 +291,7 @@ export function ActividadesPage() {
                   </div>
                 </div>
 
-                {hasRole(["registered_client"]) && (
+                {hasRole(["Cliente Registrado"]) && (
                   <Button
                     variant={
                       act.cupoDisponible <= 0
@@ -307,7 +307,7 @@ export function ActividadesPage() {
                       : "Reservar"}
                   </Button>
                 )}
-                {hasRole(["admin"]) && (
+                {hasRole(["Administrador"]) && (
                   <Button
                     variant="primary"
                     className="w-full mt-auto"
@@ -373,7 +373,7 @@ interface ActividadFormProps {
 function ActividadForm({ onClose, salas, profesores, actividad, onError }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
-  const isAdmin = hasRole(["admin"]);
+  const isAdmin = hasRole(["Administrador"]);
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {

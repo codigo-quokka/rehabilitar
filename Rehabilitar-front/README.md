@@ -66,7 +66,7 @@ src/
 
 ## Authentication
 
-The app supports 4 roles: `admin`, `reception`, `professor`, `registered_client`
+The app supports 4 roles: `Administrador`, `Recepción`, `Profesor`, `Cliente Registrado`
 
 Role-based route protection is implemented.
 
@@ -87,7 +87,7 @@ This project follows WCAG 2.2 guidelines:
 - For local development without backend, user can be manually set in localStorage:
 ```javascript
 localStorage.setItem('token', 'mock-token');
-localStorage.setItem('user', JSON.stringify({ id: '1', nombre: 'Test', apellido: 'User', email: 'test@test.com', rol: 'admin', activo: true, fechaAlta: '2026-01-01' }));
+localStorage.setItem('user', JSON.stringify({ id: '1', nombre: 'Test', apellido: 'User', email: 'test@test.com', rol: 'Administrador', activo: true, fechaAlta: '2026-01-01' }));
 location.reload();
 ```
 

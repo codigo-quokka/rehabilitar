@@ -57,7 +57,7 @@ public class AuthService : IAuthService
             }
 
             // Asignar rol de cliente registrado por defecto
-            await _userManager.AddToRoleAsync(user, "registered_client");
+            await _userManager.AddToRoleAsync(user, "Cliente Registrado");
 
             _clienteRepo.Add(c);
             await EnviarEmailDeVerificacion(user);
@@ -91,7 +91,7 @@ public class AuthService : IAuthService
 
         // Obtener rol del usuario
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "registered_client";
+        var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
         // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);

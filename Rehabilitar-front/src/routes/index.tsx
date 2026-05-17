@@ -76,7 +76,7 @@ export const routes = [
       },
       {
         path: "mis-clases",
-        element: <ProtectedRoute allowedRoles={["professor"]} />,
+        element: <ProtectedRoute allowedRoles={["Profesor"]} />,
         children: [
           {
             index: true,
@@ -90,7 +90,7 @@ export const routes = [
       },
       {
         path: "usuarios",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
@@ -100,7 +100,7 @@ export const routes = [
       },
       {
         path: "salas",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
@@ -110,7 +110,7 @@ export const routes = [
       },
       {
         path: "metricas",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
