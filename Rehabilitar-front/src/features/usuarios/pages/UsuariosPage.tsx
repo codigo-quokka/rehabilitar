@@ -314,7 +314,10 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       }
       onClose();
     } catch (err) {
-      const msg = (err as any)?.response?.data?.error || `Error al ${user ? 'actualizar' : 'crear'} usuario.`;
+      const apiMsg = (err as any)?.response?.data?.error;
+      const msg = apiMsg && apiMsg.includes("is already taken")
+        ? "El correo ingresado ya se encuentra en uso"
+        : apiMsg || `Error al ${user ? 'actualizar' : 'crear'} usuario.`;
       onNotify?.('error', msg);
     } finally {
       setLoading(false);
