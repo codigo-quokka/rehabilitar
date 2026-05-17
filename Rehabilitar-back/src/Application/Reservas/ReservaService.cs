@@ -82,24 +82,44 @@ public class ReservaService : IReservaService
         return Result.Success;
     }
 
-    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
+    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, decimal monto, CancellationToken ct)
     {
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
         for (int i = 0; i < 3; i++) {
             try {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
-                actividad.ConfirmarReserva(reservaId); // Lógica de dominio
+                
+                actividad.ProcesarPagoReserva(reservaId, monto); // Lógica de dominio actualizada
                 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
-               return Result.Success;
-           } catch (ConcurrencyException) {
-               if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
-               await Task.Delay(new Random().Next(10, 100)); // Espera aleatoria
-           }
-       }
-       return Error.Failure();
-   }
+                return Result.Success;
+            } catch (ConcurrencyException) {
+                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                await Task.Delay(new Random().Next(10, 100), ct); // Espera aleatoria
+            }
+        }
+        return Error.Failure();
+    }
+
+    public async Task<ErrorOr<Deleted>> CancelarReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
+    {
+        for (int i = 0; i < 3; i++) {
+            try {
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+                if (actividad == null) return Error.NotFound("Actividad no encontrada");
+                
+                actividad.CancelarReserva(reservaId); // Lógica de dominio
+                
+                await _uow.SaveChangesAsync(ct);
+                return Result.Deleted;
+            } catch (ConcurrencyException) {
+                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                await Task.Delay(new Random().Next(10, 100), ct);
+            }
+        }
+        return Error.Failure();
+    }
 
     public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
     {
