@@ -79,7 +79,7 @@ public class SeedingService : ISeedingService
 
     private async Task SeedRolesAsync()
     {
-        var roles = new[] { "admin", "reception", "professor", "registered_client" };
+        var roles = new[] { "Administrador", "Recepción", "Profesor", "Cliente Registrado" };
 
         foreach (var roleName in roles)
         {
@@ -107,7 +107,7 @@ public class SeedingService : ISeedingService
 
         if (result.Succeeded)
         {
-            await _userManager.AddToRoleAsync(adminUser, "admin");
+            await _userManager.AddToRoleAsync(adminUser, "Administrador");
             await ConfirmarEmail(adminUser);
         }
         else
@@ -133,7 +133,7 @@ public class SeedingService : ISeedingService
 
         if (result.Succeeded)
         {
-            await _userManager.AddToRoleAsync(receptionUser, "reception");
+            await _userManager.AddToRoleAsync(receptionUser, "Recepción");
             await ConfirmarEmail(receptionUser);
         }
         else
@@ -163,7 +163,7 @@ public class SeedingService : ISeedingService
                 return false;
             }
 
-            await _userManager.AddToRoleAsync(clientUser, "registered_client");
+            await _userManager.AddToRoleAsync(clientUser, "Cliente Registrado");
             await ConfirmarEmail(clientUser);
 
             // crear cliente:
@@ -201,7 +201,7 @@ public class SeedingService : ISeedingService
                 return false;
             }
 
-            await _userManager.AddToRoleAsync(profesorUser, "professor");
+            await _userManager.AddToRoleAsync(profesorUser, "Profesor");
             await ConfirmarEmail(profesorUser);
             
             // crear profesor:

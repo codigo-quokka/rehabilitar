@@ -52,7 +52,7 @@ src/
 
 ## Authentication
 
-- 4 roles: admin, reception, professor, registered_client
+- 4 roles: Administrador, Recepción, Profesor, Cliente Registrado
 - Role-based route protection
 - Token stored in localStorage
 
@@ -222,10 +222,10 @@ chore: organize project structure
 - Enfoque en accesibilidad WCAG 2.2
 
 ### Roles de usuario (4)
-- `admin` - Administrador del sistema
-- `reception` - Personal de recepción
-- `professor` - Profesor/Instructor
-- `registered_client` - Cliente registrado
+- `Administrador` - Administrador del sistema
+- `Recepción` - Personal de recepción
+- `Profesor` - Profesor/Instructor
+- `Cliente Registrado` - Cliente registrado
 
 ### Componentes y páginas implementadas (Frontend)
 | Componente/Página | Descripción |
@@ -236,12 +236,12 @@ chore: organize project structure
 | `EmailVerificationPage` | Verificación de email |
 | `DashboardPage` | Dashboard principal con métricas y resumen |
 | `PerfilPage` | Perfil del usuario con edición |
-| `UsuariosPage` | Gestión de usuarios (admin/reception) |
+| `UsuariosPage` | Gestión de usuarios (Administrador/Recepción) |
 | `ActividadesPage` | Listado y creación de actividades |
 | `CalendarioPage` | Vista de calendario de actividades |
 | `ReservasPage` | Gestión de reservas de usuarios |
-| `SalasPage` | Gestión de salas (admin/reception) |
-| `MetricasPage` | Métricas y reportes (admin/reception) |
+| `SalasPage` | Gestión de salas (Administrador/Recepción) |
+| `MetricasPage` | Métricas y reportes (Administrador/Recepción) |
 | `Sidebar` | Navegación con filtros por rol |
 | `Header` | Header con logout con confirmación |
 | `NotificationTray` | Bandeja de notificaciones |

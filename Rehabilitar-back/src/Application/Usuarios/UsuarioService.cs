@@ -78,7 +78,7 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.AddToRoleAsync(user, request.Rol);
 
-        if (request.Rol == "professor" && !string.IsNullOrEmpty(request.Especialidad))
+        if (request.Rol == "Profesor" && !string.IsNullOrEmpty(request.Especialidad))
         {
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
             var profesor = Profesor.Create(user.Id, especialidad);
@@ -131,7 +131,7 @@ public class UsuarioService : IUsuarioService
             {
                 profesor.CambiarEspecialidad(especialidad);
             }
-            else if (request.Rol == "professor")
+            else if (request.Rol == "Profesor")
             {
                 profesor = Profesor.Create(user.Id, especialidad);
                 _profesorRepo.Add(profesor);
@@ -180,7 +180,7 @@ public class UsuarioService : IUsuarioService
     private async Task<UsuarioResponse> MapToResponse(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "registered_client";
+        var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
         // _dbContext.Clientes.AsNoTracking().FirstOrDefaultAsync(c => c.UserId == user.Id);
