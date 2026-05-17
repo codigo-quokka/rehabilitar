@@ -77,14 +77,15 @@ export function Sidebar() {
     <NavLink
       key={item.path}
       to={item.path}
+      end
       className={({ isActive }) =>
         `flex-1 flex items-center justify-center gap-3
          px-6 py-3 rounded-lg transition-all duration-200
          text-sm font-medium text-center
          ${
            isActive
-             ? 'bg-primary text-white shadow-sm dark:bg-dark-green'
-             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-dark dark:hover:text-gray-100'
+             ? 'bg-primary !text-white shadow-sm dark:bg-dark-green dark:!text-white'
+             : 'text-gray-700 dark:text-gray-300 hover:bg-primary/20 dark:hover:bg-gray-700 hover:text-dark dark:hover:text-gray-100'
          }`
       }
     >
