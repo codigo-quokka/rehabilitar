@@ -1,10 +1,8 @@
-namespace Infrastructure.Actividades;
+namespace Infrastructure.Persistence.Repositories;
 using Application.Actividades;
 using Domain.Actividades;
-using Infrastructure.Persistence;
 using Domain.Profesores;
 using Microsoft.EntityFrameworkCore;
-using Infrastructure.Persistence.Repositories;
 
 public class ActividadRepository : RepositoryBase<Actividad>, IActividadRepository
 {
