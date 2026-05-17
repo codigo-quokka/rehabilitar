@@ -214,7 +214,12 @@ export function RegisterPage() {
       let msg = "Error al registrar usuario. Intenta de nuevo.";
 
       if (axios.isAxiosError(err)) {
-        msg = err.response?.data?.error ?? msg;
+        const apiMsg = err.response?.data?.error;
+        if (apiMsg && apiMsg.includes("is already taken")) {
+          msg = "El correo ingresado ya se encuentra en uso";
+        } else {
+          msg = apiMsg ?? msg;
+        }
       }
 
       setToastType("error");

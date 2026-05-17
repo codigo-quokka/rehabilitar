@@ -27,7 +27,7 @@ export function Button({
     primary: "bg-primary text-white hover:bg-primary-dark border-1 border-gray-200 focus:ring-primary dark:bg-dark-green dark:hover:bg-darkest-green dark:border-1 dark:border-gray-200",
     secondary: "bg-dark text-white hover:bg-secondary focus:ring-dark",
     outline:
-      "border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
+      "border-2 border-primary text-primary hover:bg-primary/70 hover:text-black focus:ring-primary",
     ghost: "border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100",
     verde:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-primary/50 hover:bg-primary/70 text-dark-green dark:hover:bg-darkest-green dark:bg-dark-green",
     naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-600 hover:text-amber-800 dark:hover:text-gray-200 dark:bg-amber-600 dark:hover:bg-amber-700",
