@@ -138,9 +138,9 @@ public class Actividad
 
 	private void GestionarListaDeEspera()
 	{
-		bool lugarOcupado = BuscarYPromoverReservaEnEspera(TipoCliente.Suscrito);
+		bool lugarOcupado = BuscarYPromoverReservaEnEspera(TipoCliente.Abonado);
 
-		if (!lugarOcupado) BuscarYPromoverReservaEnEspera(TipoCliente.Regular);
+		if (!lugarOcupado) BuscarYPromoverReservaEnEspera(TipoCliente.noAbonado);
 		
 	}
 
