@@ -194,17 +194,17 @@ export function UsuariosPage() {
               filters={[
                 ...(!isReception ? [{
                   key: 'rol',
-                  label: '',
+                  label: 'Roles',
                   options: [
-                    { value: 'all', label: 'Todos los roles' },
+                    { value: 'all', label: 'Todos' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
                   ],
                 }] : []),
                 {
                   key: 'estado',
-                  label: '',
+                  label: 'Estados',
                   options: [
-                    { value: 'all', label: 'Todos los estados' },
+                    { value: 'all', label: 'Todos' },
                     { value: 'active', label: 'Activos' },
                     { value: 'suspended', label: 'Suspendidos' },
                   ],
