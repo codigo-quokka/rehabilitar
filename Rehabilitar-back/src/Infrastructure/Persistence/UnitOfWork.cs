@@ -1,3 +1,4 @@
+using System.Data;
 using Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -16,9 +17,9 @@ public class UnitOfWork : IUnitOfWork
         {
             return await _context.SaveChangesAsync(ct);   
         }
-        catch  (DbUpdateConcurrencyException e)
+        catch  (Exception e) /* DbUpdateConcurrencyException e */
         {
-            throw new ConcurrencyException("Error de concurrencia", e);
+            throw new DBConcurrencyException("Error de concurrencia", e);
         }
     }
 
