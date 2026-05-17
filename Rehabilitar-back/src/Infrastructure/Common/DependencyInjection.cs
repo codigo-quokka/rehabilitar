@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<IProfesorRepository, ProfesorRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
 
         return services;
     }
