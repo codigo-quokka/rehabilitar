@@ -14,9 +14,10 @@ export function PasswordRecoveryPage() {
 
     try {
       await authApi.recoverPassword(email);
-      setSent(true);
     } catch (err) {
+      // Ignore error to prevent email enumeration
     } finally {
+      setSent(true);
       setLoading(false);
     }
   };
