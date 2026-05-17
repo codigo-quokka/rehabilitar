@@ -76,25 +76,26 @@ public class Actividad
 		return reserva;
 	}
 
-	public Reserva ConfirmarReserva(Guid reservaId)
+	public Reserva ProcesarPagoReserva(Guid reservaId, decimal montoPagado)
 	{
 		Version = Guid.NewGuid();
 		Reserva reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
 		
-		if (reserva.EstadoDeReserva != EstadoDeReserva.PendienteDePago) 
-			throw new DomainException($"No se puede confirmar la reserva. El estado actual es {reserva.EstadoDeReserva}. Solo se pueden confirmar reservas Pendientes de Pago.");
+		var estadoAnterior = reserva.EstadoDeReserva;
+		reserva.ActualizarDetallePago(montoPagado);
 
-		reserva.ActualizarDetallePago(reserva.DetallePago.MontoPendiente); // Asumiendo que el pago se realiza en su totalidad, esto debería venir de la información del pago real
-
-		if (HayCupoDisponible())
+		// Si la reserva pasó a Activa (o ya lo estaba) y antes no ocupaba cupo, intentamos asignarlo
+		if (reserva.EstadoDeReserva == EstadoDeReserva.Activa && estadoAnterior == EstadoDeReserva.PendienteDePago)
 		{
-			reserva.Confirmar(EstadoDeReserva.Activa);
-			CupoOcupado++;
-		}
-		else
-		{
-			reserva.Confirmar(EstadoDeReserva.EnEspera);
-			CupoEsperaOcupado++;
+			if (HayCupoDisponible())
+			{
+				CupoOcupado++;
+			}
+			else
+			{
+				reserva.Confirmar(EstadoDeReserva.EnEspera);
+				CupoEsperaOcupado++;
+			}
 		}
 
 		return reserva;
