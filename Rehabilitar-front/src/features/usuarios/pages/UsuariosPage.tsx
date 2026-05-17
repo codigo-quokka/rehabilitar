@@ -10,7 +10,8 @@ import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 
 export function UsuariosPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
+  const isReception = hasRole(['reception']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -30,7 +31,22 @@ export function UsuariosPage() {
 
   const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
 
+  const tipoLabel: Record<string, string> = {
+    TrenSuperior: 'Tren Superior',
+    TrenMedio: 'Tren Medio',
+    TrenInferior: 'Tren Inferior',
+  };
+
+  const rolLabel: Record<string, string> = {
+    admin: 'Admin',
+    reception: 'Recepción',
+    professor: 'Profesor',
+    registered_client: 'Cliente',
+    guest: 'Invitado',
+  };
+
   const filteredUsuarios = usuarios.filter(u => {
+    if (isReception && u.rol !== 'registered_client') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
     if (filters.estado === 'active' && !u.activo) return false;
     if (filters.estado === 'suspended' && u.activo) return false;
@@ -122,9 +138,14 @@ export function UsuariosPage() {
       key: 'rol',
       header: 'Rol',
       render: (u: User) => (
-        <Badge variant={u.rol === 'admin' ? 'danger' : u.rol === 'professor' ? 'info' : 'default'}>
-          {u.rol.replace('_', ' ')}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={u.rol === 'admin' ? 'danger' : u.rol === 'professor' ? 'info' : u.rol === 'reception' ? 'amber' : 'default'}>
+            {rolLabel[u.rol] || u.rol.replace('_', ' ')}
+          </Badge>
+          {u.rol === 'professor' && u.especialidad && (
+            <Badge variant="success">{tipoLabel[u.especialidad] || u.especialidad}</Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -153,9 +174,11 @@ export function UsuariosPage() {
               Reactivar
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
-            Eliminar
-          </Button>
+          {!isReception && (
+            <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
+              Eliminar
+            </Button>
+          )}
         </div>
       ),
     },
@@ -168,17 +191,17 @@ export function UsuariosPage() {
           <div className="flex gap-2">
             <FilterDropdown
               filters={[
-                {
+                ...(!isReception ? [{
                   key: 'rol',
-                  label: 'Rol',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todos los roles' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
                   ],
-                },
+                }] : []),
                 {
                   key: 'estado',
-                  label: 'Estado',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todos los estados' },
                     { value: 'active', label: 'Activos' },
@@ -194,10 +217,10 @@ export function UsuariosPage() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-[300px]"
+              className="min-w-[500px]"
             />
           </div>
-          <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
+          {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
         </div>
 
         {loading ? (

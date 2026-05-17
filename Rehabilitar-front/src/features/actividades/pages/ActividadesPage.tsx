@@ -54,6 +54,7 @@ export function ActividadesPage() {
     tipo: 'all',
     profesor: 'all',
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -96,6 +97,7 @@ export function ActividadesPage() {
   const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
 
   const filteredActividades = actividades.filter(a => {
+    if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
     if (filters.profesor === 'all') return true;
@@ -108,44 +110,60 @@ export function ActividadesPage() {
     <MainLayout title="Actividades">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <FilterDropdown
-            filters={[
-              {
-                key: 'frecuencia',
-                label: 'Frecuencia',
-                options: [
-                  { value: 'all', label: 'Todas las frecuencias' },
-                  ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
-                ],
-              },
-              {
-                key: 'tipo',
-                label: 'Especialidad',
-                options: [
-                  { value: 'all', label: 'Todas las especialidades' },
-                  ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
-                ],
-              },
-              {
-                key: 'profesor',
-                label: 'Profesor',
-                options: [
-                  { value: 'all', label: 'Todos los profesores' },
-                  { value: 'unassigned', label: 'Sin asignar' },
-                  ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
-                ],
-              },
-            ]}
-            values={filters}
-            onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-            onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all' })}
-          />
+          <div className="flex gap-2">
+            <FilterDropdown
+              filters={[
+                {
+                  key: 'frecuencia',
+                  label: '',
+                  options: [
+                    { value: 'all', label: 'Todas las frecuencias' },
+                    ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
+                  ],
+                },
+                {
+                  key: 'tipo',
+                  label: '',
+                  options: [
+                    { value: 'all', label: 'Todas las especialidades' },
+                    ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+                  ],
+                },
+                {
+                  key: 'profesor',
+                  label: '',
+                  options: [
+                    { value: 'all', label: 'Todos los profesores' },
+                    { value: 'unassigned', label: 'Sin asignar' },
+                    ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
+                  ],
+                },
+              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all' })}
+            />
+            <Input
+              placeholder="Buscar por nombre..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-[500px]"
+            />
+          </div>
           {hasRole(["admin"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
             >
               Nueva Actividad
+            </Button>
+          )}
+          {hasRole(["professor"]) && (
+            <Button
+              className="px-6 py-3 justify-center whitespace-nowrap"
+              onClick={() => setShowModal(true)}
+            >
+              Proponer Actividad
             </Button>
           )}
         </div>
@@ -268,7 +286,7 @@ export function ActividadesPage() {
                   </div>
                 </div>
 
-                {hasRole(["registered_client", "reception"]) && (
+                {hasRole(["registered_client"]) && (
                   <Button
                     variant={
                       act.cupoDisponible <= 0
@@ -335,6 +353,8 @@ interface ActividadFormProps {
 
 function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
   const isEditing = !!actividad;
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(["admin"]);
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -342,7 +362,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
           descripcion: actividad.descripcion,
           tipo: actividad.tipo as CreateActividadRequest['tipo'],
           frecuencia: actividad.frecuencia as CreateActividadRequest['frecuencia'],
-          estado: actividad.estado as CreateActividadRequest['estado'],
+          estado: isAdmin ? (actividad.estado as CreateActividadRequest['estado']) : 'Propuesta',
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
@@ -512,6 +532,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
                 { value: "TrenInferior", label: "Tren Inferior" },
               ]}
             />
+            {isAdmin && (
             <Select
               label="Estado"
               value={formData.estado}
@@ -523,16 +544,15 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
                   ? [
                       { value: "Propuesta", label: "Propuesta" },
                       { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
                       { value: "Cancelada", label: "Cancelada" },
                     ]
                   : [
                       { value: "Propuesta", label: "Propuesta" },
                       { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
                     ]
               }
             />
+            )}
           </div>
           {formData.frecuencia === 'Recurrente' && !isEditing && (
             <Input
@@ -588,7 +608,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         {isEditing && !showDeleteConfirm && (
           <Button
             variant="ghost"
-            className="bg-red-100 hover:bg-red-200 text-red-700"
+            className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500"
             onClick={() => setShowDeleteConfirm(true)}
           >
             Eliminar
