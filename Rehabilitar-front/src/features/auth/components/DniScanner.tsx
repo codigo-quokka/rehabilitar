@@ -65,6 +65,7 @@ export function DniScanner({ onScanComplete, onManualEntry }: DniScannerProps) {
 
       <div className="flex flex-col w-full space-y-3 pt-4">
         <Button 
+          variant="verde"
           onClick={() => fileInputRef.current?.click()} 
           loading={loading}
           disabled={loading}
