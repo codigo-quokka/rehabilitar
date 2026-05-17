@@ -162,20 +162,20 @@ export function UsuariosPage() {
       header: 'Acciones',
       render: (u: User) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="bg-primary/40 hover:bg-primary/20 text-dark-green dark:hover:bg-primary dark:bg-dark-green" onClick={() => setSelectedUser(u)}>
+          <Button variant="verde" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
           {u.activo ? (
-            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => setUserToSuspend(u)}>
+            <Button variant="naranja" size="sm" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className="bg-amber-200 hover:bg-amber-100 text-amber-700 dark:bg-amber-700 dark:hover:bg-amber-500" onClick={() => handleReactivar(u)}>
+            <Button variant="naranja" size="sm" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
           {!isReception && (
-            <Button variant="ghost" size="sm" className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500" onClick={() => setUserToDelete(u)}>
+            <Button variant="rojo" size="sm" onClick={() => setUserToDelete(u)}>
               Eliminar
             </Button>
           )}

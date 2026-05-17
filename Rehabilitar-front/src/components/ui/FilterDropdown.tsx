@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-
+import { Button } from './Button';
 interface FilterOption {
   value: string;
   label: string;
@@ -67,16 +67,16 @@ export function FilterDropdown({ filters, values, onChange, onApply }: FilterDro
             </div>
           ))}
           <div className="flex items-end">
-            <button
+            <Button
               type="button"
+              variant="verde"
               onClick={() => {
                 onApply();
                 setIsOpen(false);
               }}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors dark:bg-dark-green dark:hover:bg-primary"
-            >
+              >
               Limpiar
-            </button>
+            </Button>
           </div>
         </div>
       )}

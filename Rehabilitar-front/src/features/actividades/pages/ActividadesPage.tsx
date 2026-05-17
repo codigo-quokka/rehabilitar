@@ -309,7 +309,7 @@ export function ActividadesPage() {
                 )}
                 {hasRole(["Administrador"]) && (
                   <Button
-                    variant="primary"
+                    variant="verde"
                     className="w-full mt-auto"
                     onClick={() => {
                       setEditingActividad(act);
@@ -618,8 +618,7 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
       <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
         {isEditing && !showDeleteConfirm && (
           <Button
-            variant="ghost"
-            className="bg-red-200 hover:bg-red-100 text-red-800 dark:bg-red-800 dark:hover:bg-red-500"
+            variant="rojo"
             onClick={() => setShowDeleteConfirm(true)}
           >
             Eliminar
