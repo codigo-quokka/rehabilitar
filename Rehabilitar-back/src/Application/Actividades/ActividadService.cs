@@ -1,30 +1,36 @@
 using Domain.Actividades;
+using Domain.Reservas;
 using Domain.Profesores;
 using Domain.Salas;
 using Application.Common.Interfaces;
 using ErrorOr;
 using Application.Actividades.DTOs;
+using Application.Reservas.DTOs;
 using Application.Salas;
 using Application.Profesores;
+using Application.Clientes;
 
 namespace Application.Actividades;
 
-
 public class ActividadService : IActividadService
 {
+    const decimal MONTO = 1000;
     public readonly IActividadRepository _actividadRepo;
     public readonly ISalaRepository _salaRepo;
     public readonly IProfesorRepository _profesorRepo;
+    public readonly IClienteRepository _clienteRepo;
     private readonly IUnitOfWork _uow;
 
     public ActividadService(IActividadRepository actividadRepo,
                             ISalaRepository salaRepo,
                             IProfesorRepository profesorRepo,
+                            IClienteRepository clienteRepo,
                             IUnitOfWork uow)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
         _profesorRepo = profesorRepo;
+        _clienteRepo = clienteRepo;
         _uow = uow;
     }
 
@@ -35,7 +41,7 @@ public class ActividadService : IActividadService
         if (validacion.IsError)
             return validacion.Errors;
         
-        Actividad actividad = Actividad.Create(request.Nombre, request.Descripcion, request.Tipo, request.Frecuencia, request.Estado, request.FechaYHora, request.CupoMaximo, request.SalaId, request.ProfesorId, request.SerieId );
+        Actividad actividad = Actividad.Create(request.Nombre, request.Descripcion, request.Tipo, request.Frecuencia, request.Estado, request.FechaYHora, request.CupoMaximo, MONTO, request.SalaId, request.ProfesorId, request.SerieId);
         
         _actividadRepo.Add(actividad);
         await _uow.SaveChangesAsync(ct);
@@ -69,6 +75,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.Estado,
             f,
             request.ActividadBase.CupoMaximo,
+            MONTO,
             request.ActividadBase.SalaId,
             request.ActividadBase.ProfesorId,
             serieId)).ToList();
@@ -114,6 +121,7 @@ public class ActividadService : IActividadService
                 request.ActividadBase.Estado,
                 nuevaFecha,
                 request.ActividadBase.CupoMaximo,
+                MONTO,
                 request.ActividadBase.SalaId,
                 request.ActividadBase.ProfesorId,
                 act.SerieId);
@@ -144,9 +152,10 @@ public class ActividadService : IActividadService
             request.Estado,
             request.FechaYHora,
             request.CupoMaximo,
+            MONTO,
             request.SalaId,
             request.ProfesorId,
-            request.SerieId
+            request.SerieId 
         );
 
         actividad.ModificarActividad(actividadEditada);
@@ -226,6 +235,7 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad, ct);
     }
 
+    
     private async Task<ErrorOr<ActividadResponse>> MapToDto(Actividad actividad, CancellationToken ct = default)
     {
         string nombreSala = await _salaRepo.GetByIdAsync(actividad.SalaId, ct) is Sala sala ? sala.Nombre : "Sala no encontrada";

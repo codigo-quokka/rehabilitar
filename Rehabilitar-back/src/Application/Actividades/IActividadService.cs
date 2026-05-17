@@ -1,7 +1,9 @@
 using ErrorOr;
 using Application.Actividades.DTOs;
+using Application.Reservas.DTOs;
 using Domain.Actividades;
 using Domain.Profesores;
+
 
 namespace Application.Actividades;
 

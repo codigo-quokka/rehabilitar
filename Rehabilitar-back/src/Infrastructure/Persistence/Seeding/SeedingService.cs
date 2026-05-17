@@ -7,6 +7,7 @@ using Domain.Salas;
 using Microsoft.EntityFrameworkCore;
 using Domain.Actividades;
 using Domain.Reservas;
+using Domain.Enums;
 
 namespace Infrastructure.Persistence.Seeding;
 
@@ -236,21 +237,21 @@ public class SeedingService : ISeedingService
                 return;
 
         Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
-                                            estado, fechaYHora, cupoMaximo, salaId,
+                                            estado, fechaYHora, cupoMaximo, 1000, salaId,
                                             profesorId, serieId);
 
         _dbContext.Actividades.Add(actividad);
         await _dbContext.SaveChangesAsync();
     }
 
-    private async Task SeedReservaAsync(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva)
+    private async Task SeedReservaAsync(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva, TipoCliente tipoCliente)
     {
         if (await _dbContext.Reservas.AnyAsync(r =>
             r.ClienteId.Equals(clienteId) &&
             r.ActividadId.Equals(actividadId)))
                 return;
 
-        Reserva reserva = Reserva.Create(clienteId, actividadId, detallePago, estadoDeReserva);
+        Reserva reserva = Reserva.Create(clienteId, actividadId, detallePago, estadoDeReserva, tipoCliente);
 
         _dbContext.Reservas.Add(reserva);
         await _dbContext.SaveChangesAsync();
