@@ -66,7 +66,7 @@ src/
 
 ## Authentication
 
-The app supports 5 roles: `admin`, `reception`, `professor`, `registered_client`, `guest`
+The app supports 4 roles: `admin`, `reception`, `professor`, `registered_client`
 
 Role-based route protection is implemented.
 

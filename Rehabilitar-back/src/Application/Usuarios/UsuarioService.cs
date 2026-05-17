@@ -180,7 +180,7 @@ public class UsuarioService : IUsuarioService
     private async Task<UsuarioResponse> MapToResponse(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "guest";
+        var rol = roles.FirstOrDefault() ?? "registered_client";
 
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
         // _dbContext.Clientes.AsNoTracking().FirstOrDefaultAsync(c => c.UserId == user.Id);

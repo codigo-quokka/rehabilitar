@@ -91,7 +91,7 @@ public class AuthService : IAuthService
 
         // Obtener rol del usuario
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "guest";
+        var rol = roles.FirstOrDefault() ?? "registered_client";
 
         // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
