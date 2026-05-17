@@ -21,12 +21,20 @@ export function SalasPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [salaIdAEliminar, setSalaIdAEliminar] = useState(String);
+  const [showDesactivarConfirm, setShowDesactivarConfirm] = useState(false);
+  const [salaIdAEliminar, setSalaIdAEliminar] = useState('');
+  const [salaADesactivar, setSalaADesactivar] = useState<Sala | null>(null);
+
 
   const HandleDeleteClick = (id: string) => {
     setShowDeleteConfirm(true);
     setSalaIdAEliminar(id);
   };
+  const HandleDesactivarClick = (s: Sala) => {
+    setShowDesactivarConfirm(true);
+    setSalaADesactivar(s);
+  };
+
   const handleConfirmDelete = async (id: string) => {
     try {
       await salasApi.delete(id);
@@ -50,10 +58,13 @@ export function SalasPage() {
     fetchData();
   }, []);
 
-  const handleToggle = async (sala: Sala) => {
+  const handleConfirmDesactivar = async () => {
+    if (!salaADesactivar) return;
     try {
-      await salasApi.update(sala.id, { activo: !sala.activo });
+      await salasApi.update(salaADesactivar.id, { activo: !salaADesactivar.activo });
       fetchData();
+      setShowDesactivarConfirm(false);
+      setSalaADesactivar(null);
     } catch (err) {}
   };
 
@@ -87,7 +98,7 @@ export function SalasPage() {
           <Button
             variant="naranja"
             size="sm"
-            onClick={() => handleToggle(s)}
+            onClick={() => HandleDesactivarClick(s)}
           >
             {s.activo ? "Desactivar" : "Activar"}
           </Button>
@@ -153,6 +164,16 @@ export function SalasPage() {
         title="Confirmar eliminación"
         body="¿Estás seguro de que deseas eliminar la sala?"
         confirmLabel="Eliminar"
+      />
+      <ConfirmActionModal
+        isOpen={showDesactivarConfirm}
+        onCancel={() => { setShowDesactivarConfirm(false); setSalaADesactivar(null); }}
+        onConfirm={handleConfirmDesactivar}
+        title={salaADesactivar?.activo ? 'Confirmar desactivación' : 'Confirmar activación'}
+        body={salaADesactivar?.activo
+          ? `¿Estás seguro de que deseas desactivar la sala "${salaADesactivar.nombre}"?`
+          : `¿Estás seguro de que deseas activar la sala "${salaADesactivar?.nombre}"?`}
+        confirmLabel={salaADesactivar?.activo ? 'Desactivar' : 'Activar'}
       />
     </MainLayout>
   );
