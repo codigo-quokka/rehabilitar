@@ -9,7 +9,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, title }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-bg-main dark:bg-gray-800 flex flex-col">
+    <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface dark:from-gray-700 dark:via-gray-950 dark:to-gray-800  flex flex-col">
       <Header title={title} />
       <Sidebar />
       <main id="main-content" className="flex-1 p-8" tabIndex={-1}>

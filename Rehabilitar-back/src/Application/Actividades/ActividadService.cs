@@ -180,6 +180,45 @@ public class ActividadService : IActividadService
         return responses;
     }
 
+    public async Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        if (actividad.ProfesorId.HasValue && actividad.ProfesorId.Value != Guid.Empty)
+            return Error.Conflict("La actividad ya tiene un profesor asignado.");
+
+        var profesor = await _profesorRepo.GetByIdAsync(request.ProfesorId, ct);
+        if (profesor == null)
+            return Error.NotFound("Profesor no encontrado");
+
+        if (profesor.Especialidad != actividad.Tipo)
+            return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
+
+        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, ct))
+            return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
+
+        actividad.AsignarProfesor(request.ProfesorId);
+        await _uow.SaveChangesAsync(ct);
+        return await MapToDto(actividad, ct);
+    }
+
+    public async Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        if (actividad.ProfesorId != request.ProfesorId)
+            return Error.Validation("No puedes darte de baja de una actividad que no tienes asignada.");
+
+        if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
+            return Error.Validation("No puedes darte de baja de una actividad finalizada o cancelada.");
+
+        actividad.RemoverProfesor();
+        await _uow.SaveChangesAsync(ct);
+        return await MapToDto(actividad, ct);
+    }
+
     public async Task<ErrorOr<ActividadResponse>> ObtenerActividadPorId(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
