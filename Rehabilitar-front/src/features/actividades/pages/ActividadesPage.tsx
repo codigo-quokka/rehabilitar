@@ -401,7 +401,7 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
-          profesorId: actividad.profesorId || undefined,
+          profesorId: isAdmin ? actividad.profesorId || undefined : undefined,
         }
       : {
           nombre: "",
@@ -564,26 +564,39 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
                 { value: "TrenInferior", label: "Tren Inferior" },
               ]}
             />
-            {isAdmin && (
-            <Select
-              label="Estado"
-              value={formData.estado}
-              onChange={(e) =>
-                setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
-              }
-              options={
-                isEditing
-                  ? [
-                      { value: "Propuesta", label: "Propuesta" },
-                      { value: "Aprobada", label: "Aprobada" },
-                      { value: "Cancelada", label: "Cancelada" },
-                    ]
-                  : [
-                      { value: "Propuesta", label: "Propuesta" },
-                      { value: "Aprobada", label: "Aprobada" },
-                    ]
-              }
-            />
+            {isAdmin ? (
+              <Select
+                label="Estado"
+                value={formData.estado}
+                onChange={(e) =>
+                  setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
+                }
+                options={
+                  isEditing
+                    ? [
+                        { value: "Propuesta", label: "Propuesta" },
+                        { value: "Aprobada", label: "Aprobada" },
+                        { value: "Cancelada", label: "Cancelada" },
+                      ]
+                    : [
+                        { value: "Propuesta", label: "Propuesta" },
+                        { value: "Aprobada", label: "Aprobada" },
+                      ]
+                }
+              />
+            ) : (
+              <Input
+                label="Cupo máximo"
+                type="number"
+                value={formData.cupoMaximo}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cupoMaximo: parseInt(e.target.value),
+                  })
+                }
+                required
+              />
             )}
           </div>
           {formData.frecuencia === 'Recurrente' && !isEditing && (
@@ -595,39 +608,41 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
               required
             />
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Cupo máximo"
-              type="number"
-              value={formData.cupoMaximo}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  cupoMaximo: parseInt(e.target.value),
-                })
-              }
-              required
-            />
-            <Select
-              label="Profesor (opcional)"
-              value={formData.profesorId || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  profesorId: e.target.value || undefined,
-                })
-              }
-              options={[
-                { value: "", label: "Sin profesor" },
-                ...profesores
-                  .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
-                  .map((p) => ({
-                    value: p.id,
-                    label: `${p.nombre} ${p.apellido}`,
-                  })),
-              ]}
-            />
-          </div>
+          {isAdmin && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Cupo máximo"
+                type="number"
+                value={formData.cupoMaximo}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cupoMaximo: parseInt(e.target.value),
+                  })
+                }
+                required
+              />
+              <Select
+                label="Profesor (opcional)"
+                value={formData.profesorId || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    profesorId: e.target.value || undefined,
+                  })
+                }
+                options={[
+                  { value: "", label: "Sin profesor" },
+                  ...profesores
+                    .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+                    .map((p) => ({
+                      value: p.id,
+                      label: `${p.nombre} ${p.apellido}`,
+                    })),
+                ]}
+              />
+            </div>
+          )}
         </>
       )}
 
