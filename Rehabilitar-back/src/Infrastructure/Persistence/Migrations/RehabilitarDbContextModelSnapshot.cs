@@ -23,7 +23,13 @@ namespace Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("CupoEsperaOcupado")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("CupoMaximo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CupoOcupado")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Descripcion")
@@ -57,6 +63,10 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Tipo")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -115,6 +125,12 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EstadoDeReserva")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TipoCliente")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

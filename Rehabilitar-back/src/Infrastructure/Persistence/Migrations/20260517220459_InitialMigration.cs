@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -216,6 +216,7 @@ namespace Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Version = table.Column<Guid>(type: "TEXT", nullable: false),
                     Nombre = table.Column<string>(type: "TEXT", nullable: false),
                     Descripcion = table.Column<string>(type: "TEXT", nullable: false),
                     Tipo = table.Column<int>(type: "INTEGER", nullable: false),
@@ -223,6 +224,8 @@ namespace Infrastructure.Persistence.Migrations
                     Estado = table.Column<int>(type: "INTEGER", nullable: false),
                     FechaYHora = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CupoMaximo = table.Column<int>(type: "INTEGER", nullable: false),
+                    CupoOcupado = table.Column<int>(type: "INTEGER", nullable: false),
+                    CupoEsperaOcupado = table.Column<int>(type: "INTEGER", nullable: false),
                     Precio = table.Column<decimal>(type: "TEXT", nullable: false),
                     SalaId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ProfesorId = table.Column<Guid>(type: "TEXT", nullable: true),
@@ -252,6 +255,8 @@ namespace Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ActividadId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FechaReserva = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    TipoCliente = table.Column<int>(type: "INTEGER", nullable: false),
                     MontoTotal = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
                     MontoPagado = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
                     EstadoDeReserva = table.Column<int>(type: "INTEGER", nullable: false)
@@ -302,6 +307,12 @@ namespace Infrastructure.Persistence.Migrations
                 name: "RoleNameIndex",
                 table: "Roles",
                 column: "NormalizedName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Salas_Nombre",
+                table: "Salas",
+                column: "Nombre",
                 unique: true);
 
             migrationBuilder.CreateIndex(
