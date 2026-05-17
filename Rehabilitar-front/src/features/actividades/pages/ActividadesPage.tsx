@@ -115,7 +115,7 @@ export function ActividadesPage() {
               filters={[
                 {
                   key: 'frecuencia',
-                  label: 'Frecuencia',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todas las frecuencias' },
                     ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
@@ -123,7 +123,7 @@ export function ActividadesPage() {
                 },
                 {
                   key: 'tipo',
-                  label: 'Especialidad',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todas las especialidades' },
                     ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
@@ -131,7 +131,7 @@ export function ActividadesPage() {
                 },
                 {
                   key: 'profesor',
-                  label: 'Profesor',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todos los profesores' },
                     { value: 'unassigned', label: 'Sin asignar' },
@@ -156,6 +156,14 @@ export function ActividadesPage() {
               onClick={() => setShowModal(true)}
             >
               Nueva Actividad
+            </Button>
+          )}
+          {hasRole(["professor"]) && (
+            <Button
+              className="px-6 py-3 justify-center whitespace-nowrap"
+              onClick={() => setShowModal(true)}
+            >
+              Proponer Actividad
             </Button>
           )}
         </div>
@@ -278,7 +286,7 @@ export function ActividadesPage() {
                   </div>
                 </div>
 
-                {hasRole(["registered_client", "reception"]) && (
+                {hasRole(["registered_client"]) && (
                   <Button
                     variant={
                       act.cupoDisponible <= 0
@@ -345,6 +353,8 @@ interface ActividadFormProps {
 
 function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
   const isEditing = !!actividad;
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(["admin"]);
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -352,7 +362,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
           descripcion: actividad.descripcion,
           tipo: actividad.tipo as CreateActividadRequest['tipo'],
           frecuencia: actividad.frecuencia as CreateActividadRequest['frecuencia'],
-          estado: actividad.estado as CreateActividadRequest['estado'],
+          estado: isAdmin ? (actividad.estado as CreateActividadRequest['estado']) : 'Propuesta',
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
@@ -522,6 +532,7 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
                 { value: "TrenInferior", label: "Tren Inferior" },
               ]}
             />
+            {isAdmin && (
             <Select
               label="Estado"
               value={formData.estado}
@@ -533,16 +544,15 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
                   ? [
                       { value: "Propuesta", label: "Propuesta" },
                       { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
                       { value: "Cancelada", label: "Cancelada" },
                     ]
                   : [
                       { value: "Propuesta", label: "Propuesta" },
                       { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
                     ]
               }
             />
+            )}
           </div>
           {formData.frecuencia === 'Recurrente' && !isEditing && (
             <Input

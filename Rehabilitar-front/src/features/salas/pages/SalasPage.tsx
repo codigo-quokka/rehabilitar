@@ -11,8 +11,11 @@ import {
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { salasApi } from "../../../api";
 import { Sala } from "../../../types";
+import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
+  const { hasRole } = useAuth();
+  const isReception = hasRole(["reception"]);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -107,9 +110,11 @@ export function SalasPage() {
     <MainLayout title="Salas">
       <div className="space-y-6">
         <div className="flex justify-end">
+          {!isReception && (
           <Button variant="primary" onClick={() => setShowModal(true)}>
             Nueva Sala
           </Button>
+          )}
         </div>
 
         {loading ? (

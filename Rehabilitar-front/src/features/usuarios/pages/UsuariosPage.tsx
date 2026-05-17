@@ -193,7 +193,7 @@ export function UsuariosPage() {
               filters={[
                 ...(!isReception ? [{
                   key: 'rol',
-                  label: 'Rol',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todos los roles' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
@@ -201,7 +201,7 @@ export function UsuariosPage() {
                 }] : []),
                 {
                   key: 'estado',
-                  label: 'Estado',
+                  label: '',
                   options: [
                     { value: 'all', label: 'Todos los estados' },
                     { value: 'active', label: 'Activos' },
@@ -220,7 +220,7 @@ export function UsuariosPage() {
               className="min-w-[500px]"
             />
           </div>
-          <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>
+          {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
         </div>
 
         {loading ? (
