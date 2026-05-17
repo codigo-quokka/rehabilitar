@@ -35,13 +35,13 @@ public class ReservaService : IReservaService
         {
             try
             {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(Guid.Parse(request.ActividadId), ct);
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-                var cliente = await _clienteRepo.GetByIdAsync(Guid.Parse(request.ClienteId), ct);
+                var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
                 if (cliente == null) return Error.NotFound("Cliente no encontrado");
 
-                Reserva reserva = actividad.IniciarReserva(cliente, request.tipoCliente.);
+                Reserva reserva = actividad.IniciarReserva(cliente, request.TipoCliente);
                 //  metodo redirigirAPago. cuando sale ya se tine info del pago
                 //ConfirmarReserva
                 //si el cliente tiene creditos va a agregar reserva con el pago al 100. sino tendría que ir a iniciar reserva
@@ -66,14 +66,6 @@ public class ReservaService : IReservaService
         }
 
         return Error.NotFound("Error inesperado al procesar la reserva.");
-    }
-
-    public async void ReservarActividadesRecurrentes(ICollection<Actividad> actividades, Guid clienteId, TipoCliente tipoCliente, CancellationToken ct)
-    {
-        foreach (Actividad a in actividades)
-        {
-            await ReservarActividadAsync(a.Id, clienteId, tipoCliente, ct);
-        }
     }
 
     public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct)
