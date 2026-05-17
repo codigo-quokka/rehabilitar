@@ -15,7 +15,7 @@ export function ReservasPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const params = hasRole(['admin', 'reception']) ? {} : { usuarioId: user?.id };
+        const params = hasRole(['Administrador', 'Recepción']) ? {} : { usuarioId: user?.id };
         const res = await reservasApi.getAll(params);
         setReservas(res);
 
@@ -39,7 +39,7 @@ export function ReservasPage() {
     }
   };
 
-  const canManage = hasRole(['admin', 'reception']);
+  const canManage = hasRole(['Administrador', 'Recepción']);
 
   const columns = [
     { key: 'id', header: 'ID' },

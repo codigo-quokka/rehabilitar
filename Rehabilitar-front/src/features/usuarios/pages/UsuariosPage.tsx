@@ -11,7 +11,7 @@ import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 export function UsuariosPage() {
   const { user: currentUser, hasRole } = useAuth();
-  const isReception = hasRole(['reception']);
+  const isReception = hasRole(['Recepción']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -29,7 +29,7 @@ export function UsuariosPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
 
   const tipoLabel: Record<string, string> = {
     TrenSuperior: 'Tren Superior',
@@ -38,15 +38,15 @@ export function UsuariosPage() {
   };
 
   const rolLabel: Record<string, string> = {
-    admin: 'Admin',
-    reception: 'Recepción',
-    professor: 'Profesor',
-    registered_client: 'Cliente',
-    guest: 'Invitado',
+    Administrador: 'Admin',
+    Recepción: 'Recepción',
+    Profesor: 'Profesor',
+    'Cliente Registrado': 'Cliente',
+
   };
 
   const filteredUsuarios = usuarios.filter(u => {
-    if (isReception && u.rol !== 'registered_client') return false;
+    if (isReception && u.rol !== 'Cliente Registrado') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
     if (filters.estado === 'active' && !u.activo) return false;
     if (filters.estado === 'suspended' && u.activo) return false;
@@ -139,10 +139,10 @@ export function UsuariosPage() {
       header: 'Rol',
       render: (u: User) => (
         <div className="flex items-center gap-2">
-          <Badge variant={u.rol === 'admin' ? 'danger' : u.rol === 'professor' ? 'info' : u.rol === 'reception' ? 'amber' : 'default'}>
+          <Badge variant={u.rol === 'Administrador' ? 'danger' : u.rol === 'Profesor' ? 'info' : u.rol === 'Recepción' ? 'amber' : 'default'}>
             {rolLabel[u.rol] || u.rol.replace('_', ' ')}
           </Badge>
-          {u.rol === 'professor' && u.especialidad && (
+          {u.rol === 'Profesor' && u.especialidad && (
             <Badge variant="success">{tipoLabel[u.especialidad] || u.especialidad}</Badge>
           )}
         </div>
@@ -217,7 +217,7 @@ export function UsuariosPage() {
               placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-[500px]"
+              className="min-w-125"
             />
           </div>
           {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
@@ -292,7 +292,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
-    rol: user?.rol || 'registered_client',
+    rol: user?.rol || 'Cliente Registrado',
     especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
@@ -317,7 +317,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
     }
   };
 
-  const roles: Role[] = ['admin', 'reception', 'professor', 'registered_client', 'guest'];
+  const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -345,10 +345,10 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       <Select
         label="Rol"
         value={formData.rol}
-        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role, especialidad: e.target.value !== 'professor' ? '' : formData.especialidad })}
+        onChange={(e) => setFormData({ ...formData, rol: e.target.value as Role, especialidad: e.target.value !== 'Profesor' ? '' : formData.especialidad })}
         options={roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))}
       />
-      {formData.rol === 'professor' && (
+      {formData.rol === 'Profesor' && (
         <Select
           label="Especialidad"
           value={formData.especialidad}

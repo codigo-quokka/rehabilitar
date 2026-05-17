@@ -12,7 +12,7 @@ export function DashboardPage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = hasRole(['admin']);
+  const isAdmin = hasRole(['Administrador']);
 
   const fetchData = useCallback(async () => {
     try {

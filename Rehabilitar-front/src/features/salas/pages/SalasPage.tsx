@@ -15,7 +15,7 @@ import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
   const { hasRole } = useAuth();
-  const isReception = hasRole(["reception"]);
+  const isReception = hasRole(["Recepción"]);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
