@@ -1,3 +1,4 @@
+using System.Data;
 using Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -12,7 +13,14 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken ct)
     {
-        return await _context.SaveChangesAsync(ct);
+        try
+        {
+            return await _context.SaveChangesAsync(ct);   
+        }
+        catch  (Exception e) /* DbUpdateConcurrencyException e */
+        {
+            throw new DBConcurrencyException("Error de concurrencia", e);
+        }
     }
 
     public async Task BeginTransactionAsync(CancellationToken ct = default)

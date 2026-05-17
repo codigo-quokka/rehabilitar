@@ -54,8 +54,10 @@ export function ActividadesPage() {
     frecuencia: 'all',
     tipo: 'all',
     profesor: 'all',
+    estado: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
@@ -103,8 +105,10 @@ export function ActividadesPage() {
 
   const filteredActividades = actividades.filter(a => {
     if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (hasRole(['Cliente Registrado']) && a.estado !== 'Aprobada') return false;
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
+    if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
     if (filters.profesor === 'all') return true;
     if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
     if (a.profesorId !== filters.profesor) return false;
@@ -143,19 +147,34 @@ export function ActividadesPage() {
                     ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
                   ],
                 },
+                ...(!hasRole(['Cliente Registrado'])
+                  ? [
+                      {
+                        key: 'estado',
+                        label: '',
+                        options: [
+                          { value: 'all', label: 'Todos los estados' },
+                          ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
+                        ],
+                      },
+                    ]
+                  : []),
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all' })}
+              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', estado: 'all' })}
+              onOpenChange={setFilterOpen}
             />
-            <Input
-              placeholder="Buscar por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="min-w-125"
-            />
+            {!filterOpen && (
+              <Input
+                placeholder="Buscar por nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125"
+              />
+            )}
           </div>
-          {hasRole(["Administrador"]) && (
+          {!filterOpen && hasRole(["Administrador"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -163,7 +182,7 @@ export function ActividadesPage() {
               Nueva Actividad
             </Button>
           )}
-          {hasRole(["Profesor"]) && (
+          {!filterOpen && hasRole(["Profesor"]) && (
             <Button
               className="px-6 py-3 justify-center whitespace-nowrap"
               onClick={() => setShowModal(true)}
@@ -189,7 +208,7 @@ export function ActividadesPage() {
                   <div className="flex gap-2">
                     <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                     <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
-                    {hasRole(["Administrador", "Profesor"]) && (
+                    {hasRole(["Administrador", "Profesor", "Recepción"]) && (
                       <Badge variant={
                         act.estado === 'Cancelada' ? 'warning' :
                         act.estado === 'EnCurso' ? 'info' :
