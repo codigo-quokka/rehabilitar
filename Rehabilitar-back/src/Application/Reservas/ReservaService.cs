@@ -12,18 +12,21 @@ namespace Application.Reservas;
 
 public class ReservaService : IReservaService
 {
+    private readonly IReservaRepository _reservaRepo;
     private readonly IActividadRepository _actividadRepo;
     private readonly IClienteRepository _clienteRepo;
     private readonly IUnitOfWork _uow;
 
-    public ReservaService(IActividadRepository actividadRepo, IClienteRepository clienteRepo, IUnitOfWork uow)
+    public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
+                        IClienteRepository clienteRepo, IUnitOfWork uow)
     {
+        _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
         _clienteRepo = clienteRepo;
         _uow = uow;
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(Guid actividadId, Guid clienteId, TipoCliente tipoCliente,  CancellationToken ct)
+    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct)
     {
         int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
         int delayPerRetry = 100; // Milisegundos opcionales
@@ -32,13 +35,13 @@ public class ReservaService : IReservaService
         {
             try
             {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(Guid.Parse(request.ActividadId), ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                var cliente = await _clienteRepo.GetByIdAsync(Guid.Parse(request.ClienteId), ct);
                 if (cliente == null) return Error.NotFound("Cliente no encontrado");
 
-                Reserva reserva = actividad.IniciarReserva(cliente, tipoCliente);
+                Reserva reserva = actividad.IniciarReserva(cliente, request.tipoCliente.);
                 //  metodo redirigirAPago. cuando sale ya se tine info del pago
                 //ConfirmarReserva
                 //si el cliente tiene creditos va a agregar reserva con el pago al 100. sino tendría que ir a iniciar reserva
@@ -92,7 +95,13 @@ public class ReservaService : IReservaService
        return Error.Failure();
    }
 
-    private ErrorOr<ReservaDTO> MapToReservaDTO(Reserva reserva, CancellationToken ct = default)
+    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
+    {
+        var reservas = await _reservaRepo.GetReservasDeClientePorIdAsync(id, ct);
+        return reservas.Select(MapToReservaDTO).ToList();
+    }
+
+    private static ReservaDTO MapToReservaDTO(Reserva reserva)
     {
         return new ReservaDTO(
             reserva.Id,

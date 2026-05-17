@@ -6,7 +6,7 @@ namespace Application.Reservas.DTOs;
 public record ReservaDTO(
     Guid Id, 
     Guid ClienteId, 
-    Guid ActividadId, 
+    Guid ActividadId,
     DateTime FechaReserva,
     TipoCliente TipoCliente,
     EstadoDeReserva EstadoDeReserva,
