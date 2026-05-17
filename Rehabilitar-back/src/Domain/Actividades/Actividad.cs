@@ -112,9 +112,14 @@ public class Actividad
 		SerieId = serieId;
 	}
 
-	private void AsignarProfesor(Guid profesorId)
+	public void AsignarProfesor(Guid profesorId)
 	{
 		ProfesorId = profesorId;
+	}
+
+	public void RemoverProfesor()
+	{
+		ProfesorId = null;
 	}
 
 	private void CambiarEstado(EstadoActividad nuevoEstado) // quizas se deba refactorizar para validar transiciones de estado permitidas

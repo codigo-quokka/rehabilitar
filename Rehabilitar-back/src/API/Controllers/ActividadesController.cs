@@ -84,6 +84,26 @@ public class ActividadesController : ApiControllerBase
         );
     }
 
+    [HttpPut("{id:guid}/asignar-profesor")]
+    public async Task<IActionResult> AsignarProfesor(Guid id, [FromBody] AsignarProfesorRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.AsignarProfesorActividad(id, request, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPut("{id:guid}/remover-profesor")]
+    public async Task<IActionResult> RemoverProfesor(Guid id, [FromBody] RemoverProfesorRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.RemoverProfesorActividad(id, request, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {

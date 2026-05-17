@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { MainLayout } from '../../../components/layout';
-import { Card, Badge, Table } from '../../../components/ui';
+import { Card, Badge, Table, Button } from '../../../components/ui';
+import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { useAuth } from '../../../hooks/useAuth';
-import { profesorApi } from '../../../api';
+import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
 
 const formatDate = (iso: string) => {
@@ -38,6 +39,8 @@ export function MisClasesPage() {
   const { user } = useAuth();
   const [clases, setClases] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,6 +57,19 @@ export function MisClasesPage() {
     };
     fetchData();
   }, [user]);
+
+  const handleRemoverProfesor = async () => {
+    if (!selectedActividad || !user) return;
+    try {
+      await actividadesApi.removerProfesor(selectedActividad.id, user.id);
+      setClases(prev => prev.filter(a => a.id !== selectedActividad.id));
+    } catch {
+      // empty
+    } finally {
+      setShowConfirmModal(false);
+      setSelectedActividad(null);
+    }
+  };
 
   const columns = [
     { key: 'nombre', header: 'Actividad' },
@@ -112,6 +128,21 @@ export function MisClasesPage() {
         </Badge>
       ),
     },
+    {
+      key: 'acciones',
+      header: 'Darse de baja',
+      render: (a: Actividad) => (
+        a.profesorId && a.profesorId !== '00000000-0000-0000-0000-000000000000' ? (
+          <Button
+            variant="rojo"
+            size="sm"
+            onClick={() => { setSelectedActividad(a); setShowConfirmModal(true); }}
+          >
+            Darse de baja
+          </Button>
+        ) : null
+      ),
+    }
   ];
 
   return (
@@ -131,6 +162,15 @@ export function MisClasesPage() {
           </Card>
         )}
       </div>
+
+      <ConfirmActionModal
+        isOpen={showConfirmModal}
+        title="¿Darse de baja?"
+        body={`¿Estás seguro de que querés darte de baja de "${selectedActividad?.nombre}"?`}
+        confirmLabel="Darse de baja"
+        onConfirm={handleRemoverProfesor}
+        onCancel={() => { setShowConfirmModal(false); setSelectedActividad(null); }}
+      />
     </MainLayout>
   );
 }
