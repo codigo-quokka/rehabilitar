@@ -173,7 +173,7 @@ public class EmailService : IEmailService
                         <p class='greeting'>¡Hola!</p>
                         <p class='message'>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>RehabilitAR.</strong></p>
                         <div class='button-container'>
-                            <a href='{link}' class='confirm-button'>Restablecer Contraseña</a>
+                            <a href='{link}' class='confirm-button'>Restablecer contraseña</a>
                         </div>
                         <p class='alternative-text'>
                             Si el botón no funciona, podés copiar y pegar este enlace en tu navegador:
