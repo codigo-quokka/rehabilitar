@@ -70,7 +70,7 @@ export function DniScanner({ onScanComplete, onManualEntry }: DniScannerProps) {
           disabled={loading}
           className="w-full py-3"
         >
-          {loading ? "Analizando..." : "Tomar foto"}
+          {loading ? "Analizando..." : "Cargar imagen"}
         </Button>
         
         <Button 
