@@ -175,9 +175,9 @@ public class ActividadService : IActividadService
     }
 
     public async Task<ErrorOr<List<ActividadResponse>>> ListarActividades(
-        TipoEspecialidad? tipo, FrecuenciaActividad? frecuencia, EstadoActividad? estado, CancellationToken ct)
+        TipoEspecialidad? tipo, FrecuenciaActividad? frecuencia, EstadoActividad? estado, Guid? profesorId, CancellationToken ct)
     {
-        var actividades = await _actividadRepo.ListarActividadesAsync(tipo, frecuencia, estado, ct);
+        var actividades = await _actividadRepo.ListarActividadesAsync(tipo, frecuencia, estado, profesorId, ct);
         var responses = new List<ActividadResponse>();
         foreach (var actividad in actividades)
         {
