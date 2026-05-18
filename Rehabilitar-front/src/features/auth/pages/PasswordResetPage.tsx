@@ -115,6 +115,11 @@ export function PasswordResetPage() {
                 <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
               </div>
 
+              <InformRequirements
+                value={newPassword}
+                requirements={passwordReqs}
+              />
+
               <div className="relative">
                 <Input
                   label="Confirmar nueva contraseña"
@@ -133,10 +138,7 @@ export function PasswordResetPage() {
                 requirements={confirmPasswordReqs}
               />
 
-              <InformRequirements
-                value={newPassword}
-                requirements={passwordReqs}
-              />
+              
 
               <Button type="submit" className="w-full">Restablecer contraseña</Button>
             </form>

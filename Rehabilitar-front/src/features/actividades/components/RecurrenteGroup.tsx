@@ -140,7 +140,7 @@ export function RecurrenteGroup({
   };
 
   const stripe =
-    "h-2.5 bg-white dark:bg-gray-900/70 border-x border-b border-border dark:border-gray-700 rounded-b-2xl pointer-events-none";
+    "h-2.5 border-x border-b border-border dark:border-gray-700 rounded-b-2xl pointer-events-none";
 
   return (
     <>
@@ -155,7 +155,7 @@ export function RecurrenteGroup({
         className="cursor-pointer flex flex-col h-full"
       >
       <div className="flex flex-col flex-1">
-        <Card className="flex flex-col flex-1 transition-shadow hover:shadow-gray-700 pb-4 dark:hover:shadow-gray-500">
+        <Card className="flex flex-col flex-1 transition-shadow hover:shadow-dark-green hover:bg-green-50 dark:hover:bg-gray-900 dark:hover:shadow-gray-500">
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
@@ -219,7 +219,7 @@ export function RecurrenteGroup({
                     handleSubscribe();
                   }}
                 >
-                  Ver Subscriptores
+                  Ver suscriptores
                 </Button>
               </div>
             )}
@@ -232,7 +232,7 @@ export function RecurrenteGroup({
                   handleSubscribe();
                 }}
               >
-                Ver Subscriptores
+                Ver suscriptores
               </Button>
             )}
             {hasRole(["Cliente Registrado"]) && (
@@ -261,10 +261,10 @@ export function RecurrenteGroup({
             )}
           </div>
         </Card>
-        <div className={`${stripe} shadow -mt5 w-[92%] mx-auto`} />
-        <div className={`${stripe} shadow-md -mt5 w-[84%] mx-auto`} />
-        <div className={`${stripe} shadow-lg -mt5 w-[76%] mx-auto`} />
-        <div className={`${stripe} shadow-xl -mt5 w-[68%] mx-auto`} />
+        <div className={`${stripe} -mt5 bg-dark/5 w-[92%] mx-auto`} />
+        <div className={`${stripe} shadow-xl -mt5 bg-dark/20 w-[84%] mx-auto`} />
+        <div className={`${stripe} shadow-xl -mt5 bg-dark/40 w-[76%] mx-auto`} />
+        <div className={`${stripe} shadow-xl -mt5 bg-dark/50 w-[68%] mx-auto`} />
       </div>
       </div>
 
