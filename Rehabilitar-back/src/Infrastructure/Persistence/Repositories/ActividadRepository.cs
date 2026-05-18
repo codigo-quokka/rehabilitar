@@ -78,6 +78,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                                       .Include(a => a.Sala)
                                       .Include(a => a.Profesor)
                                       .ThenInclude(p => p.User)
+                                      .Include(a => a.Reservas)
                                       .FirstOrDefaultAsync(a => a.Id == actividadId, ct);
         if (actividad == null) throw new KeyNotFoundException("Actividad no encontrada.");
         return actividad;

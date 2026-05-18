@@ -67,12 +67,10 @@ public class Actividad
 		Reservas = new List<Reserva>();
 	}
 
-	public Reserva IniciarReserva(Cliente cliente, TipoCliente tipoCliente) // Definir el tipo de cliente, quizás haya que crear una clase Cliente que herede de User para diferenciarlo de otros tipos de usuarios (administradores, profesores, etc.)
+	public Reserva IniciarReserva(Cliente cliente, TipoCliente tipoCliente)
 	{
-		Version = Guid.NewGuid(); // Actualizar la versión de la actividad para manejar concurrencia optimista
-		var reserva = Reserva.Create(cliente.UserId, this.Id, new DetallePago(this.Precio, 0), EstadoDeReserva.PendienteDePago, tipoCliente);
-		Reservas.Add(reserva);
-		//redirigirAPago(reserva);
+		Version = Guid.NewGuid();
+		Reserva reserva = Reserva.Create(cliente.UserId, this.Id, new DetallePago(this.Precio, 0), EstadoDeReserva.PendienteDePago, tipoCliente);
 		return reserva;
 	}
 

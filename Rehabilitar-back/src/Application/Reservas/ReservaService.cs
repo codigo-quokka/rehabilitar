@@ -48,26 +48,25 @@ public class ReservaService : IReservaService
                 if (cliente == null) return Error.NotFound("Cliente no encontrado");
 
                 Reserva reserva = actividad.IniciarReserva(cliente, request.TipoCliente);
-                //  metodo redirigirAPago. cuando sale ya se tine info del pago
-                //ConfirmarReserva
-                //si el cliente tiene creditos va a agregar reserva con el pago al 100. sino tendría que ir a iniciar reserva
+                _reservaRepo.Add(reserva);
 
-
-                // Aquí es donde EF Core comparará el 'Version' (Concurrency Token)
                 await _uow.SaveChangesAsync(ct);
 
-                return MapToReservaResponse(reserva);
+                var reservaCompleta = await _reservaRepo.GetByIdAsync(reserva.Id, ct);
+                if (reservaCompleta == null)
+                    return Error.NotFound("Error al recuperar la reserva después de crearla.");
+
+                return MapToReservaResponse(reservaCompleta);
             }
-            catch (ConcurrencyException)
+            catch (ConcurrencyException ex)
             {
-                // ¡CONFLICTO DETECTADO!
+                System.Console.WriteLine($"ReservaService: ConcurrencyException en intento {i + 1}/{maxRetries}: {ex.InnerException?.Message}");
+
                 if (i == maxRetries - 1)
                     return Error.Conflict("El sistema está muy ocupado. Por favor, intenta de nuevo en unos segundos.");
 
-                // Esperar un momento aleatorio (jitter) ayuda a reducir colisiones en el reintento
+                _uow.ClearChangeTracker();
                 await Task.Delay(new Random().Next(10, delayPerRetry), ct);
-
-                // En el próximo loop, 'ObtenerPorIdAsync' traerá la versión actualizada de la DB
             }
         }
 
@@ -104,7 +103,8 @@ public class ReservaService : IReservaService
                 return Result.Success;
             } catch (ConcurrencyException) {
                 if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
-                await Task.Delay(new Random().Next(10, 100), ct); // Espera aleatoria
+                _uow.ClearChangeTracker();
+                await Task.Delay(new Random().Next(10, 100), ct);
             }
         }
         return Error.Failure();
@@ -124,6 +124,7 @@ public class ReservaService : IReservaService
                 return Result.Deleted;
             } catch (ConcurrencyException) {
                 if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                _uow.ClearChangeTracker();
                 await Task.Delay(new Random().Next(10, 100), ct);
             }
         }

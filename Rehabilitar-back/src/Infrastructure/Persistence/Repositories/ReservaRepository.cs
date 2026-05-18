@@ -8,6 +8,14 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
 {
     public ReservaRepository(RehabilitarDbContext context) : base(context) { }
 
+    public override async Task<Reserva?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Reservas
+            .Include(r => r.Cliente)
+            .ThenInclude(c => c.User)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
+    }
+
     public async Task<IEnumerable<Reserva>> GetReservasDeClientePorIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.Reservas

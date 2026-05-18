@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { MainLayout } from "../../../components/layout";
 import {
@@ -39,6 +40,9 @@ export function ActividadesPage() {
   const dateFromRef = useRef<HTMLInputElement>(null);
   const dateToRef = useRef<HTMLInputElement>(null);
 
+  const navigate = useNavigate();
+  const [reservandoId, setReservandoId] = useState<string | null>(null);
+
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -74,10 +78,29 @@ export function ActividadesPage() {
 
   const handleReservar = async (actividad: Actividad) => {
     if (!user) return;
+    setReservandoId(actividad.id);
     try {
-      await reservasApi.create({ actividadId: actividad.id });
-      fetchData();
-    } catch (err) {}
+      await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      navigate("/reservas");
+    } catch (err) {
+      const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
+      console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
+      const data = axiosErr?.response?.data;
+      const msg = typeof data?.error === 'string'
+        ? data.error
+        : typeof data?.errorCode === 'string'
+          ? data.errorCode
+          : typeof data?.title === 'string'
+            ? data.title
+            : typeof data?.message === 'string'
+              ? data.message
+              : axiosErr?.message ?? 'Error al realizar la reserva';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setReservandoId(null);
+    }
   };
 
   const canManage = hasRole(["Administrador", "Recepción"]);
