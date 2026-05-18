@@ -219,7 +219,7 @@ export function RecurrenteGroup({
                     handleSubscribe();
                   }}
                 >
-                  Ver Subsctiptores
+                  Ver Subscriptores
                 </Button>
               </div>
             )}
@@ -361,10 +361,10 @@ export function RecurrenteGroup({
             <div className="flex flex-col items-center text-center mb-6 relative">
               <button
                 onClick={() => setExpanded(false)}
-                className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
                 aria-label="Cerrar"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
