@@ -26,7 +26,7 @@ public class ReservaService : IReservaService
         _uow = uow;
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<ReservaResponse>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
     {
         int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
         int delayPerRetry = 100; // Milisegundos opcionales
@@ -46,7 +46,7 @@ public class ReservaService : IReservaService
 
                 await _uow.SaveChangesAsync(ct);
 
-                return MapToReservaDTO(reserva);
+                return MapToReservaResponse(reserva);
             }
             catch (ConcurrencyException ex)
             {
@@ -120,33 +120,35 @@ public class ReservaService : IReservaService
         return Error.Failure();
     }
 
-    public async Task<ErrorOr<ReservaDTO>> ObtenerReservaPorId(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<ReservaResponse>> ObtenerReservaPorId(Guid id, CancellationToken ct = default)
     {
         var reserva = await _reservaRepo.GetByIdAsync(id, ct);
 
         if (reserva == null)
             return Error.NotFound("Reserva no encontrada");
 
-        return MapToReservaDTO(reserva);
+        return MapToReservaResponse(reserva);
     }
 
-    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
     {
         var reservas = await _reservaRepo.GetReservasDeClientePorIdAsync(id, ct);
-        return reservas.Select(MapToReservaDTO).ToList();
+        return reservas.Select(MapToReservaResponse).ToList();
     }
 
-    public async Task<ErrorOr<IEnumerable<ReservaDTO>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default)
     {
         var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(id, ct);
-        return reservas.Select(MapToReservaDTO).ToList();
+        return reservas.Select(MapToReservaResponse).ToList();
     }
 
-    private static ReservaDTO MapToReservaDTO(Reserva reserva)
+    private static ReservaResponse MapToReservaResponse(Reserva reserva)
     {
-        return new ReservaDTO(
+        string nombreCliente = reserva.Cliente.User!.FirstName + " " + reserva.Cliente.User.LastName;
+        return new ReservaResponse(
             reserva.Id,
             reserva.ClienteId,
+            nombreCliente,
             reserva.ActividadId,
             reserva.FechaReserva,
             reserva.TipoCliente,

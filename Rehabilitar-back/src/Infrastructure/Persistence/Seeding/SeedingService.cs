@@ -17,14 +17,17 @@ public class SeedingService : ISeedingService
     private readonly RoleManager<Role> _roleManager;
     private readonly UserManager<User> _userManager;
     private readonly RehabilitarDbContext _dbContext;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
     public SeedingService(RoleManager<Role> roleManager,
                         UserManager<User> userManager,
-                        RehabilitarDbContext dbContext)
+                        RehabilitarDbContext dbContext,
+                        IPasswordHasher<User> passwordHasher)
     {
         _roleManager = roleManager;
         _userManager = userManager;
         _dbContext = dbContext;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task SeedAsync()
@@ -104,7 +107,8 @@ public class SeedingService : ISeedingService
             email: adminEmail
         );
 
-        var result = await _userManager.CreateAsync(adminUser, "Admin01!");
+        adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, "admin");
+        var result = await _userManager.CreateAsync(adminUser);
 
         if (result.Succeeded)
         {
@@ -130,7 +134,8 @@ public class SeedingService : ISeedingService
             email: receptionEmail
         );
 
-        var result = await _userManager.CreateAsync(receptionUser, "Recep01!");
+        receptionUser.PasswordHash = _passwordHasher.HashPassword(receptionUser, "recepcion");
+        var result = await _userManager.CreateAsync(receptionUser);
 
         if (result.Succeeded)
         {
@@ -157,7 +162,10 @@ public class SeedingService : ISeedingService
                 lastName: clientLastName,
                 email: clientEmail
             );
-            var result = await _userManager.CreateAsync(clientUser, "Cliente1!");
+
+            clientUser.PasswordHash = _passwordHasher.HashPassword(clientUser, "cliente");
+            var result = await _userManager.CreateAsync(clientUser);
+
             if (!result.Succeeded)
             {
                 System.Console.WriteLine("Error al seedear cliente.");
@@ -195,7 +203,10 @@ public class SeedingService : ISeedingService
                 lastName: profesorLastName,
                 email: profesorEmail
             );
-            var result = await _userManager.CreateAsync(profesorUser, "Profesor1!");
+            
+            profesorUser.PasswordHash = _passwordHasher.HashPassword(profesorUser, "profesor");
+            var result = await _userManager.CreateAsync(profesorUser);
+
             if (!result.Succeeded)
             {
                 System.Console.WriteLine("Error al seedear profesor.");

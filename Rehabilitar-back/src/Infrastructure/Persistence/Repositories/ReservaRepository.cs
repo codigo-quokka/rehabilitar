@@ -13,6 +13,8 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
         return await _context.Reservas
         // .Include(r => r.Actividad) se puede incluir la actividad pero de momento la dejo comentada hasta que se necesite
         .Where(r => r.ClienteId == userId)
+        .Include(r => r.Cliente)
+        .ThenInclude(c => c.User)
         .AsNoTracking() // con tracking o sin tracking? si necesito las reservas de un cliente probablemente ese cliente deba poder modificarlas, entonces sería sin tracking. Si se modifican así lo cambio.
         .ToListAsync();
     }

@@ -50,6 +50,9 @@ public class ActividadService : IActividadService
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividadRecurrente(CrearActividadRecurrenteRequest request, CancellationToken ct = default)
     {
+        if (request.FechaFinRecurrente <= request.ActividadBase.FechaYHora)
+            return Error.Validation("La fecha fin de recurrencia debe ser posterior a la fecha de inicio.");
+
         Guid serieId = Guid.NewGuid();
         
         DateTime fechaInicio = request.ActividadBase.FechaYHora;
@@ -245,7 +248,7 @@ public class ActividadService : IActividadService
             var profesor = await _profesorRepo.GetByIdAsync(actividad.ProfesorId.Value, ct);
 
             if (profesor == null)
-                return Error.NotFound("Prfoesor.NotFound", "Profesor no encontrado.");
+                return Error.NotFound("Profesor.NotFound", "Profesor no encontrado.");
 
             nombreProfesor = profesor.User.FirstName + " " + profesor.User.LastName;
         }
@@ -273,12 +276,15 @@ public class ActividadService : IActividadService
         if (estado == EstadoActividad.Finalizada)
             return Error.Validation("No se puede crear o editar una actividad en estado finalizada.");
 
+        if (fechaYHora < DateTime.Now)
+            return Error.Validation("La fecha y hora de la actividad no puede ser en el pasado.");
+
         var sala = await _salaRepo.GetByIdAsync(salaId, ct);
         
         if (sala == null) return Error.NotFound("Sala no encontrada");
 
-        if (cupoMaximo <= 0 || cupoMaximo > sala.Capacidad) 
-            return Error.Validation($"Cupo máximo debe ser mayor a 0 y menor o igual a la capacidad de la sala ({sala.Capacidad})");
+        if (cupoMaximo > sala.Capacidad) 
+            return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, ct))
             return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");

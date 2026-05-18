@@ -4,6 +4,7 @@ using Application.Profesores;
 using Application.Reservas;
 using Application.Salas;
 using Application.Usuarios;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Common;
@@ -18,6 +19,8 @@ public static class DependencyInjection
         services.AddScoped<IProfesorService, ProfesorService>();
         services.AddScoped<IReservaService, ReservaService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
+
+        services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
 
         return services;
     }

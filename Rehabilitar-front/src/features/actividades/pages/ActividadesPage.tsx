@@ -1,10 +1,9 @@
-import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { MainLayout } from "../../../components/layout";
 import {
   Card,
   Button,
-  Badge,
   Modal,
   Input,
   Select,
@@ -14,34 +13,9 @@ import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
 import { Actividad, Sala, User, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
-
-const formatDate = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-};
-
-const tipoLabel: Record<string, string> = {
-  TrenSuperior: 'Tren Superior',
-  TrenMedio: 'Tren Medio',
-  TrenInferior: 'Tren Inferior',
-};
-
-const frecuenciaLabel: Record<string, string> = {
-  Esporadica: 'Esporádica',
-  Recurrente: 'Recurrente',
-};
-
-const estadoLabel: Record<string, string> = {
-  Propuesta: 'Propuesta',
-  Aprobada: 'Aprobada',
-  EnCurso: 'En Curso',
-  Cancelada: 'Cancelada',
-};
+import { ActividadCard } from "../components/ActividadCard";
+import { RecurrenteGroup } from "../components/RecurrenteGroup";
+import { tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
 
 export function ActividadesPage() {
   const { user, hasRole } = useAuth();
@@ -149,6 +123,24 @@ export function ActividadesPage() {
     if (a.profesorId !== filters.profesor) return false;
     return true;
   });
+
+  const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+
+  const { grupos, individuales } = useMemo(() => {
+    const gruposMap = new Map<string, Actividad[]>();
+    const ind: Actividad[] = [];
+    for (const act of filteredActividades) {
+      if (act.serieId && act.serieId.trim() !== '' && act.serieId !== NULL_GUID) {
+        if (!gruposMap.has(act.serieId)) {
+          gruposMap.set(act.serieId, []);
+        }
+        gruposMap.get(act.serieId)!.push(act);
+      } else {
+        ind.push(act);
+      }
+    }
+    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+  }, [filteredActividades]);
 
   return (
     <MainLayout title="Actividades">
@@ -317,162 +309,53 @@ export function ActividadesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredActividades.map((act) => (
-              <Card key={act.id} className="flex flex-col">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex gap-2">
-                    <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
-                    <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
-                    {hasRole(["Administrador", "Profesor", "Recepción"]) && (
-                      <Badge variant={
-                        act.estado === 'Cancelada' ? 'warning' :
-                        act.estado === 'EnCurso' ? 'info' :
-                        act.estado === 'Aprobada' ? 'success' :
-                        act.estado === 'Propuesta' ? 'amber' : 'default'
-                       }>
-                        {estadoLabel[act.estado] || act.estado}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge
-                    variant={
-                      act.cupoDisponible <= 0
-                        ? "warning"
-                        : "success"
-                    }
-                  >
-                    {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
-                  </Badge>
-                </div>
-
-                <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
-                  {act.nombre}
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex-1">
-                  {act.descripcion}
-                </p>
-
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    {formatDate(act.fechaYHora)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {formatTime(act.fechaYHora)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    {act.salaNombre}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    {act.profesorNombre || "Sin profesor asignado"}
-                  </div>
-                </div>
-
-                {hasRole(["Cliente Registrado"]) && (
-                  <Button
-                    variant={
-                      act.cupoDisponible <= 0
-                        ? "outline"
-                        : "primary"
-                    }
-                    className="w-full mt-auto"
-                    disabled={act.cupoDisponible <= 0 || reservandoId === act.id}
-                    loading={reservandoId === act.id}
-                    onClick={() => handleReservar(act)}
-                  >
-                    {act.cupoDisponible <= 0
-                      ? "Completo"
-                      : reservandoId === act.id
-                        ? "Reservando..."
-                        : "Reservar"}
-                  </Button>
-                )}
-                {hasRole(["Administrador"]) && (
-                  <Button
-                    variant="verde"
-                    className="w-full mt-auto"
-                    onClick={() => {
-                      setEditingActividad(act);
-                      setShowModal(true);
-                    }}
-                  >
-                    Modificar
-                  </Button>
-                )}
-                {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
-                  <Button
-                    variant="verde"
-                    className="w-full mt-auto"
-                    onClick={async () => {
-                      try {
-                        await actividadesApi.asignarProfesor(act.id, user!.id);
-                        fetchData();
-                      } catch (err) {
-                        console.error('Error al tomar la actividad', err);
-                      }
-                    }}
-                  >
-                    Tomar actividad
-                  </Button>
-                )}
-              </Card>
+            {grupos.map(([serieId, acts]) => (
+              <RecurrenteGroup
+                key={serieId}
+                actividades={acts}
+                hasRole={hasRole}
+                salas={salas}
+                profesores={profesores}
+                onUpdate={fetchData}
+                onReservar={handleReservar}
+                onModificar={(act) => {
+                  setEditingActividad(act);
+                  setShowModal(true);
+                }}
+                onTomarActividad={async (act) => {
+                  try {
+                    await actividadesApi.asignarProfesor(act.id, user!.id);
+                    fetchData();
+                  } catch (err) {
+                    console.error('Error al tomar la actividad', err);
+                  }
+                }}
+                onError={(msg) => {
+                  setToastType('error');
+                  setToastMessage(msg);
+                  setShowToast(true);
+                }}
+              />
+            ))}
+            {individuales.map((act) => (
+              <ActividadCard
+                key={act.id}
+                actividad={act}
+                hasRole={hasRole}
+                onReservar={handleReservar}
+                onModificar={(act) => {
+                  setEditingActividad(act);
+                  setShowModal(true);
+                }}
+                onTomarActividad={async (act) => {
+                  try {
+                    await actividadesApi.asignarProfesor(act.id, user!.id);
+                    fetchData();
+                  } catch (err) {
+                    console.error('Error al tomar la actividad', err);
+                  }
+                }}
+              />
             ))}
           </div>
         )}
@@ -538,7 +421,8 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
-          profesorId: isAdmin ? actividad.profesorId || undefined : undefined,
+          profesorId: isAdmin ? (actividad.profesorId && actividad.profesorId !== '00000000-0000-0000-0000-000000000000' ? actividad.profesorId : undefined) : undefined,
+          serieId: actividad.serieId && actividad.serieId !== '00000000-0000-0000-0000-000000000000' ? actividad.serieId : undefined,
         }
       : {
           nombre: "",
