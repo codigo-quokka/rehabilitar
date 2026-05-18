@@ -271,7 +271,7 @@ public class ActividadService : IActividadService
         );
     }
 
-    private async Task<ErrorOr<Success>> ValidarActividad(Guid? id, int cupoMaximo, Guid salaId, DateTime fechaYHora, Guid? profesorId, TipoEspecialidad tipo, EstadoActividad estado, CancellationToken ct = default)
+    private async Task<ErrorOr<Success>> ValidarActividad(Guid? id, int cupoMaximo, Guid salaId, DateTime fechaYHora, Guid? profesorId, TipoEspecialidad tipo, EstadoActividad estado, Guid serieId, CancellationToken ct = default)
     {
         if (estado == EstadoActividad.Finalizada)
             return Error.Validation("No se puede crear o editar una actividad en estado finalizada.");
@@ -286,7 +286,7 @@ public class ActividadService : IActividadService
         if (cupoMaximo > sala.Capacidad) 
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
-        if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, ct))
+        if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
             return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
@@ -300,7 +300,7 @@ public class ActividadService : IActividadService
             if (profesor.Especialidad != tipo) 
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
-            if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, ct))
+            if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
                 return Error.Conflict("El profesor no está disponible en la fecha y hora seleccionada");
         }
 
