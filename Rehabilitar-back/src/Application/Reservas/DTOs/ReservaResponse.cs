@@ -3,9 +3,10 @@ using Domain.Enums;
 
 namespace Application.Reservas.DTOs;
 
-public record ReservaDTO(
+public record ReservaResponse(
     Guid Id, 
     Guid ClienteId, 
+    string NombreCliente,
     Guid ActividadId,
     DateTime FechaReserva,
     TipoCliente TipoCliente,
