@@ -1,6 +1,7 @@
 using Application.Actividades;
 using Application.Auth;
 using Application.Profesores;
+using Application.Reservas;
 using Application.Salas;
 using Application.Usuarios;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IActividadService, ActividadService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IProfesorService, ProfesorService>();
+        services.AddScoped<IReservaService, ReservaService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
 
         return services;

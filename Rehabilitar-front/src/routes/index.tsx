@@ -11,6 +11,7 @@ import { DashboardPage } from "../features/usuarios/pages/DashboardPage";
 import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
 import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
 import { ReservasPage } from "../features/reservas/pages/ReservasPage";
+import { ConfirmarPagoPage } from "../features/reservas/pages/ConfirmarPagoPage";
 import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
 import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
@@ -72,7 +73,16 @@ export const routes = [
       },
       {
         path: "reservas",
-        element: <ReservasPage />,
+        children: [
+          {
+            index: true,
+            element: <ReservasPage />,
+          },
+          {
+            path: "confirmar/:reservaId",
+            element: <ConfirmarPagoPage />,
+          },
+        ],
       },
       {
         path: "mis-clases",

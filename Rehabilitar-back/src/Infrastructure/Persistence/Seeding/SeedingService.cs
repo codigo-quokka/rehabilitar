@@ -104,7 +104,7 @@ public class SeedingService : ISeedingService
             email: adminEmail
         );
 
-        var result = await _userManager.CreateAsync(adminUser, "admin0");
+        var result = await _userManager.CreateAsync(adminUser, "Admin01!");
 
         if (result.Succeeded)
         {
@@ -130,7 +130,7 @@ public class SeedingService : ISeedingService
             email: receptionEmail
         );
 
-        var result = await _userManager.CreateAsync(receptionUser, "recepcionista");
+        var result = await _userManager.CreateAsync(receptionUser, "Recep01!");
 
         if (result.Succeeded)
         {
@@ -157,7 +157,7 @@ public class SeedingService : ISeedingService
                 lastName: clientLastName,
                 email: clientEmail
             );
-            var result = await _userManager.CreateAsync(clientUser, "cliente");
+            var result = await _userManager.CreateAsync(clientUser, "Cliente1!");
             if (!result.Succeeded)
             {
                 System.Console.WriteLine("Error al seedear cliente.");
@@ -195,7 +195,7 @@ public class SeedingService : ISeedingService
                 lastName: profesorLastName,
                 email: profesorEmail
             );
-            var result = await _userManager.CreateAsync(profesorUser, "profesor");
+            var result = await _userManager.CreateAsync(profesorUser, "Profesor1!");
             if (!result.Succeeded)
             {
                 System.Console.WriteLine("Error al seedear profesor.");
