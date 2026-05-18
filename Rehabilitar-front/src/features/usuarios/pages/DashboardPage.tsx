@@ -150,7 +150,12 @@ export function DashboardPage() {
                   <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
                     <div>
                       <p className="font-medium text-dark dark:text-gray-100">{actividadNombreMap[res.actividadId] ?? `Actividad #${res.actividadId}`}</p>
-                      <p className="text-sm text-gray-500">{res.fechaReserva}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(res.fechaReserva).toLocaleDateString('es-AR', {
+                          year: 'numeric', month: 'long', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
                     </div>
                     <Badge
                       variant={
