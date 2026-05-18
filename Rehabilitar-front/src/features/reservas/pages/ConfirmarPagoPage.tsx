@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Select } from '../../../components/ui';
 import { reservasApi, actividadesApi } from '../../../api';
-import { Actividad } from '../../../types';
+import { Actividad, Reserva } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { MercadoFake } from '../../../components/MercadoFake';
 
@@ -126,9 +126,28 @@ export function ConfirmarPagoPage() {
     }
   };
 
-  const handleMercadoFakeSuccess = () => {
+  const handleMercadoFakeSuccess = (reservaActualizada: Reserva) => {
     setShowMercadoFake(false);
-    efectuarPago(monto);
+    const completado = reservaActualizada.montoPendiente === 0;
+
+    if (completado) {
+      setToastType('success');
+      setToastMessage('¡Pago completo! Tu reserva está totalmente saldada.');
+    } else if (reservaActualizada.estadoDeReserva === 'Activa') {
+      setToastType('success');
+      setToastMessage('¡Reserva confirmada! Tu lugar está asegurado.');
+    } else if (reservaActualizada.estadoDeReserva === 'EnEspera') {
+      setToastType('success');
+      setToastMessage('Pago registrado. Quedaste en lista de espera.');
+    } else {
+      setToastType('success');
+      setToastMessage('Pago registrado correctamente.');
+    }
+    setShowToast(true);
+
+    setTimeout(() => {
+      navigate('/reservas', { replace: true });
+    }, 1500);
   };
 
   const handleMercadoPagoRedirect = () => {
@@ -236,9 +255,6 @@ export function ConfirmarPagoPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Monto mínimo: ${montoMinimoMP.toFixed(2)} — Monto máximo: ${montoPendiente.toFixed(2)}
                 </p>
-                <p className="text-xs font-medium text-primary">
-                  Mínimo: ${montoMinimoMP.toFixed(2)}
-                </p>
               </>
             ) : (
               <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
@@ -279,6 +295,9 @@ export function ConfirmarPagoPage() {
         isOpen={showMercadoFake}
         onClose={() => setShowMercadoFake(false)}
         amount={monto}
+        reservaId={reservaId!}
+        actividadId={state.actividadId}
+        metodoPago={metodoPago}
         onSuccess={handleMercadoFakeSuccess}
         onError={(msg) => {
           setShowMercadoFake(false);

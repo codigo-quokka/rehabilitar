@@ -46,7 +46,11 @@ public class ReservaService : IReservaService
 
                 await _uow.SaveChangesAsync(ct);
 
-                return MapToReservaResponse(reserva);
+                var reservaCompleta = await _reservaRepo.GetByIdAsync(reserva.Id, ct);
+                if (reservaCompleta == null)
+                    return Error.NotFound("Error al recuperar la reserva después de crearla.");
+
+                return MapToReservaResponse(reservaCompleta);
             }
             catch (ConcurrencyException ex)
             {

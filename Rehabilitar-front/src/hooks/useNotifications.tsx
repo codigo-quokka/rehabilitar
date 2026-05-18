@@ -27,13 +27,7 @@ function createInitialNotifications(): Notification[] {
       message: "Bienvenido a RehabilitAR",
       timestamp: now,
       read: false,
-    },
-    {
-      id: "2",
-      message: "Tu cita está confirmada para mañana",
-      timestamp: oneHourAgo,
-      read: false,
-    },
+    }
   ];
 }
 
