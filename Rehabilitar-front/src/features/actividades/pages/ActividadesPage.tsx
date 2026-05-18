@@ -307,6 +307,11 @@ export function ActividadesPage() {
                     console.error('Error al tomar la actividad', err);
                   }
                 }}
+                onError={(msg) => {
+                  setToastType('error');
+                  setToastMessage(msg);
+                  setShowToast(true);
+                }}
               />
             ))}
             {individuales.map((act) => (

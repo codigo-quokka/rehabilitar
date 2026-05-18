@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Card, Badge, Button, Modal, Input, Select } from "../../../components/ui";
 import { Actividad, Role, Sala, User } from "../../../types";
 import { actividadesApi } from "../../../api";
+import { useAuth } from "../../../hooks/useAuth";
 import { ActividadCard } from "./ActividadCard";
 import { formatDate, tipoLabel } from "../constants";
 
@@ -13,6 +14,7 @@ interface RecurrenteGroupProps {
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
   onUpdate: () => void;
+  onError?: (message: string) => void;
   salas: Sala[];
   profesores: User[];
 }
@@ -20,6 +22,7 @@ interface RecurrenteGroupProps {
 export function RecurrenteGroup({
   actividades,
   onUpdate,
+  onError,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
@@ -27,8 +30,14 @@ export function RecurrenteGroup({
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const { hasRole } = cardProps;
+  const { user } = useAuth();
   const first = actividades[0];
   const count = actividades.length;
+
+  const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+  const unassignedCount = actividades.filter(
+    (act) => !act.profesorId || act.profesorId === NULL_GUID
+  ).length;
 
   const [editForm, setEditForm] = useState({
     nombre: first.nombre,
@@ -75,14 +84,41 @@ export function RecurrenteGroup({
         salaId: editForm.salaId,
         estado: editForm.estado as Actividad['estado'],
       };
-      await Promise.all(actividades.map((act) => actividadesApi.update(act.id, payload)));
-      setShowEditGroup(false);
+      const results = await Promise.allSettled(actividades.map((act) => actividadesApi.update(act.id, payload)));
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        onError?.(`${failed.length} de ${actividades.length} actividades no pudieron modificarse`);
+      } else {
+        setShowEditGroup(false);
+      }
       onUpdate();
     } catch (err) {
       console.error('Error al modificar grupo', err);
+      onError?.('Error al modificar las actividades');
     } finally {
       setEditLoading(false);
     }
+  };
+
+  const handleTomarTodas = async () => {
+    if (!user) {
+      onError?.('Debe iniciar sesión para tomar actividades');
+      return;
+    }
+    const unassigned = actividades.filter(
+      (act) => !act.profesorId || act.profesorId === NULL_GUID
+    );
+    if (unassigned.length === 0) return;
+    const results = await Promise.allSettled(unassigned.map((act) => actividadesApi.asignarProfesor(act.id, user.id)));
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      const reasons = failed.map(r => {
+        const err = (r as PromiseRejectedResult).reason;
+        return err?.response?.data?.error || err?.message || 'Error desconocido';
+      });
+      onError?.(`${failed.length} actividad(es) no pudieron asignarse: ${reasons[0]}`);
+    }
+    onUpdate();
   };
 
   const stripe =
@@ -116,7 +152,7 @@ export function RecurrenteGroup({
             {first.nombre}
           </h3>
 
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex-1 line-clamp-2">
+          <p className="text-dark dark:text-gray-400 text-sm mb-4 flex-1 line-clamp-2">
             {first.descripcion}
           </p>
 
@@ -152,6 +188,18 @@ export function RecurrenteGroup({
               }}
             >
               Modificar todas
+            </Button>
+          )}
+          {hasRole(["Profesor"]) && unassignedCount > 0 && (
+            <Button
+              variant="verde"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTomarTodas();
+              }}
+            >
+              Tomar todas ({unassignedCount} disponibles)
             </Button>
           )}
         </Card>
@@ -278,6 +326,10 @@ export function RecurrenteGroup({
                   onModificar={(a) => {
                     setExpanded(false);
                     cardProps.onModificar(a);
+                  }}
+                  onTomarActividad={async (a) => {
+                    setExpanded(false);
+                    await cardProps.onTomarActividad(a);
                   }}
                 />
               ))}
