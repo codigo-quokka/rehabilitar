@@ -163,7 +163,10 @@ public class Actividad
 		CambiarSala(OtraActividad.SalaId);
 		EditarDetalles(OtraActividad.Nombre, OtraActividad.Descripcion, OtraActividad.Tipo);
 		this.CupoMaximo = OtraActividad.CupoMaximo;
-		AsignarProfesor(OtraActividad.ProfesorId ?? Guid.Empty);
+		if (OtraActividad.ProfesorId.HasValue)
+			AsignarProfesor(OtraActividad.ProfesorId.Value);
+		else
+			RemoverProfesor();
 		if (OtraActividad.Frecuencia == FrecuenciaActividad.Recurrente)
 			HacerRecurrente(OtraActividad.SerieId);
 	}
