@@ -67,8 +67,8 @@ public class SeedingService : ISeedingService
         var salaD = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D");
         var salaE = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E");
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
-        var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
+        var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
         var now = DateTime.Today.AddDays(1);
         await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
         await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));

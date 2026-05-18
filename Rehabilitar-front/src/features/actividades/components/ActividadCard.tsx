@@ -8,6 +8,7 @@ interface ActividadCardProps {
   onReservar: (act: Actividad) => void;
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
+  onVerReservas?: (act: Actividad) => void;
 }
 
 export function ActividadCard({
@@ -16,13 +17,14 @@ export function ActividadCard({
   onReservar,
   onModificar,
   onTomarActividad,
+  onVerReservas,
 }: ActividadCardProps) {
   return (
     <Card className="flex flex-col">
       <div className="flex items-start justify-between mb-3">
         <div className="flex gap-2">
           <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
-          <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
+          <Badge className={act.frecuencia === 'Recurrente' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}>{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
           {hasRole(["Administrador", "Profesor", "Recepción"]) && (
             <Badge variant={
               act.estado === 'Cancelada' ? 'warning' :
@@ -93,13 +95,40 @@ export function ActividadCard({
             {act.cupoDisponible <= 0 ? "Completo" : "Reservar"}
           </Button>
         )}
-        {hasRole(["Administrador"]) && (
+        {hasRole(["Administrador"]) && onVerReservas && (
+          <div className="flex gap-2">
+            <Button
+              variant="verde"
+              className="flex-1"
+              onClick={() => onModificar(act)}
+            >
+              Modificar
+            </Button>
+            <Button
+              variant="violeta"
+              className="flex-1"
+              onClick={() => onVerReservas(act)}
+            >
+              Ver reservas
+            </Button>
+          </div>
+        )}
+        {hasRole(["Administrador"]) && !onVerReservas && (
           <Button
             variant="verde"
             className="w-full"
             onClick={() => onModificar(act)}
           >
             Modificar
+          </Button>
+        )}
+        {hasRole(["Recepción"]) && onVerReservas && (
+          <Button
+            variant="violeta"
+            className="w-full"
+            onClick={() => onVerReservas(act)}
+          >
+            Ver reservas
           </Button>
         )}
         {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (

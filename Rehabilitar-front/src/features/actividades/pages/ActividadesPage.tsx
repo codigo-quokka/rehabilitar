@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { MainLayout } from "../../../components/layout";
 import {
   Card,
@@ -8,10 +9,11 @@ import {
   Input,
   Select,
   FilterDropdown,
+  Badge,
 } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
-import { Actividad, Sala, User, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
+import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { ActividadCard } from "../components/ActividadCard";
@@ -48,6 +50,11 @@ export function ActividadesPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  const [showReservasModal, setShowReservasModal] = useState(false);
+  const [reservasActNombre, setReservasActNombre] = useState('');
+  const [reservasData, setReservasData] = useState<Reserva[]>([]);
+  const [reservasLoading, setReservasLoading] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -76,6 +83,25 @@ export function ActividadesPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleVerReservas = async (actividad: Actividad) => {
+    setReservasActNombre(actividad.nombre);
+    setReservasLoading(true);
+    setShowReservasModal(true);
+    setReservasData([]);
+    try {
+      const reservas = await reservasApi.getAll({ actividadId: actividad.id });
+      setReservasData(reservas);
+    } catch (err) {
+      console.error('Error al obtener reservas:', err);
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al cargar reservas';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setReservasLoading(false);
+    }
+  };
 
   const handleReservar = async (actividad: Actividad) => {
     if (!user) return;
@@ -331,6 +357,7 @@ export function ActividadesPage() {
                     console.error('Error al tomar la actividad', err);
                   }
                 }}
+                onVerReservas={handleVerReservas}
                 onError={(msg) => {
                   setToastType('error');
                   setToastMessage(msg);
@@ -356,6 +383,7 @@ export function ActividadesPage() {
                     console.error('Error al tomar la actividad', err);
                   }
                 }}
+                onVerReservas={handleVerReservas}
               />
             ))}
           </div>
@@ -399,6 +427,74 @@ export function ActividadesPage() {
           message={toastMessage}
           onClose={() => setShowToast(false)}
         />
+      )}
+
+      {showReservasModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setShowReservasModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasActNombre}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+            </div>
+            {reservasLoading ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+            ) : reservasData.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reservasData.map((res) => {
+                  const nombre = res.nombreCliente || 'Cliente desconocido';
+                  const iniciales = nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                  return (
+                    <Card key={res.id} className="flex flex-col">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-dark font-bold text-sm shrink-0">
+                          {iniciales || '??'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-dark dark:text-gray-100 truncate">
+                            {nombre}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <p>
+                          {new Date(res.fechaReserva).toLocaleDateString('es-AR', {
+                            year: 'numeric', month: 'long', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-auto">
+                        <Badge variant={
+                          res.estadoDeReserva === 'Activa' ? 'success' :
+                          res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                          res.estadoDeReserva === 'EnEspera' ? 'info' :
+                          res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
+                        } className="text-xs">
+                          {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente de pago' :
+                           res.estadoDeReserva === 'Activa' ? 'Activa' :
+                           res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                           res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
+                        </Badge>
+                        {res.montoPendiente === 0 && (
+                          <Badge variant="success" className="text-xs">Pagado</Badge>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </MainLayout>
   );
