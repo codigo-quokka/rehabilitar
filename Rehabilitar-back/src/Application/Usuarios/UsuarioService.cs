@@ -216,8 +216,8 @@ public class UsuarioService : IUsuarioService
             Telefono = cliente?.Telefono,
             FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
             Documento = cliente?.Dni.Valor,
-            AptitudFisica = null,
-            FechaAptitud = null,
+            AptitudFisica = cliente?.AptoFisicoAprobado ?? null,
+            SaldoAFavor = cliente?.SaldoAFavor ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
         };
     }
