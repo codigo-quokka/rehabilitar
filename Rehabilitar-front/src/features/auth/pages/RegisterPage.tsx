@@ -49,6 +49,7 @@ export function RegisterPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [toastMessage, setToastMessage] = useState("");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const MIN_PASSWORD_LENGTH = 8;
@@ -92,16 +93,14 @@ export function RegisterPage() {
       return;
     }
 
-    if (showToast) {
+    if (registrationSuccess) {
       const timer = setTimeout(() => {
-        if (toastType === "success") {
-          navigate("/login");
-        }
+        navigate("/login");
       }, 4300);
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [isAuthenticated, showToast, toastType, navigate]);
+  }, [isAuthenticated, registrationSuccess, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -135,7 +134,10 @@ export function RegisterPage() {
       dni: data.dniNumber || prev.dni,
       fechaNacimiento: data.fechaNacimiento || prev.fechaNacimiento
     }));
-    
+
+    setToastType("success");
+    setToastMessage("Datos leídos correctamente.");
+    setShowToast(true);
     addNotification("DNI leído exitosamente. Verificá que los datos sean correctos.", "success");
     setPhase('form');
   };
@@ -241,6 +243,7 @@ export function RegisterPage() {
       });
       const msg =
         "¡Éxito! Revisa tu correo para poder inciar sesión por primera vez. \nRedirigiendo...";
+      setRegistrationSuccess(true);
       setToastType("success");
       setToastMessage(msg);
       setShowToast(true);
