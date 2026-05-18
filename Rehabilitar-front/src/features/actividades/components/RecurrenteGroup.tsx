@@ -225,14 +225,14 @@ export function RecurrenteGroup({
             )}
             {hasRole(["Recepción"]) && onVerReservas && (
               <Button
-                variant="naranja"
+                variant="violeta"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onVerReservas(first);
+                  handleSubscribe();
                 }}
               >
-                Ver reservas
+                Ver Subscriptores
               </Button>
             )}
             {hasRole(["Cliente Registrado"]) && (

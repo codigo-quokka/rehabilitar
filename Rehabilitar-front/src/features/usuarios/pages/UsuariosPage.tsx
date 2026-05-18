@@ -25,6 +25,7 @@ export function UsuariosPage() {
   const [filters, setFilters] = useState({
     rol: 'all',
     estado: 'all',
+    especialidad: 'all',
   });
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -59,6 +60,7 @@ export function UsuariosPage() {
   const filteredUsuarios = usuarios.filter(u => {
     if (isReception && u.rol !== 'Cliente Registrado') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
+    if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
     if (filters.estado === 'active' && !u.activo) return false;
     if (filters.estado === 'suspended' && u.activo) return false;
     if (searchTerm) {
@@ -255,7 +257,17 @@ export function UsuariosPage() {
                     { value: 'all', label: 'Todos' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
                   ],
-                }] : []),
+                },
+                ...(filters.rol === 'Profesor' ? [{
+                  key: 'especialidad',
+                  label: 'Especialidad',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    { value: 'TrenSuperior', label: 'Tren Superior' },
+                    { value: 'TrenMedio', label: 'Tren Medio' },
+                    { value: 'TrenInferior', label: 'Tren Inferior' },
+                  ],
+                }] : [])] : []),
                 {
                   key: 'estado',
                   label: 'Estados',
@@ -268,7 +280,7 @@ export function UsuariosPage() {
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ rol: 'all', estado: 'all' })}
+              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all' })}
               onOpenChange={setFilterOpen}
             />
             <div className={filterOpen ? 'invisible' : ''}>
