@@ -464,6 +464,12 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
       return;
     }
 
+    const parsedDate = new Date(formData.fechaYHora);
+    if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
+      onError('La fecha y hora no pueden ser anteriores a las de hoy');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -480,6 +486,11 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
           setLoading(false);
           return;
         }
+        if (new Date(fechaFinRecurrente) <= new Date(formData.fechaYHora)) {
+          onError('La fecha de fin de recurrencia debe ser posterior a la fecha de inicio');
+          setLoading(false);
+          return;
+        }
         const recurrentePayload: CreateActividadRecurrenteRequest = {
           actividadBase: payload,
           fechaFinRecurrente: fechaFinRecurrente.includes(':') && !fechaFinRecurrente.endsWith(':00')
@@ -492,7 +503,10 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
       }
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
+      const data = err?.response?.data;
+      const fluentErrors = data?.errors;
+      const firstFluentError = fluentErrors && Object.values(fluentErrors).find((v: any) => v?.[0])?.[0];
+      const msg = data?.errorCode ?? firstFluentError ?? data?.error ?? err?.message ?? `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
       onError(msg);
     } finally {
       setLoading(false);
