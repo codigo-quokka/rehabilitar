@@ -5,6 +5,7 @@ using Application.Usuarios.Requests;
 using Application.Usuarios.Responses;
 using Domain;
 using Domain.Profesores;
+using ErrorOr;
 using Microsoft.AspNetCore.Identity;
 
 namespace Application.Usuarios;
@@ -17,6 +18,7 @@ public class UsuarioService : IUsuarioService
     private readonly IClienteRepository _clienteRepo;
     private readonly IProfesorRepository _profesorRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IEmailService _emailService;
 
     // private readonly RehabilitarDbContext _dbContext;
 
@@ -26,7 +28,8 @@ public class UsuarioService : IUsuarioService
         IUsuarioRepository usuarioRepo,
         IClienteRepository clienteRepo,
         IProfesorRepository profesorRepo,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IEmailService emailService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -34,6 +37,7 @@ public class UsuarioService : IUsuarioService
         _clienteRepo = clienteRepo;
         _profesorRepo = profesorRepo;
         _uow = uow;
+        _emailService = emailService;
     }
 
     public async Task<IEnumerable<UsuarioResponse>> GetAllAsync()
@@ -78,6 +82,7 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.AddToRoleAsync(user, request.Rol);
 
+
         if (request.Rol == "Profesor" && !string.IsNullOrEmpty(request.Especialidad))
         {
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
@@ -85,6 +90,17 @@ public class UsuarioService : IUsuarioService
             _profesorRepo.Add(profesor);
             await _uow.SaveChangesAsync();
         }
+
+        var emailResult = await EnviarMailConCredenciales(user, password);
+
+        if (!emailResult.IsError)
+        {
+            // si el mail se envía correctamente le confirmamos el email directamente para que no tenga que verificarlo.
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            await _userManager.ConfirmEmailAsync(user, token);
+        }
+        // else / try/catch
+        // implementar rollback.
 
         return await MapToResponse(user);
     }
@@ -208,8 +224,38 @@ public class UsuarioService : IUsuarioService
 
     private static string GenerateRandomPassword()
     {
-        const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string number = "0123456789";
+        const string symbol = "!@#$%^&*()_-+=[{]};:<>|./?";
+        const string allChars = lower + upper + number + symbol;
+
         var random = new Random();
-        return new string(Enumerable.Repeat(chars, 10).Select(s => s[random.Next(s.Length)]).ToArray());
+        var passwordChars = new char[8];
+
+        passwordChars[0] = lower[random.Next(lower.Length)];
+        passwordChars[1] = upper[random.Next(upper.Length)];
+        passwordChars[2] = number[random.Next(number.Length)];
+        passwordChars[3] = symbol[random.Next(symbol.Length)];
+
+        for (int i = 4; i < passwordChars.Length; i++)
+        {
+            passwordChars[i] = allChars[random.Next(allChars.Length)];
+        }
+
+        for (int i = passwordChars.Length - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (passwordChars[i], passwordChars[j]) = (passwordChars[j], passwordChars[i]);
+        }
+
+        return new string(passwordChars);
+    }
+
+    private async Task<ErrorOr<Success>> EnviarMailConCredenciales(User user, string password)
+    {
+        var emailResult = await _emailService.SendNewUserWithCredentialsEmail(user.Email!, password);
+
+        return emailResult;
     }
 }
