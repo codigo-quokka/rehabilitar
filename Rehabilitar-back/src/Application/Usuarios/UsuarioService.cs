@@ -243,14 +243,11 @@ public class UsuarioService : IUsuarioService
             Rol = rol,
             Activo = !(user.LockoutEnabled && user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow),
             FechaAlta = DateTime.UtcNow,
-            Telefono = user?.PhoneNumber,
-            FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
-            Documento = user?.Dni.Valor,
+            Telefono = cliente?.Telefono,
+            FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
+            Documento = cliente?.Dni.Valor,
             AptitudFisica = cliente?.AptoFisicoAprobado ?? null,
-            RehabiliCoins = cliente?.RehabiliCoins ?? null,
             SaldoAFavor = cliente?.SaldoAFavor ?? null,
-            CancelacionesConsecutivas = cliente?.CancelacionesConsecutivas ?? null,
-            InasistenciasConsecutivas = cliente?.InasistenciasConsecutivas ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
         };
     }

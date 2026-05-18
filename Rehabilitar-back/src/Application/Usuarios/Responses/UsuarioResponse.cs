@@ -15,10 +15,6 @@ public class UsuarioResponse
     public string? FechaNacimiento { get; set; }
     public string? Documento { get; set; }
     public bool? AptitudFisica { get; set; }
-    public string? FechaAptitud { get; set; }
-    public int? RehabiliCoins { get; set; }
     public SaldoAFavor? SaldoAFavor { get; set; }
-    public int? CancelacionesConsecutivas { get; set; }
-    public int? InasistenciasConsecutivas { get; set; }
     public string? Especialidad { get; set; }
 }
