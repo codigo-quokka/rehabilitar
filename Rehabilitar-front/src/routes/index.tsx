@@ -2,6 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Role } from "../types";
 
+import { LandingPage } from "../features/landing/pages/LandingPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { PasswordRecoveryPage } from "../features/auth/pages/PasswordRecoveryPage";
@@ -35,6 +36,10 @@ function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
 
 export const routes = [
   {
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
     path: "/login",
     element: <LoginPage />,
   },
@@ -55,27 +60,26 @@ export const routes = [
     element: <EmailVerificationPage />,
   },
   {
-    path: "/",
     element: <ProtectedRoute />,
     children: [
       {
-        path: "dashboard",
+        path: "/dashboard",
         element: <DashboardPage />,
       },
       {
-        path: "actividades",
+        path: "/actividades",
         element: <ActividadesPage />,
       },
       {
-        path: "calendario",
+        path: "/calendario",
         element: <CalendarioPage />,
       },
       {
-        path: "reservas",
+        path: "/reservas",
         element: <ReservasPage />,
       },
       {
-        path: "mis-clases",
+        path: "/mis-clases",
         element: <ProtectedRoute allowedRoles={["Profesor"]} />,
         children: [
           {
@@ -85,11 +89,11 @@ export const routes = [
         ],
       },
       {
-        path: "perfil",
+        path: "/perfil",
         element: <PerfilPage />,
       },
       {
-        path: "usuarios",
+        path: "/usuarios",
         element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
@@ -99,7 +103,7 @@ export const routes = [
         ],
       },
       {
-        path: "salas",
+        path: "/salas",
         element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
@@ -109,7 +113,7 @@ export const routes = [
         ],
       },
       {
-        path: "metricas",
+        path: "/metricas",
         element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
@@ -118,14 +122,10 @@ export const routes = [
           },
         ],
       },
-      {
-        path: "",
-        element: <Navigate to="/dashboard" replace />,
-      },
     ],
   },
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ];

@@ -44,7 +44,10 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                 .HasForeignKey<Cliente>(c => c.UserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
-
+            entity.OwnsOne(c => c.SaldoAFavor, s =>
+            {
+                s.Property(d => d.MontoTotal).HasColumnName("MontoTotal").HasColumnType("decimal(18, 2)");
+            });
             entity.Property(c => c.Dni)
                 .HasConversion(
                     dniObjeto => dniObjeto.Valor,

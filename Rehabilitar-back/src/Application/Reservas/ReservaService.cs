@@ -7,6 +7,7 @@ using Domain.Reservas;
 using Domain.Actividades;
 using Domain.Exceptions;
 using Domain.Enums;
+using Application.Pagos.Requests;
 
 namespace Application.Reservas;
 
@@ -35,6 +36,11 @@ public class ReservaService : IReservaService
         {
             try
             {
+                var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(request.ActividadId, ct);
+
+                if (reservas.Any(r => r.ClienteId == request.ClienteId && r.EstadoDeReserva != EstadoDeReserva.Cancelada))
+                    return Error.Conflict("El cliente ya tiene una reserva para esta actividad");
+                
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
@@ -84,15 +90,15 @@ public class ReservaService : IReservaService
         return Result.Success;
     }
 
-    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(Guid actividadId, Guid reservaId, decimal monto, CancellationToken ct = default)
+    public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(RegistrarPagoRequest request, Guid reservaId, CancellationToken ct = default)
     {
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
         for (int i = 0; i < 3; i++) {
             try {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
                 
-                actividad.ProcesarPagoReserva(reservaId, monto); // Lógica de dominio actualizada
+                actividad.ProcesarPagoReserva(reservaId, request.Monto); // Lógica de dominio actualizada
                 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
                 return Result.Success;
@@ -110,7 +116,8 @@ public class ReservaService : IReservaService
             try {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
                 if (actividad == null) return Error.NotFound("Actividad no encontrada");
-                
+
+                                
                 actividad.CancelarReserva(reservaId); // Lógica de dominio
                 
                 await _uow.SaveChangesAsync(ct);
@@ -147,7 +154,7 @@ public class ReservaService : IReservaService
 
     private static ReservaResponse MapToReservaResponse(Reserva reserva)
     {
-        string nombreCliente = reserva.Cliente.User!.FirstName + " " + reserva.Cliente.User.LastName;
+        string nombreCliente = reserva.Cliente.User.FirstName + " " + reserva.Cliente.User.LastName;
         return new ReservaResponse(
             reserva.Id,
             reserva.ClienteId,

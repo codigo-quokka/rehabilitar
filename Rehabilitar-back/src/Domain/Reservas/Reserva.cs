@@ -46,7 +46,14 @@ public class Reserva
 
     public void CancelarReservaPorActividadCancelada()
     {
-        throw new NotImplementedException(); //hay que darle RehabiliCoins a los clientes (implementar rehabilicoins)
+        Cancelar();
+        if (TipoCliente == TipoCliente.Abonado)
+            Cliente.RecibirRehabilicoin();
+        else
+        {
+            Cliente.Reembolsar(DetallePago.MontoPagado);
+            ActualizarDetallePago(DetallePago.MontoPendiente);
+        }
     }
 
     // public void ReactivarReserva()

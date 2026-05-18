@@ -9,9 +9,11 @@ public class Cliente
     public Dni Dni { get; private set; }
     public string? Telefono { get; private set; }
 
-    public User? User {get; private set; } // nav EFCore
+    public User User { get; private set; }
+    public int RehabiliCoins {get; private set;}
+    public SaldoAFavor SaldoAFavor { get; private set; }
+    public bool AptoFisicoAprobado { get; private set;}
 
-    // constructor vacío para EF Core.
     #nullable disable
     private Cliente() { }
     #nullable enable
@@ -22,6 +24,7 @@ public class Cliente
         FechaNacimiento = fechaNacimiento;
         Dni = dni;
         Telefono = telefono;
+        AptoFisicoAprobado = false;
     }
 
     // factory
@@ -38,5 +41,34 @@ public class Cliente
         {
             throw new DomainException("Debe ser mayor de edad para registrarse en el sitio.");
         }
+    }
+
+    public void RecibirRehabilicoin()
+    {
+        RehabiliCoins++;
+    }
+
+    public void CanjearRehabilicoin()
+    {
+        if (RehabiliCoins <= 0)
+        {
+            throw new DomainException("No tiene RehabiliCoins para canjear.");
+        }
+        RehabiliCoins--;
+    }
+
+    public void Reembolsar(decimal monto)
+    {
+        SaldoAFavor.AgregarSaldo(monto);
+    }
+
+    public void RegistrarPago(decimal monto)
+    {
+        SaldoAFavor.RestarSaldo(monto);
+    }
+    
+    public void AprobarAptoFisico()
+    {
+        AptoFisicoAprobado = true;
     }
 }

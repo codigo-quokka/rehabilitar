@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RehabilitarDbContext))]
-    partial class RehabilitarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518061906_AddRehabiliCoins")]
+    partial class AddRehabiliCoins
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -81,9 +84,6 @@ namespace Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("AptoFisicoAprobado")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Dni")
                         .IsRequired()

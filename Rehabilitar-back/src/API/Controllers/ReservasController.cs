@@ -76,7 +76,7 @@ public class ReservasController : ApiControllerBase
     [HttpPost("{reservaId:guid}/pago")]
     public async Task<IActionResult> RegistrarPago(Guid reservaId, [FromBody] RegistrarPagoRequest request, CancellationToken ct)
     {
-        var result = await _reservaService.ConfirmarPagoReservaAsync(request.ActividadId, reservaId, request.Monto, ct);
+        var result = await _reservaService.ConfirmarPagoReservaAsync(request, reservaId, ct);
 
         return result.Match(
             success => Ok(),
