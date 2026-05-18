@@ -15,6 +15,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
 import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
+import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { ActividadCard } from "../components/ActividadCard";
 import { RecurrenteGroup } from "../components/RecurrenteGroup";
 import { tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
@@ -412,6 +413,11 @@ export function ActividadesPage() {
             setToastMessage(msg);
             setShowToast(true);
           }}
+          onSuccess={(msg) => {
+            setToastType('success');
+            setToastMessage(msg);
+            setShowToast(true);
+          }}
         />
       </Modal>
 
@@ -500,9 +506,10 @@ interface ActividadFormProps {
   profesores: User[];
   actividad?: Actividad;
   onError: (message: string) => void;
+  onSuccess: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad, onError }: ActividadFormProps) {
+function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
@@ -533,7 +540,7 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
         },
   );
   const [loading, setLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
 
@@ -542,13 +549,14 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
+      onSuccess('Actividad eliminada exitosamente');
       onClose();
     } catch (err: any) {
       const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
       onError(msg);
     } finally {
+      setShowConfirmDeleteModal(false);
       setLoading(false);
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -597,6 +605,7 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
       } else {
         await actividadesApi.create(payload);
       }
+      onSuccess(isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente');
       onClose();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -610,7 +619,8 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">Seleccione el tipo de frecuencia para la actividad:</p>
@@ -777,38 +787,35 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
         </>
       )}
 
-      <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
-        {isEditing && !showDeleteConfirm && (
+      <div className={`flex gap-3 pt-4 ${isEditing ? 'justify-between' : 'justify-end'}`}>
+        {isEditing && (
           <Button
             variant="rojo"
-            onClick={() => setShowDeleteConfirm(true)}
+            type="button"
+            onClick={() => setShowConfirmDeleteModal(true)}
           >
             Eliminar
           </Button>
         )}
-        {showDeleteConfirm ? (
-          <div className="flex items-center gap-3 w-full justify-end">
-            <span className="text-sm text-gray-600 mr-auto">
-              ¿Estás seguro de eliminar esta actividad?
-            </span>
-            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setShowDeleteConfirm(false)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" loading={loading} onClick={handleDelete}>
-              Eliminar
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" loading={loading}>
-              {isEditing ? "Guardar" : "Crear"}
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={loading}>
+            {isEditing ? "Guardar" : "Crear"}
+          </Button>
+        </div>
       </div>
-    </form>
+      </form>
+
+      <ConfirmActionModal
+        isOpen={showConfirmDeleteModal}
+        title="Eliminar actividad"
+        body="¿Estás seguro de que deseas eliminar esta actividad? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirmDeleteModal(false)}
+      />
+    </>
   );
 }
