@@ -1,6 +1,7 @@
 using Application.Reservas;
 using Application.Reservas.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using Application.Pagos.Requests;
 
 namespace API.Controllers;
 
@@ -72,10 +73,10 @@ public class ReservasController : ApiControllerBase
         );
     }
 
-    [HttpPost("{id:guid}/pago")]
-    public async Task<IActionResult> RegistrarPago(Guid id, [FromBody] RegistrarPagoRequest request, CancellationToken ct)
+    [HttpPost("{reservaId:guid}/pago")]
+    public async Task<IActionResult> RegistrarPago(Guid reservaId, [FromBody] RegistrarPagoRequest request, CancellationToken ct)
     {
-        var result = await _reservaService.ConfirmarPagoReservaAsync(request.ActividadId, id, request.Monto, ct);
+        var result = await _reservaService.ConfirmarPagoReservaAsync(request.ActividadId, reservaId, request.Monto, ct);
 
         return result.Match(
             success => Ok(),
@@ -94,6 +95,3 @@ public class ReservasController : ApiControllerBase
         );
     }
 }
-
-// DTO Auxiliar para recibir la información de pago en el controller
-public record RegistrarPagoRequest(Guid ActividadId, string MetodoPago, decimal Monto);
