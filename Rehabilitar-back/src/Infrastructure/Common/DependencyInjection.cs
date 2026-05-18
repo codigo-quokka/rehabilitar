@@ -80,6 +80,7 @@ public static class DependencyInjection
 
         // registro de servicios:
         services.AddScoped<ISeedingService, SeedingService>();
+        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();

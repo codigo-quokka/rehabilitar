@@ -4,18 +4,22 @@ Este documento describe los usuarios y cuentas que se insertan automáticamente 
 
 ## Notas Generales de Seguridad
 * **Todas las cuentas** generadas por el seeder tienen el email pre-confirmado (`EmailConfirmed = true`) para poder iniciar sesión directamente.
-* La política de contraseñas de Identity está configurada temporalmente a un mínimo de 6 caracteres sin restricciones de mayúsculas o caracteres especiales (revisar `DependencyInjection.cs`).
 
 ---
 
-## 1. Administrador del Sistema
+## 1. Administrador y Recepción del Sistema
 
-Es la cuenta principal con acceso total al sistema.
+Cuentas con privilegios administrativos o de gestión.
 
-* **Nombre:** Admin Administrador
-* **Email / Username:** `admin@rehabilitar.com`
-* **Contraseña:** `admin0`
-* **Rol:** `Administrador`
+* **Administrador:**
+    * **Email / Username:** `admin@rehabilitar.com`
+    * **Contraseña:** `admin`
+    * **Rol:** `Administrador`
+
+* **Recepción:**
+    * **Email / Username:** `recepcion@rehabilitar.com`
+    * **Contraseña:** `recepcion`
+    * **Rol:** `Recepción`
 
 ---
 
@@ -59,12 +63,21 @@ Usuarios encargados de dictar las actividades y clases en las diferentes salas. 
 
 ---
 
-## Roles Creados en el Sistema
+## 5. Actividades Iniciales
 
-Además de los usuarios, el sistema asegura la existencia de los siguientes roles en la tabla `Roles` de Identity:
+El sistema genera las siguientes actividades para facilitar las pruebas de flujo de reservas:
 
-* `Administrador`
-* `Recepción` (No hay usuarios asignados por defecto)
-* `Profesor`
-* `Cliente Registrado`
+| Nombre | Especialidad | Frecuencia | Estado |
+| :--- | :--- | :--- | :--- |
+| Yoga Terapéutico | TrenSuperior | Esporadica | Aprobada |
+| Rehabilitación de Hombro | TrenSuperior | Recurrente | EnCurso |
+| Ejercicios Core | TrenMedio | Recurrente | Aprobada |
+| Fortalecimiento Lumbar | TrenMedio | Esporadica | Propuesta |
+| Rehabilitación de Rodilla | TrenInferior | Recurrente | EnCurso |
+| Tonificación General | TrenSuperior | Recurrente | Aprobada |
+| Estiramientos Asistidos | TrenInferior | Esporadica | Propuesta |
+| Gimnasia Postural | TrenMedio | Recurrente | EnCurso |
+
+---
+
 
