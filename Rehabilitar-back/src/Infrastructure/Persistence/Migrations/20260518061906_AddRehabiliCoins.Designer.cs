@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RehabilitarDbContext))]
-    [Migration("20260513223526_UniqueSalaNombre")]
-    partial class UniqueSalaNombre
+    [Migration("20260518061906_AddRehabiliCoins")]
+    partial class AddRehabiliCoins
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,7 +26,13 @@ namespace Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("CupoEsperaOcupado")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("CupoMaximo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CupoOcupado")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Descripcion")
@@ -61,6 +67,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("Tipo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProfesorId");
@@ -83,6 +93,9 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("RehabiliCoins")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Telefono")
                         .HasColumnType("TEXT");
@@ -118,6 +131,12 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EstadoDeReserva")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TipoCliente")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -379,6 +398,26 @@ namespace Infrastructure.Persistence.Migrations
                         .WithOne()
                         .HasForeignKey("Domain.Clientes.Cliente", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("Domain.Clientes.SaldoAFavor", "SaldoAFavor", b1 =>
+                        {
+                            b1.Property<Guid>("ClienteUserId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<decimal>("MontoTotal")
+                                .HasColumnType("decimal(18, 2)")
+                                .HasColumnName("MontoTotal");
+
+                            b1.HasKey("ClienteUserId");
+
+                            b1.ToTable("Clientes");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClienteUserId");
+                        });
+
+                    b.Navigation("SaldoAFavor")
                         .IsRequired();
 
                     b.Navigation("User");

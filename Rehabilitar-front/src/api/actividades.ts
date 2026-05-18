@@ -27,6 +27,11 @@ export const actividadesApi = {
     return response.data;
   },
 
+  updateSerie: async (serieId: string, data: Record<string, unknown>) => {
+    const response = await apiClient.put(`/actividades/serie/${serieId}`, data);
+    return response.data;
+  },
+
   delete: async (id: string) => {
     const response = await apiClient.delete(`/actividades/${id}`);
     return response.data;
@@ -34,6 +39,16 @@ export const actividadesApi = {
 
   getByProfesor: async (profesorId: string) => {
     const response = await apiClient.get('/actividades/profesor', { params: { profesorId } });
+    return response.data;
+  },
+
+  asignarProfesor: async (id: string, profesorId: string) => {
+    const response = await apiClient.put(`/actividades/${id}/asignar-profesor`, { profesorId });
+    return response.data;
+  },
+
+  removerProfesor: async (id: string, profesorId: string) => {
+    const response = await apiClient.put(`/actividades/${id}/remover-profesor`, { profesorId });
     return response.data;
   },
 };

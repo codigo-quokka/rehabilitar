@@ -1,33 +1,48 @@
-using Application.Usuarios;
+using Application.Clientes;
+using Application.Common.Interfaces;
+using Application.Profesores;
 using Application.Usuarios.Requests;
 using Application.Usuarios.Responses;
 using Domain;
 using Domain.Profesores;
-using Infrastructure.Persistence;
+using ErrorOr;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Usuarios;
+namespace Application.Usuarios;
 
 public class UsuarioService : IUsuarioService
 {
     private readonly UserManager<User> _userManager;
     private readonly RoleManager<Role> _roleManager;
-    private readonly RehabilitarDbContext _dbContext;
+    private readonly IUsuarioRepository _usuarioRepo;
+    private readonly IClienteRepository _clienteRepo;
+    private readonly IProfesorRepository _profesorRepo;
+    private readonly IUnitOfWork _uow;
+    private readonly IEmailService _emailService;
+
+    // private readonly RehabilitarDbContext _dbContext;
 
     public UsuarioService(
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
-        RehabilitarDbContext dbContext)
+        IUsuarioRepository usuarioRepo,
+        IClienteRepository clienteRepo,
+        IProfesorRepository profesorRepo,
+        IUnitOfWork uow,
+        IEmailService emailService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
-        _dbContext = dbContext;
+        _usuarioRepo = usuarioRepo;
+        _clienteRepo = clienteRepo;
+        _profesorRepo = profesorRepo;
+        _uow = uow;
+        _emailService = emailService;
     }
 
     public async Task<IEnumerable<UsuarioResponse>> GetAllAsync()
     {
-        var users = await _userManager.Users.ToListAsync();
+        var users = await _usuarioRepo.GetAllAsync();
         var result = new List<UsuarioResponse>();
 
         foreach (var user in users)
@@ -67,13 +82,25 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.AddToRoleAsync(user, request.Rol);
 
-        if (request.Rol == "professor" && !string.IsNullOrEmpty(request.Especialidad))
+
+        if (request.Rol == "Profesor" && !string.IsNullOrEmpty(request.Especialidad))
         {
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
             var profesor = Profesor.Create(user.Id, especialidad);
-            _dbContext.Profesores.Add(profesor);
-            await _dbContext.SaveChangesAsync();
+            _profesorRepo.Add(profesor);
+            await _uow.SaveChangesAsync();
         }
+
+        var emailResult = await EnviarMailConCredenciales(user, password);
+
+        if (!emailResult.IsError)
+        {
+            // si el mail se envía correctamente le confirmamos el email directamente para que no tenga que verificarlo.
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            await _userManager.ConfirmEmailAsync(user, token);
+        }
+        // else / try/catch
+        // implementar rollback.
 
         return await MapToResponse(user);
     }
@@ -112,8 +139,7 @@ public class UsuarioService : IUsuarioService
 
         if (!string.IsNullOrEmpty(request.Especialidad))
         {
-            var profesor = await _dbContext.Profesores
-                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+            var profesor = await _profesorRepo.GetByIdAsync(user.Id);
 
             var especialidad = Enum.Parse<TipoEspecialidad>(request.Especialidad);
 
@@ -121,13 +147,13 @@ public class UsuarioService : IUsuarioService
             {
                 profesor.CambiarEspecialidad(especialidad);
             }
-            else if (request.Rol == "professor")
+            else if (request.Rol == "Profesor")
             {
                 profesor = Profesor.Create(user.Id, especialidad);
-                _dbContext.Profesores.Add(profesor);
+                _profesorRepo.Add(profesor);
             }
 
-            await _dbContext.SaveChangesAsync();
+            await _uow.SaveChangesAsync();
         }
 
         return await MapToResponse(user);
@@ -170,15 +196,13 @@ public class UsuarioService : IUsuarioService
     private async Task<UsuarioResponse> MapToResponse(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "guest";
+        var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
-        var cliente = await _dbContext.Clientes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        var cliente = await _clienteRepo.GetByIdAsync(user.Id);
+        // _dbContext.Clientes.AsNoTracking().FirstOrDefaultAsync(c => c.UserId == user.Id);
 
-        var profesor = await _dbContext.Profesores
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var profesor = await _profesorRepo.GetByIdAsync(user.Id);
+        // _dbContext.Profesores.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         return new UsuarioResponse
         {
@@ -200,8 +224,38 @@ public class UsuarioService : IUsuarioService
 
     private static string GenerateRandomPassword()
     {
-        const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string number = "0123456789";
+        const string symbol = "!@#$%^&*()_-+=[{]};:<>|./?";
+        const string allChars = lower + upper + number + symbol;
+
         var random = new Random();
-        return new string(Enumerable.Repeat(chars, 10).Select(s => s[random.Next(s.Length)]).ToArray());
+        var passwordChars = new char[8];
+
+        passwordChars[0] = lower[random.Next(lower.Length)];
+        passwordChars[1] = upper[random.Next(upper.Length)];
+        passwordChars[2] = number[random.Next(number.Length)];
+        passwordChars[3] = symbol[random.Next(symbol.Length)];
+
+        for (int i = 4; i < passwordChars.Length; i++)
+        {
+            passwordChars[i] = allChars[random.Next(allChars.Length)];
+        }
+
+        for (int i = passwordChars.Length - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (passwordChars[i], passwordChars[j]) = (passwordChars[j], passwordChars[i]);
+        }
+
+        return new string(passwordChars);
+    }
+
+    private async Task<ErrorOr<Success>> EnviarMailConCredenciales(User user, string password)
+    {
+        var emailResult = await _emailService.SendNewUserWithCredentialsEmail(user.Email!, password);
+
+        return emailResult;
     }
 }

@@ -1,45 +1,24 @@
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { MainLayout } from "../../../components/layout";
 import {
   Card,
   Button,
-  Badge,
   Modal,
   Input,
   Select,
   FilterDropdown,
+  Badge,
 } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
-import { Actividad, Sala, User, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
-
-const formatDate = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-};
-
-const tipoLabel: Record<string, string> = {
-  TrenSuperior: 'Tren Superior',
-  TrenMedio: 'Tren Medio',
-  TrenInferior: 'Tren Inferior',
-};
-
-const frecuenciaLabel: Record<string, string> = {
-  Esporadica: 'Esporádica',
-  Recurrente: 'Recurrente',
-};
-
-const estadoLabel: Record<string, string> = {
-  Propuesta: 'Propuesta',
-  Aprobada: 'Aprobada',
-  EnCurso: 'En Curso',
-  Cancelada: 'Cancelada',
-};
+import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
+import { Notitoast } from "../../../components/Notitoast";
+import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
+import { ActividadCard } from "../components/ActividadCard";
+import { RecurrenteGroup } from "../components/RecurrenteGroup";
+import { tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
 
 export function ActividadesPage() {
   const { user, hasRole } = useAuth();
@@ -53,7 +32,28 @@ export function ActividadesPage() {
     frecuencia: 'all',
     tipo: 'all',
     profesor: 'all',
+    sala: 'all',
+    estado: 'all',
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [dateFilterApplied, setDateFilterApplied] = useState(false);
+  const dateFromRef = useRef<HTMLInputElement>(null);
+  const dateToRef = useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate();
+  const [reservandoId, setReservandoId] = useState<string | null>(null);
+
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
+  const [showReservasModal, setShowReservasModal] = useState(false);
+  const [reservasActNombre, setReservasActNombre] = useState('');
+  const [reservasData, setReservasData] = useState<Reserva[]>([]);
+  const [reservasLoading, setReservasLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -84,70 +84,246 @@ export function ActividadesPage() {
     fetchData();
   }, []);
 
-  const handleReservar = async (actividad: Actividad) => {
-    if (!user) return;
+  const handleVerReservas = async (actividad: Actividad) => {
+    setReservasActNombre(actividad.nombre);
+    setReservasLoading(true);
+    setShowReservasModal(true);
+    setReservasData([]);
     try {
-      await reservasApi.create({ actividadId: actividad.id });
-      fetchData();
-    } catch (err) {}
+      const reservas = await reservasApi.getAll({ actividadId: actividad.id });
+      setReservasData(reservas);
+    } catch (err) {
+      console.error('Error al obtener reservas:', err);
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al cargar reservas';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setReservasLoading(false);
+    }
   };
 
-  const canManage = hasRole(["admin", "reception"]);
-  const profesores = usuarios.filter(u => u.rol === 'professor' && u.activo);
+  const handleReservar = async (actividad: Actividad) => {
+    if (!user) return;
+    setReservandoId(actividad.id);
+    try {
+      await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      navigate("/reservas", { state: { _successMessage: '¡Reserva agregada!' } });
+    } catch (err) {
+      const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
+      console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
+      const data = axiosErr?.response?.data;
+      const msg = typeof data?.error === 'string'
+        ? data.error
+        : typeof data?.errorCode === 'string'
+          ? data.errorCode
+          : typeof data?.title === 'string'
+            ? data.title
+            : typeof data?.message === 'string'
+              ? data.message
+              : axiosErr?.message ?? 'Error al realizar la reserva';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setReservandoId(null);
+    }
+  };
+
+  const canManage = hasRole(["Administrador", "Recepción"]);
+  const profesores = usuarios.filter(u => u.rol === 'Profesor' && u.activo);
 
   const filteredActividades = actividades.filter(a => {
+    if (searchTerm && !a.nombre.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (dateFilterApplied) {
+      const actDate = new Date(a.fechaYHora);
+      if (dateFrom && actDate < new Date(dateFrom)) return false;
+      if (dateTo && actDate > new Date(dateTo + 'T23:59:59')) return false;
+    }
+    if (hasRole(['Cliente Registrado']) && a.estado !== 'Aprobada') return false;
     if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
     if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
+    if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
+    if (filters.sala !== 'all' && a.salaId !== filters.sala) return false;
     if (filters.profesor === 'all') return true;
     if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
     if (a.profesorId !== filters.profesor) return false;
     return true;
   });
 
+  const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+
+  const { grupos, individuales } = useMemo(() => {
+    const gruposMap = new Map<string, Actividad[]>();
+    const ind: Actividad[] = [];
+    for (const act of filteredActividades) {
+      if (act.serieId && act.serieId.trim() !== '' && act.serieId !== NULL_GUID) {
+        if (!gruposMap.has(act.serieId)) {
+          gruposMap.set(act.serieId, []);
+        }
+        gruposMap.get(act.serieId)!.push(act);
+      } else {
+        ind.push(act);
+      }
+    }
+    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+  }, [filteredActividades]);
+
   return (
     <MainLayout title="Actividades">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <FilterDropdown
-            filters={[
-              {
-                key: 'frecuencia',
-                label: 'Frecuencia',
-                options: [
-                  { value: 'all', label: 'Todas las frecuencias' },
-                  ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
-                ],
-              },
-              {
-                key: 'tipo',
-                label: 'Especialidad',
-                options: [
-                  { value: 'all', label: 'Todas las especialidades' },
-                  ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
-                ],
-              },
-              {
-                key: 'profesor',
-                label: 'Profesor',
-                options: [
-                  { value: 'all', label: 'Todos los profesores' },
-                  { value: 'unassigned', label: 'Sin asignar' },
-                  ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
-                ],
-              },
-            ]}
-            values={filters}
-            onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-            onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all' })}
-          />
-          {hasRole(["admin"]) && (
-            <Button
-              className="px-6 py-3 justify-center whitespace-nowrap"
-              onClick={() => setShowModal(true)}
-            >
-              Nueva Actividad
-            </Button>
-          )}
+          <div className="flex gap-2">
+            <FilterDropdown
+              filters={[
+                {
+                  key: 'frecuencia',
+                  label: 'Frecuencia',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
+                  ],
+                },
+                {
+                  key: 'tipo',
+                  label: 'Especialidad',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
+                  ],
+                },
+                {
+                  key: 'profesor',
+                  label: 'Profesor',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'unassigned', label: 'Sin asignar' },
+                    ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
+                  ],
+                },
+                {
+                  key: 'sala',
+                  label: 'Sala',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    ...salas.map((s) => ({ value: s.id, label: s.nombre })),
+                  ],
+                },
+                ...(!hasRole(['Cliente Registrado'])
+                  ? [
+                      {
+                        key: 'estado',
+                        label: 'Estado',
+                        options: [
+                          { value: 'all', label: 'Todos' },
+                          ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
+                        ],
+                      },
+                    ]
+                  : []),
+              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
+              onOpenChange={setFilterOpen}
+            />
+            <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
+              <div className="flex items-center gap-1 w-22.5">
+                <button
+                  type="button"
+                  onClick={() => dateFromRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateFrom ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateFrom.split('-')[0]}</span>
+                      <span className="block">{dateFrom.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Desde</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateFromRef}
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <div className="flex items-center gap-1 w-22.5">
+                <button
+                  type="button"
+                  onClick={() => dateToRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateTo ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateTo.split('-')[0]}</span>
+                      <span className="block">{dateTo.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Hasta</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateToRef}
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (dateFilterApplied) {
+                    setDateFrom('');
+                    setDateTo('');
+                    setDateFilterApplied(false);
+                  } else {
+                    setDateFilterApplied(true);
+                  }
+                }}
+                disabled={!dateFilterApplied && !dateFrom && !dateTo}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-19"
+              >
+                {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
+              </button>
+            </div>
+            <div className={filterOpen ? 'invisible' : ''}>
+              <Input
+                placeholder="Buscar por nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125 h-12"
+              />
+            </div>
+          </div>
+          <div className={filterOpen ? 'invisible' : ''}>
+            {hasRole(["Administrador"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Nueva Actividad
+              </Button>
+            )}
+            {hasRole(["Profesor"]) && (
+              <Button
+                className="px-6 py-3 justify-center whitespace-nowrap h-12"
+                onClick={() => setShowModal(true)}
+              >
+                Proponer Actividad
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -160,142 +336,55 @@ export function ActividadesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredActividades.map((act) => (
-              <Card key={act.id} className="flex flex-col">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex gap-2">
-                    <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
-                    <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
-                    {hasRole(["admin", "professor"]) && (
-                      <Badge variant={
-                        act.estado === 'Cancelada' ? 'warning' :
-                        act.estado === 'EnCurso' ? 'info' :
-                        act.estado === 'Aprobada' ? 'success' : 'default'
-                      } className={act.estado === 'Propuesta' ? 'bg-orange-200 text-orange-700' : ''}>
-                        {estadoLabel[act.estado] || act.estado}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge
-                    variant={
-                      act.cupoDisponible <= 0
-                        ? "warning"
-                        : "success"
-                    }
-                  >
-                    {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
-                  </Badge>
-                </div>
-
-                <h3 className="text-lg font-semibold text-dark mb-2">
-                  {act.nombre}
-                </h3>
-                <p className="text-gray-500 text-sm mb-4 flex-1">
-                  {act.descripcion}
-                </p>
-
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    {formatDate(act.fechaYHora)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {formatTime(act.fechaYHora)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    {act.salaNombre}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    {act.profesorNombre || "Sin profesor asignado"}
-                  </div>
-                </div>
-
-                {hasRole(["registered_client", "reception"]) && (
-                  <Button
-                    variant={
-                      act.cupoDisponible <= 0
-                        ? "outline"
-                        : "primary"
-                    }
-                    className="w-full mt-auto"
-                    disabled={act.cupoDisponible <= 0}
-                    onClick={() => handleReservar(act)}
-                  >
-                    {act.cupoDisponible <= 0
-                      ? "Completo"
-                      : "Reservar"}
-                  </Button>
-                )}
-                {hasRole(["admin"]) && (
-                  <Button
-                    variant="primary"
-                    className="w-full mt-auto"
-                    onClick={() => {
-                      setEditingActividad(act);
-                      setShowModal(true);
-                    }}
-                  >
-                    Modificar
-                  </Button>
-                )}
-              </Card>
+            {grupos.map(([serieId, acts]) => (
+              <RecurrenteGroup
+                key={serieId}
+                actividades={acts}
+                hasRole={hasRole}
+                salas={salas}
+                profesores={profesores}
+                onUpdate={fetchData}
+                onReservar={handleReservar}
+                onModificar={(act) => {
+                  setEditingActividad(act);
+                  setShowModal(true);
+                }}
+                onTomarActividad={async (act) => {
+                  try {
+                    await actividadesApi.asignarProfesor(act.id, user!.id);
+                    fetchData();
+                  } catch (err) {
+                    console.error('Error al tomar la actividad', err);
+                  }
+                }}
+                onVerReservas={handleVerReservas}
+                onError={(msg) => {
+                  setToastType('error');
+                  setToastMessage(msg);
+                  setShowToast(true);
+                }}
+              />
+            ))}
+            {individuales.map((act) => (
+              <ActividadCard
+                key={act.id}
+                actividad={act}
+                hasRole={hasRole}
+                onReservar={handleReservar}
+                onModificar={(act) => {
+                  setEditingActividad(act);
+                  setShowModal(true);
+                }}
+                onTomarActividad={async (act) => {
+                  try {
+                    await actividadesApi.asignarProfesor(act.id, user!.id);
+                    fetchData();
+                  } catch (err) {
+                    console.error('Error al tomar la actividad', err);
+                  }
+                }}
+                onVerReservas={handleVerReservas}
+              />
             ))}
           </div>
         )}
@@ -319,8 +408,94 @@ export function ActividadesPage() {
           }}
           salas={salas.filter(s => s.activo)}
           profesores={profesores}
+          onError={(msg) => {
+            setToastType('error');
+            setToastMessage(msg);
+            setShowToast(true);
+          }}
+          onSuccess={(msg) => {
+            setToastType('success');
+            setToastMessage(msg);
+            setShowToast(true);
+          }}
         />
       </Modal>
+
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+
+      {showReservasModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setShowReservasModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasActNombre}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+            </div>
+            {reservasLoading ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+            ) : reservasData.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reservasData.map((res) => {
+                  const nombre = res.nombreCliente || 'Cliente desconocido';
+                  const iniciales = nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                  return (
+                    <Card key={res.id} className="flex flex-col">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-dark font-bold text-sm shrink-0">
+                          {iniciales || '??'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-dark dark:text-gray-100 truncate">
+                            {nombre}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <p>
+                          {new Date(res.fechaReserva).toLocaleDateString('es-AR', {
+                            year: 'numeric', month: 'long', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-auto">
+                        <Badge variant={
+                          res.estadoDeReserva === 'Activa' ? 'success' :
+                          res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                          res.estadoDeReserva === 'EnEspera' ? 'info' :
+                          res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
+                        } className="text-xs">
+                          {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente de pago' :
+                           res.estadoDeReserva === 'Activa' ? 'Activa' :
+                           res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                           res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
+                        </Badge>
+                        {res.montoPendiente === 0 && (
+                          <Badge variant="success" className="text-xs">Pagado</Badge>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </MainLayout>
   );
 }
@@ -330,10 +505,14 @@ interface ActividadFormProps {
   salas: Sala[];
   profesores: User[];
   actividad?: Actividad;
+  onError: (message: string) => void;
+  onSuccess: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormProps) {
+function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
   const isEditing = !!actividad;
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole(["Administrador"]);
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -341,11 +520,12 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
           descripcion: actividad.descripcion,
           tipo: actividad.tipo as CreateActividadRequest['tipo'],
           frecuencia: actividad.frecuencia as CreateActividadRequest['frecuencia'],
-          estado: actividad.estado as CreateActividadRequest['estado'],
+          estado: isAdmin ? (actividad.estado as CreateActividadRequest['estado']) : 'Propuesta',
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
-          profesorId: actividad.profesorId || undefined,
+          profesorId: isAdmin ? (actividad.profesorId && actividad.profesorId !== '00000000-0000-0000-0000-000000000000' ? actividad.profesorId : undefined) : undefined,
+          serieId: actividad.serieId && actividad.serieId !== '00000000-0000-0000-0000-000000000000' ? actividad.serieId : undefined,
         }
       : {
           nombre: "",
@@ -360,33 +540,37 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         },
   );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
 
   const handleDelete = async () => {
     if (!actividad) return;
     setLoading(true);
-    setError(null);
     try {
       await actividadesApi.delete(actividad.id);
+      onSuccess('Actividad eliminada exitosamente');
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || 'Error al eliminar actividad';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
+      onError(msg);
     } finally {
+      setShowConfirmDeleteModal(false);
       setLoading(false);
-      setShowDeleteConfirm(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (!formData.salaId) {
-      setError('Debe seleccionar una sala');
+      onError('Debe seleccionar una sala');
+      return;
+    }
+
+    const parsedDate = new Date(formData.fechaYHora);
+    if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
+      onError('La fecha y hora no pueden ser anteriores a las de hoy');
       return;
     }
 
@@ -402,7 +586,12 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
         await actividadesApi.update(actividad.id, payload);
       } else if (formData.frecuencia === 'Recurrente') {
         if (!fechaFinRecurrente) {
-          setError('Debe seleccionar una fecha fin para la recurrencia');
+          onError('Debe seleccionar una fecha fin para la recurrencia');
+          setLoading(false);
+          return;
+        }
+        if (new Date(fechaFinRecurrente) <= new Date(formData.fechaYHora)) {
+          onError('La fecha de fin de recurrencia debe ser posterior a la fecha de inicio');
           setLoading(false);
           return;
         }
@@ -416,17 +605,22 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
       } else {
         await actividadesApi.create(payload);
       }
+      onSuccess(isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente');
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.title || err?.response?.data || err?.message || `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const data = err?.response?.data;
+      const fluentErrors = data?.errors;
+      const firstFluentError = fluentErrors && Object.values(fluentErrors).find((v: any) => v?.[0])?.[0];
+      const msg = data?.errorCode ?? firstFluentError ?? data?.error ?? err?.message ?? `Error al ${isEditing ? 'modificar' : 'crear'} actividad`;
+      onError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">Seleccione el tipo de frecuencia para la actividad:</p>
@@ -457,11 +651,11 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
             required
           />
           <div>
-            <label className="block text-sm font-medium text-dark mb-1.5">
+            <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
               Descripción
             </label>
             <textarea
-              className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-dark dark:text-gray-100"
               rows={3}
               value={formData.descripcion}
               onChange={(e) =>
@@ -511,27 +705,40 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
                 { value: "TrenInferior", label: "Tren Inferior" },
               ]}
             />
-            <Select
-              label="Estado"
-              value={formData.estado}
-              onChange={(e) =>
-                setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
-              }
-              options={
-                isEditing
-                  ? [
-                      { value: "Propuesta", label: "Propuesta" },
-                      { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
-                      { value: "Cancelada", label: "Cancelada" },
-                    ]
-                  : [
-                      { value: "Propuesta", label: "Propuesta" },
-                      { value: "Aprobada", label: "Aprobada" },
-                      { value: "EnCurso", label: "En Curso" },
-                    ]
-              }
-            />
+            {isAdmin ? (
+              <Select
+                label="Estado"
+                value={formData.estado}
+                onChange={(e) =>
+                  setFormData({ ...formData, estado: e.target.value as CreateActividadRequest['estado'] })
+                }
+                options={
+                  isEditing
+                    ? [
+                        { value: "Propuesta", label: "Propuesta" },
+                        { value: "Aprobada", label: "Aprobada" },
+                        { value: "Cancelada", label: "Cancelada" },
+                      ]
+                    : [
+                        { value: "Propuesta", label: "Propuesta" },
+                        { value: "Aprobada", label: "Aprobada" },
+                      ]
+                }
+              />
+            ) : (
+              <Input
+                label="Cupo máximo"
+                type="number"
+                value={formData.cupoMaximo}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cupoMaximo: parseInt(e.target.value),
+                  })
+                }
+                required
+              />
+            )}
           </div>
           {formData.frecuencia === 'Recurrente' && !isEditing && (
             <Input
@@ -542,80 +749,73 @@ function ActividadForm({ onClose, salas, profesores, actividad }: ActividadFormP
               required
             />
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Cupo máximo"
-              type="number"
-              value={formData.cupoMaximo}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  cupoMaximo: parseInt(e.target.value),
-                })
-              }
-              required
-            />
-            <Select
-              label="Profesor (opcional)"
-              value={formData.profesorId || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  profesorId: e.target.value || undefined,
-                })
-              }
-              options={[
-                { value: "", label: "Sin profesor" },
-                ...profesores
-                  .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
-                  .map((p) => ({
-                    value: p.id,
-                    label: `${p.nombre} ${p.apellido}`,
-                  })),
-              ]}
-            />
-          </div>
+          {isAdmin && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Cupo máximo"
+                type="number"
+                value={formData.cupoMaximo}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cupoMaximo: parseInt(e.target.value),
+                  })
+                }
+                required
+              />
+              <Select
+                label="Profesor (opcional)"
+                value={formData.profesorId || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    profesorId: e.target.value || undefined,
+                  })
+                }
+                options={[
+                  { value: "", label: "Sin profesor" },
+                  ...profesores
+                    .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+                    .map((p) => ({
+                      value: p.id,
+                      label: `${p.nombre} ${p.apellido}`,
+                    })),
+                ]}
+              />
+            </div>
+          )}
         </>
       )}
 
-      {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-      <div className={`flex gap-3 pt-4 ${isEditing && !showDeleteConfirm ? 'justify-between' : 'justify-end'}`}>
-        {isEditing && !showDeleteConfirm && (
+      <div className={`flex gap-3 pt-4 ${isEditing ? 'justify-between' : 'justify-end'}`}>
+        {isEditing && (
           <Button
-            variant="ghost"
-            className="bg-red-300 hover:bg-red-400"
-            onClick={() => setShowDeleteConfirm(true)}
+            variant="rojo"
+            type="button"
+            onClick={() => setShowConfirmDeleteModal(true)}
           >
             Eliminar
           </Button>
         )}
-        {showDeleteConfirm ? (
-          <div className="flex items-center gap-3 w-full justify-end">
-            <span className="text-sm text-gray-600 mr-auto">
-              ¿Estás seguro de eliminar esta actividad?
-            </span>
-            <Button variant="ghost" type="button" onClick={() => setShowDeleteConfirm(false)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" loading={loading} onClick={handleDelete}>
-              Eliminar
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            <Button variant="ghost" type="button" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" loading={loading}>
-              {isEditing ? "Guardar" : "Crear"}
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={loading}>
+            {isEditing ? "Guardar" : "Crear"}
+          </Button>
+        </div>
       </div>
-    </form>
+      </form>
+
+      <ConfirmActionModal
+        isOpen={showConfirmDeleteModal}
+        title="Eliminar actividad"
+        body="¿Estás seguro de que deseas eliminar esta actividad? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirmDeleteModal(false)}
+      />
+    </>
   );
 }

@@ -5,6 +5,7 @@ using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
 using Domain.Exceptions;
 using Application.Clientes;
+using ErrorOr;
 
 namespace Application.Auth;
 
@@ -15,6 +16,8 @@ public class AuthService : IAuthService
     private readonly IClienteRepository _clienteRepo;
     private readonly IEmailService _emailService;
     private readonly IJwtProvider _jwt;
+
+    private const string Dominio = "localhost:5173";
 
     public AuthService(UserManager<User> userManager,
                         IClienteRepository clienteRepo,
@@ -54,7 +57,7 @@ public class AuthService : IAuthService
             }
 
             // Asignar rol de cliente registrado por defecto
-            await _userManager.AddToRoleAsync(user, "registered_client");
+            await _userManager.AddToRoleAsync(user, "Cliente Registrado");
 
             _clienteRepo.Add(c);
             await EnviarEmailDeVerificacion(user);
@@ -88,7 +91,7 @@ public class AuthService : IAuthService
 
         // Obtener rol del usuario
         var roles = await _userManager.GetRolesAsync(user);
-        var rol = roles.FirstOrDefault() ?? "guest";
+        var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
         // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
@@ -114,7 +117,7 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<bool> ResendVerificationEmailAsync(ResendVerificationEmailRequest request)
+    public async Task<bool> ResendVerificationEmailAsync(EmailRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null || user.EmailConfirmed)
@@ -138,6 +141,34 @@ public class AuthService : IAuthService
         return result.Succeeded;
     }
 
+    public async Task<ErrorOr<Success>> SendResetPasswordEmailAsync(EmailRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Error.NotFound("Usuario no encontrado.");
+        
+        var result = await EnviarEmailDeResetPassword(user);
+        return result;
+    }
+
+    public async Task<ErrorOr<Success>> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(request.UserId);
+        if (user == null)
+            return Error.NotFound("Usuario no encontrado.");
+
+        if (await _userManager.CheckPasswordAsync(user, request.NewPassword))
+            return Error.Validation("Password.SameAsOld", "La nueva contraseña no puede ser idéntica a la actual.");
+
+        var result = await _userManager.ResetPasswordAsync(user, request.PasswordResetToken, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+            return errors;
+        }
+        return Result.Success;
+    }
+
     // métodos privados para funcionalidades específicas:
 
     private Cliente CrearCliente(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
@@ -151,9 +182,19 @@ public class AuthService : IAuthService
     {
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         string verificationLink =
-            $"http://localhost:5173/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
+            $"http://{Dominio}/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
         var emailResult = await _emailService.SendConfirmationEmail(user.Email!, verificationLink);
         if (emailResult.IsError)
             throw new Exception("El usuario no pudo ser creado porque falló el envío del correo de verificación.");
+    }
+
+    private async Task<ErrorOr<Success>> EnviarEmailDeResetPassword(User user)
+    {
+        var passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        string link =
+            $"http://{Dominio}/reset-password?userId={user.Id}&passwordResetToken={Uri.EscapeDataString(passwordResetToken)}";
+        var emailResult = await _emailService.SendPasswordResetEmail(user.Email!, link);
+
+        return emailResult;
     }
 }

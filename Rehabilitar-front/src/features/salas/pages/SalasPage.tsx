@@ -9,27 +9,52 @@ import {
   Table,
 } from "../../../components/ui";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
+import { Notitoast } from "../../../components/Notitoast";
 import { salasApi } from "../../../api";
 import { Sala } from "../../../types";
+import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
+  const { hasRole } = useAuth();
+  const isReception = hasRole(["Recepción"]);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [salaIdAEliminar, setSalaIdAEliminar] = useState(String);
+  const [showDesactivarConfirm, setShowDesactivarConfirm] = useState(false);
+  const [salaIdAEliminar, setSalaIdAEliminar] = useState('');
+  const [salaADesactivar, setSalaADesactivar] = useState<Sala | null>(null);
+
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+
 
   const HandleDeleteClick = (id: string) => {
     setShowDeleteConfirm(true);
     setSalaIdAEliminar(id);
   };
+  const HandleDesactivarClick = (s: Sala) => {
+    setShowDesactivarConfirm(true);
+    setSalaADesactivar(s);
+  };
+
   const handleConfirmDelete = async (id: string) => {
     try {
       await salasApi.delete(id);
       fetchData();
       setShowDeleteConfirm(false);
-    } catch (err) {}
+      setToastType('success');
+      setToastMessage('Sala eliminada exitosamente.');
+      setShowToast(true);
+    } catch (err) {
+      setShowDeleteConfirm(false);
+      const msg = (err as any)?.response?.data?.error || 'Error al eliminar la sala.';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
   };
 
   const fetchData = async () => {
@@ -47,11 +72,24 @@ export function SalasPage() {
     fetchData();
   }, []);
 
-  const handleToggle = async (sala: Sala) => {
+  const handleConfirmDesactivar = async () => {
+    if (!salaADesactivar) return;
     try {
-      await salasApi.update(sala.id, { activo: !sala.activo });
+      await salasApi.update(salaADesactivar.id, { activo: !salaADesactivar.activo });
       fetchData();
-    } catch (err) {}
+      setShowDesactivarConfirm(false);
+      setSalaADesactivar(null);
+      setToastType('success');
+      setToastMessage(salaADesactivar.activo ? 'Sala desactivada exitosamente.' : 'Sala activada exitosamente.');
+      setShowToast(true);
+    } catch (err) {
+      setShowDesactivarConfirm(false);
+      setSalaADesactivar(null);
+      const msg = (err as any)?.response?.data?.error || 'Error al actualizar la sala.';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
   };
 
   const columns = [
@@ -75,25 +113,22 @@ export function SalasPage() {
       render: (s: Sala) => (
         <div className="flex gap-2">
           <Button
-            variant="ghost"
+            variant="verde"
             size="sm"
-            className="bg-green-200 hover:bg-green-300"
             onClick={() => setSelectedSala(s)}
           >
             Editar
           </Button>
           <Button
-            variant="ghost"
+            variant="naranja"
             size="sm"
-            className="bg-orange-200 hover:bg-orange-300"
-            onClick={() => handleToggle(s)}
+            onClick={() => HandleDesactivarClick(s)}
           >
             {s.activo ? "Desactivar" : "Activar"}
           </Button>
           <Button
-            variant="ghost"
+            variant="rojo"
             size="sm"
-            className="bg-red-300 hover:bg-red-400"
             onClick={() => HandleDeleteClick(s.id)}
           >
             Eliminar
@@ -107,9 +142,11 @@ export function SalasPage() {
     <MainLayout title="Salas">
       <div className="space-y-6">
         <div className="flex justify-end">
+          {!isReception && (
           <Button variant="primary" onClick={() => setShowModal(true)}>
             Nueva Sala
           </Button>
+          )}
         </div>
 
         {loading ? (
@@ -142,6 +179,7 @@ export function SalasPage() {
             setSelectedSala(null);
             fetchData();
           }}
+          onNotify={(type, message) => { setToastType(type); setToastMessage(message); setShowToast(true); }}
         />
       </Modal>
       <ConfirmActionModal
@@ -152,6 +190,24 @@ export function SalasPage() {
         body="¿Estás seguro de que deseas eliminar la sala?"
         confirmLabel="Eliminar"
       />
+      <ConfirmActionModal
+        isOpen={showDesactivarConfirm}
+        onCancel={() => { setShowDesactivarConfirm(false); setSalaADesactivar(null); }}
+        onConfirm={handleConfirmDesactivar}
+        title={salaADesactivar?.activo ? 'Confirmar desactivación' : 'Confirmar activación'}
+        body={salaADesactivar?.activo
+          ? `¿Estás seguro de que deseas desactivar la sala "${salaADesactivar.nombre}"?`
+          : `¿Estás seguro de que deseas activar la sala "${salaADesactivar?.nombre}"?`}
+        confirmLabel={salaADesactivar?.activo ? 'Desactivar' : 'Activar'}
+      />
+
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </MainLayout>
   );
 }
@@ -159,9 +215,10 @@ export function SalasPage() {
 interface SalaFormProps {
   sala: Sala | null;
   onClose: () => void;
+  onNotify?: (type: 'success' | 'error', message: string) => void;
 }
 
-function SalaForm({ sala, onClose }: SalaFormProps) {
+function SalaForm({ sala, onClose, onNotify }: SalaFormProps) {
   const [formData, setFormData] = useState({
     nombre: sala?.nombre || "",
     capacidad: sala?.capacidad || 20,
@@ -175,11 +232,18 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
     try {
       if (sala) {
         await salasApi.update(sala.id, formData);
+        onNotify?.('success', 'Sala actualizada exitosamente.');
       } else {
         await salasApi.create({ ...formData, activo: true });
+        onNotify?.('success', 'Sala creada exitosamente.');
       }
       onClose();
     } catch (err) {
+      const apiMsg = (err as any)?.response?.data?.error;
+      const msg = apiMsg && apiMsg.toLowerCase().includes("a conflict error has occurred.")
+        ? "Ya existe una sala con ese nombre"
+        : apiMsg || `Error al ${sala ? 'actualizar' : 'crear'} la sala.`;
+      onNotify?.('error', msg);
     } finally {
       setLoading(false);
     }
@@ -204,11 +268,11 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         required
       />
       <div>
-        <label className="block text-sm font-medium text-dark mb-1.5">
+        <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
           Descripción
         </label>
         <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+          className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
           rows={3}
           value={formData.descripcion}
           onChange={(e) =>
@@ -217,7 +281,7 @@ function SalaForm({ sala, onClose }: SalaFormProps) {
         />
       </div>
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="ghost" type="button" onClick={onClose}>
+        <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
           Cancelar
         </Button>
         <Button type="submit" loading={loading}>

@@ -44,7 +44,10 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                 .HasForeignKey<Cliente>(c => c.UserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
-
+            entity.OwnsOne(c => c.SaldoAFavor, s =>
+            {
+                s.Property(d => d.MontoTotal).HasColumnName("MontoTotal").HasColumnType("decimal(18, 2)");
+            });
             entity.Property(c => c.Dni)
                 .HasConversion(
                     dniObjeto => dniObjeto.Valor,
@@ -89,6 +92,8 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
         {
             entity.ToTable("Actividades");
             entity.HasKey(a => a.Id);
+            entity.Property(a => a.Version)
+                  .IsConcurrencyToken(); // Para manejar concurrencia optimista
             entity.HasOne(a => a.Sala)
                   .WithMany(s => s.Actividades)
                   .HasForeignKey(a => a.SalaId)

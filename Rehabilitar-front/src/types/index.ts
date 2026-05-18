@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'reception' | 'professor' | 'registered_client' | 'guest';
+export type Role = 'Administrador' | 'Recepción' | 'Profesor' | 'Cliente Registrado';
 
 export interface User {
   id: string;
@@ -61,16 +61,19 @@ export interface CreateActividadRecurrenteRequest {
   fechaFinRecurrente: string;
 }
 
+export type EstadoDeReserva = 'PendienteDePago' | 'Activa' | 'EnEspera' | 'Cancelada';
+export type TipoCliente = 'noAbonado' | 'Abonado';
+
 export interface Reserva {
   id: string;
-  usuarioId: string;
+  clienteId: string;
+  nombreCliente?: string;
   actividadId: string;
   fechaReserva: string;
-  estado: 'confirmada' | 'cancelada' | 'completada' | 'asistio' | 'no_asistio';
-  fechaCancelacion?: string;
-  metodoPago?: string;
-  monto?: number;
-  observaciones?: string;
+  tipoCliente: TipoCliente;
+  estadoDeReserva: EstadoDeReserva;
+  montoTotal: number;
+  montoPendiente: number;
 }
 
 export interface Sala {
@@ -111,6 +114,12 @@ export interface RegisterData {
 export interface EmailVerificationData {
   userId: string;
   confirmationToken: string;
+}
+
+export interface ResetPasswordData {
+  userId: string;
+  passwordResetToken: string;
+  newPassword: string;
 }
 
 export interface ApiResponse<T> {

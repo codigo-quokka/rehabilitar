@@ -1,6 +1,7 @@
 import { BrowserRouter, useRoutes } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { NotificationsProvider } from "./hooks/useNotifications";
+import { ThemeProvider } from "./context/ThemeContext";
 import { routes } from "./routes";
 
 function AppRoutes() {
@@ -9,13 +10,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationsProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </NotificationsProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <NotificationsProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </NotificationsProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

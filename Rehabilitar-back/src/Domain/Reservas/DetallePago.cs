@@ -8,6 +8,7 @@ public record DetallePago(decimal MontoTotal, decimal MontoPagado)
     
     public DetallePago RegistrarPago(decimal monto) // Método para "evolucionar" el estado del pago (retorna una nueva instancia)
     {
+        if (monto < 0) monto = 0;
         if (MontoPendiente < monto)
             throw new ArgumentException("El monto a pagar excede el monto pendiente.");
         return this with { MontoPagado = MontoPagado + monto };

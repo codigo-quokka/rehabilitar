@@ -1,18 +1,16 @@
 using System.Text;
-using Application.Auth;
 using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
 using Application.Usuarios;
 using Application.Actividades;
+using Application.Reservas;
 using Domain;
 using Infrastructure.Email;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
-using Infrastructure.Actividades;
 using Infrastructure.Persistence.Seeding;
-using Infrastructure.Usuarios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -40,12 +38,11 @@ public static class DependencyInjection
             options.User.RequireUniqueEmail = true;
             options.SignIn.RequireConfirmedEmail = true;
 
-            // config password: de momento contraseña simple para poder testear 
-            options.Password.RequiredLength = 6;
-            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireDigit = true;
             options.Password.RequiredUniqueChars = 0;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequireUppercase = true;
         })
         .AddEntityFrameworkStores<RehabilitarDbContext>()
         .AddDefaultTokenProviders();
@@ -83,6 +80,7 @@ public static class DependencyInjection
 
         // registro de servicios:
         services.AddScoped<ISeedingService, SeedingService>();
+        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEmailService, EmailService>();
@@ -92,6 +90,9 @@ public static class DependencyInjection
         services.AddScoped<IActividadRepository, ActividadRepository>();
         services.AddScoped<IProfesorRepository, ProfesorRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IReservaRepository, ReservaRepository>();
+        services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
 
         return services;
     }

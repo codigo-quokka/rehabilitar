@@ -44,7 +44,7 @@ export function NotificationTray() {
     <div className="relative" ref={trayRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 text-gray-500 hover:text-dark hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="relative p-2.5 text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label={`Notificaciones${unreadCount > 0 ? `, ${unreadCount} sin leer` : ""}`}
         aria-expanded={isOpen}
       >
@@ -62,9 +62,9 @@ export function NotificationTray() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-border overflow-hidden z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gray-50">
-            <h3 className="font-semibold text-dark">Notificaciones</h3>
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-border dark:border-gray-700 overflow-hidden z-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <h3 className="font-semibold text-dark dark:text-gray-100">Notificaciones</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -86,8 +86,8 @@ export function NotificationTray() {
                   <li key={notification.id}>
                     <button
                       onClick={() => handleNotificationClick(notification.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                        !notification.read ? "bg-primary/5 border-l-4 border-l-primary" : ""
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                        !notification.read ? "bg-primary/5 dark:bg-primary/10 border-l-4 border-l-primary" : ""
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -104,7 +104,7 @@ export function NotificationTray() {
                         <div className="flex-1 min-w-0">
                           <p
                             className={`text-sm ${
-                              !notification.read ? "font-semibold text-dark" : "text-gray-700"
+                              !notification.read ? "font-semibold text-dark dark:text-gray-100" : "text-gray-700 dark:text-gray-300"
                             }`}
                           >
                             {notification.message}

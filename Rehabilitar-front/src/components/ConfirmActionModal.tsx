@@ -13,12 +13,12 @@ export function ConfirmActionModal({ title, body, confirmLabel, onConfirm, onCan
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={title} size="sm">
       <div className="text-center">
-        <p className="text-gray-600 mb-6">{body}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{body}</p>
         <div className="flex justify-center gap-3">
-          <Button variant="ghost" onClick={onCancel}>
+          <Button variant="ghost" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={onConfirm}>
+          <Button variant="rojo" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

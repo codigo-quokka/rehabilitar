@@ -1,10 +1,8 @@
-namespace Infrastructure.Actividades;
+namespace Infrastructure.Persistence.Repositories;
 using Application.Actividades;
 using Domain.Actividades;
-using Infrastructure.Persistence;
 using Domain.Profesores;
 using Microsoft.EntityFrameworkCore;
-using Infrastructure.Persistence.Repositories;
 
 public class ActividadRepository : RepositoryBase<Actividad>, IActividadRepository
 {
@@ -35,7 +33,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                  ct); // chequear lógica
     }
     
-    public async Task<ICollection<Actividad>> ListarActividadesAsync(TipoEspecialidad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null, CancellationToken ct = default)
+    public async Task<ICollection<Actividad>> ListarActividadesAsync(TipoEspecialidad? tipo = null, FrecuenciaActividad? frecuencia = null, EstadoActividad? estado = null, Guid? profesorId = null, CancellationToken ct = default)
     {
         IQueryable<Actividad> query = _context.Actividades
                                               .Include(a => a.Sala)
@@ -48,6 +46,8 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
             query = query.Where(a => a.Frecuencia == frecuencia.Value);
         if (estado.HasValue)
             query = query.Where(a => a.Estado == estado.Value);
+        if (profesorId.HasValue)
+            query = query.Where(a => a.ProfesorId == profesorId.Value);
 
         List<Actividad> actividades = await query.ToListAsync();
         return actividades;
@@ -78,6 +78,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                                       .Include(a => a.Sala)
                                       .Include(a => a.Profesor)
                                       .ThenInclude(p => p.User)
+                                      .Include(a => a.Reservas)
                                       .FirstOrDefaultAsync(a => a.Id == actividadId, ct);
         if (actividad == null) throw new KeyNotFoundException("Actividad no encontrada.");
         return actividad;

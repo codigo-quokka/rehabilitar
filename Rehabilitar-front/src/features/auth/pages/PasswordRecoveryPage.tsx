@@ -14,24 +14,25 @@ export function PasswordRecoveryPage() {
 
     try {
       await authApi.recoverPassword(email);
-      setSent(true);
     } catch (err) {
+      // Ignore error to prevent email enumeration
     } finally {
+      setSent(true);
       setLoading(false);
     }
   };
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-bg-main flex items-center justify-center p-6">
+      <div className="min-h-screen bg-bg-main dark:bg-gray-950 flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           <div className="w-16 h-16 mx-auto mb-6 bg-primary/20 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-dark mb-2">Revisa tu email</h2>
-          <p className="text-gray-500 mb-6">
+          <h2 className="text-xl font-semibold text-dark dark:text-gray-100 mb-2">Revisa tu email</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
             Te hemos enviado un enlace para recuperar tu contraseña
           </p>
           <Link to="/login" className="text-primary hover:underline">
@@ -43,16 +44,16 @@ export function PasswordRecoveryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-main flex items-center justify-center p-6">
+    <div className="min-h-screen bg-bg-main dark:bg-gray-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary">RehabilitAR</h1>
-          <p className="text-gray-500 mt-2">Centro de Rehabilitación</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Centro de Rehabilitación</p>
         </div>
 
         <Card>
-          <h2 className="text-xl font-semibold text-dark mb-2">Recuperar contraseña</h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <h2 className="text-xl font-semibold text-dark dark:text-gray-100 mb-2">Recuperar contraseña</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
             Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
           </p>
 

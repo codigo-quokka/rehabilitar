@@ -29,6 +29,7 @@ src/
  ├─ components/
  │   ├─ layout/       # MainLayout, Sidebar, Header
  │   └─ ui/           # Reusable UI components (Button, Input, Card, Modal, Table, Select, Badge)
+ ├─ context/         # React context providers (ThemeContext)
  ├─ features/
  │   ├─ auth/         # Login, Register, PasswordRecovery pages
  │   ├─ usuarios/     # Dashboard, Usuarios, Perfil pages
@@ -44,14 +45,14 @@ src/
 
 ## Brand Palette
 
-- Primary: #6DD3A8, #48B7A5, #309B9B, #2C7E8B
+- Primary: #4ABC8F, #3AAC80, #2E9B70, #258A60
 - Secondary: #2F6274, #2F4858
-- Backgrounds: #FBFBFB, #F5F5F7, #F9F9FB
-- Borders: #E8E8ED
+- Backgrounds: #EAF2F8, #E0EBF4, #F0F6FB
+- Borders: #D8E3ED
 
 ## Authentication
 
-- 5 roles: admin, reception, professor, registered_client, guest
+- 4 roles: Administrador, Recepción, Profesor, Cliente Registrado
 - Role-based route protection
 - Token stored in localStorage
 
@@ -63,7 +64,7 @@ src/
 
 ## Design Rules
 
-- No pure white (#FFFFFF) - use #FBFBFB instead
+- No pure white (#FFFFFF) - use #FBFBFB (or #EAF2F8 for page bg) instead
 - Soft shadows, subtle rounded corners
 - Fully responsive
 - Apple-inspired minimalist aesthetic
@@ -112,6 +113,62 @@ This project follows guidelines from these installed skills:
   - Auto-dismiss, animations, manual close button
 - Notifications shared between toast and tray
 
+## Dark mode conventions
+
+### Strategy
+- **Class-based Tailwind dark mode**. The `dark` class lives on `<html>` and is managed by `ThemeContext` (`src/context/ThemeContext.tsx`).
+- Never use `prefers-color-scheme` media queries for UI colors — always use Tailwind's `dark:` variant.
+- The toggle button is in `Header.tsx`; theme persists via `localStorage` key `"rehabilitar-theme"`.
+
+### How to consume
+- **Visual styling only**: Use Tailwind `dark:` variants directly on className strings. No JS needed.
+- **Programmatic access**: Import `useTheme` from `src/context/ThemeContext` only if the component needs to react to the theme (e.g. conditional rendering of icon variants).
+
+### Color conventions
+
+| Role | Light (default) | Dark |
+|---|---|---|
+| Page background | `bg-bg-main` (#EAF2F8) | `dark:bg-gray-950` |
+| Page gradient | `from-bg-main via-bg-secondary to-bg-surface` | `dark:from-gray-950 dark:via-gray-900 dark:to-gray-950` |
+| Surface/Card | `bg-white` | `dark:bg-gray-900` |
+| Surface (alt) | `bg-gray-50` / `bg-bg-surface` (#F0F6FB) | `dark:bg-gray-800/50` |
+| Hover state | `hover:bg-gray-100` | `dark:hover:bg-gray-700` |
+| Table row hover | `hover:bg-gray-50` | `dark:hover:bg-gray-800/50` |
+| Primary text | `text-dark` (#2F4858) | `dark:text-gray-100` |
+| Secondary text | `text-gray-500` / `text-gray-600` | `dark:text-gray-400` |
+| Muted text | `text-gray-700` | `dark:text-gray-300` |
+| Borders | `border-border` (#E8E8ED) / `border-gray-200` / `border-gray-300` | `dark:border-gray-700` |
+| Modal backdrop | `bg-black/40` | (same) |
+| Button ghost | `border-gray-300` `text-dark` `hover:bg-gray-200` | `dark:border-gray-600` `dark:text-gray-100` `dark:hover:bg-gray-700` |
+| Button danger | `bg-red-400` | `dark:bg-red-600` |
+
+### Mandatory checklist for every new component
+Every background, text, and border color MUST include a `dark:` variant. Specifically:
+- Every `bg-*` has a `dark:bg-*` variant.
+- Every `text-*` has a `dark:text-*` variant.
+- Every `border-*` has a `dark:border-*` variant.
+- No hardcoded hex colors in `className` or `style` props unless a `dark:` equivalent is also present.
+- Icons must be visible in both modes (use `currentColor` with text color inheritance).
+- `"Sin asignar"` / empty-state text must use `text-gray-500 dark:text-gray-400`.
+
+### Existing dark-mode-compatible components (no per-callsite overrides needed)
+- `Notitoast` — already handles success/error variants in dark mode
+- `ConfirmActionModal` — inherits dark styles from Modal
+- `Card` — bg-white borders covered
+- `Table` — header, rows, hover all covered
+- `Input` — border, background, text all covered
+- `Select` — border, background, text all covered
+- `Badge` — all 5 variants (default, success, warning, danger, info) covered
+- `Button` — all 5 variants (primary, secondary, outline, ghost, danger) covered
+- `FilterDropdown` — trigger, dropdown panel, select all covered
+- `Modal` — backdrop, container, header, close button, body all covered
+- `NotificationTray` — panel, header, item hover all covered
+- `PrivacyEye` — icon button covered
+- `Sidebar` — nav background, link states all covered
+
+### localStorage key
+- `"rehabilitar-theme"` — do not use this key for anything else.
+
 ## Auto-Update Documentation
 
 When making significant changes or adding new features, run:
@@ -152,6 +209,8 @@ refactor: extract utility functions
 chore: organize project structure
 ```
 
+> When asked for a commit message, always follow this standard: `type(scope): description` in lowercase English.
+
 ---
 
 ## Current Project State
@@ -162,12 +221,11 @@ chore: organize project structure
 - **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS v4
 - Enfoque en accesibilidad WCAG 2.2
 
-### Roles de usuario (5)
-- `admin` - Administrador del sistema
-- `reception` - Personal de recepción
-- `professor` - Profesor/Instructor
-- `registered_client` - Cliente registrado
-- `guest` - Invitado
+### Roles de usuario (4)
+- `Administrador` - Administrador del sistema
+- `Recepción` - Personal de recepción
+- `Profesor` - Profesor/Instructor
+- `Cliente Registrado` - Cliente registrado
 
 ### Componentes y páginas implementadas (Frontend)
 | Componente/Página | Descripción |
@@ -178,12 +236,12 @@ chore: organize project structure
 | `EmailVerificationPage` | Verificación de email |
 | `DashboardPage` | Dashboard principal con métricas y resumen |
 | `PerfilPage` | Perfil del usuario con edición |
-| `UsuariosPage` | Gestión de usuarios (admin/reception) |
+| `UsuariosPage` | Gestión de usuarios (Administrador/Recepción) |
 | `ActividadesPage` | Listado y creación de actividades |
 | `CalendarioPage` | Vista de calendario de actividades |
 | `ReservasPage` | Gestión de reservas de usuarios |
-| `SalasPage` | Gestión de salas (admin/reception) |
-| `MetricasPage` | Métricas y reportes (admin/reception) |
+| `SalasPage` | Gestión de salas (Administrador/Recepción) |
+| `MetricasPage` | Métricas y reportes (Administrador/Recepción) |
 | `Sidebar` | Navegación con filtros por rol |
 | `Header` | Header con logout con confirmación |
 | `NotificationTray` | Bandeja de notificaciones |
@@ -200,7 +258,7 @@ chore: organize project structure
 - **API Base URL:** `http://localhost:5129/api` (configurable via `VITE_API_URL`)
 - **CamelCase:** El backend devuelve camelCase (`token`, `user`, `id`, `nombre`) - el frontend debe usar camelCase al acceder a estos campos
 - **Estilos:** Tailwind con tokens personalizados en `tailwind.config.js`
-- **Colores brand:** Primary (#6DD3A8), Secondary (#2F6274)
+- **Colores brand:** Primary (#4ABC8F), Secondary (#2F6274)
 - **No usar #FFFFFF:** Usar #FBFBFB en backgrounds
 - **Accesibilidad:** Enfoque en keyboard navigation, focus states, skip links, ARIA labels
 - **Auth:** Token JWT en localStorage, interceptor auto-añade Bearer token

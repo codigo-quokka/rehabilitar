@@ -2,14 +2,17 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { Role } from "../types";
 
+import { LandingPage } from "../features/landing/pages/LandingPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { PasswordRecoveryPage } from "../features/auth/pages/PasswordRecoveryPage";
+import { PasswordResetPage } from "../features/auth/pages/PasswordResetPage";
 import { EmailVerificationPage } from "../features/auth/pages/EmailVerificationPage";
 import { DashboardPage } from "../features/usuarios/pages/DashboardPage";
 import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
 import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
 import { ReservasPage } from "../features/reservas/pages/ReservasPage";
+import { ConfirmarPagoPage } from "../features/reservas/pages/ConfirmarPagoPage";
 import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
 import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
@@ -34,6 +37,10 @@ function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
 
 export const routes = [
   {
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
     path: "/login",
     element: <LoginPage />,
   },
@@ -46,32 +53,44 @@ export const routes = [
     element: <PasswordRecoveryPage />,
   },
   {
+    path: "/reset-password",
+    element: <PasswordResetPage />,
+  },
+  {
     path: "/email-verification",
     element: <EmailVerificationPage />,
   },
   {
-    path: "/",
     element: <ProtectedRoute />,
     children: [
       {
-        path: "dashboard",
+        path: "/dashboard",
         element: <DashboardPage />,
       },
       {
-        path: "actividades",
+        path: "/actividades",
         element: <ActividadesPage />,
       },
       {
-        path: "calendario",
+        path: "/calendario",
         element: <CalendarioPage />,
       },
       {
         path: "reservas",
-        element: <ReservasPage />,
+        children: [
+          {
+            index: true,
+            element: <ReservasPage />,
+          },
+          {
+            path: "confirmar/:reservaId",
+            element: <ConfirmarPagoPage />,
+          },
+        ],
       },
       {
-        path: "mis-clases",
-        element: <ProtectedRoute allowedRoles={["professor"]} />,
+        path: "/mis-clases",
+        element: <ProtectedRoute allowedRoles={["Profesor"]} />,
         children: [
           {
             index: true,
@@ -80,12 +99,12 @@ export const routes = [
         ],
       },
       {
-        path: "perfil",
+        path: "/perfil",
         element: <PerfilPage />,
       },
       {
-        path: "usuarios",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        path: "/usuarios",
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
@@ -94,8 +113,8 @@ export const routes = [
         ],
       },
       {
-        path: "salas",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        path: "/salas",
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
@@ -104,8 +123,8 @@ export const routes = [
         ],
       },
       {
-        path: "metricas",
-        element: <ProtectedRoute allowedRoles={["admin", "reception"]} />,
+        path: "/metricas",
+        element: <ProtectedRoute allowedRoles={["Administrador", "Recepción"]} />,
         children: [
           {
             index: true,
@@ -113,14 +132,10 @@ export const routes = [
           },
         ],
       },
-      {
-        path: "",
-        element: <Navigate to="/dashboard" replace />,
-      },
     ],
   },
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ];

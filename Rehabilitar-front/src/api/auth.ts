@@ -1,11 +1,20 @@
 import { apiClient } from './client';
-import { EmailVerificationData, LoginCredentials, RegisterData, User } from '../types';
+import { EmailVerificationData, ResetPasswordData, LoginCredentials, RegisterData, User } from '../types';
 
 export const authApi = {
   login: async (credentials: LoginCredentials) => {
     const response = await apiClient.post('/auth/login', credentials, {
       // @ts-expect-error
       ignoreAuthInterceptor: true
+    });
+    return response.data;
+  },
+
+  scanDni: async (file: File) => {
+    const formData = new FormData();
+    formData.append('frontImage', file);
+    const response = await apiClient.post('/auth/scan-dni', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
@@ -51,8 +60,12 @@ export const authApi = {
     return response.data;
   },
 
-  resetPassword: async (token: string, password: string) => {
-    const response = await apiClient.post('/auth/reset', { token, password });
+  resetPassword: async (data: ResetPasswordData) => {
+    const response = await apiClient.post('/auth/reset', {
+      userId: data.userId,
+      passwordResetToken: data.passwordResetToken,
+      newPassword: data.newPassword
+    });
     return response.data;
   },
 };

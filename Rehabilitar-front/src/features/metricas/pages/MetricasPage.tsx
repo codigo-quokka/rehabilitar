@@ -79,30 +79,30 @@ export function MetricasPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Resumen del Día</h3>
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Resumen del Día</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-bg-surface rounded-lg">
-                <span className="text-gray-600">Reservas realizadas</span>
-                <span className="font-semibold text-dark">{metricas.reservasDia}</span>
+              <div className="flex justify-between items-center p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-400">Reservas realizadas</span>
+                <span className="font-semibold text-dark dark:text-gray-100">{metricas.reservasDia}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-bg-surface rounded-lg">
-                <span className="text-gray-600">Actividades programadas</span>
-                <span className="font-semibold text-dark">{metricas.actividadesDia}</span>
+              <div className="flex justify-between items-center p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-400">Actividades programadas</span>
+                <span className="font-semibold text-dark dark:text-gray-100">{metricas.actividadesDia}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-bg-surface rounded-lg">
-                <span className="text-gray-600">Ocupación de salas</span>
-                <span className="font-semibold text-dark">{metricas.ocupacionSalas}%</span>
+              <div className="flex justify-between items-center p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
+                <span className="text-gray-600 dark:text-gray-400">Ocupación de salas</span>
+                <span className="font-semibold text-dark dark:text-gray-100">{metricas.ocupacionSalas}%</span>
               </div>
             </div>
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-dark mb-4">Tasa de Cancelación</h3>
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Tasa de Cancelación</h3>
             <div className="flex items-center justify-center h-32">
               <div className="relative w-32 h-32">
                 <svg className="w-full h-full" viewBox="0 0 36 36">
                   <path
-                    className="text-gray-200"
+                    className="text-gray-200 dark:text-gray-700"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     fill="none"
                     stroke="currentColor"
@@ -118,7 +118,7 @@ export function MetricasPage() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-dark">
+                  <span className="text-2xl font-bold text-dark dark:text-gray-100">
                     {metricas.totalReservas ? Math.round((metricas.reservasCanceladas / metricas.totalReservas) * 100) : 0}%
                   </span>
                 </div>

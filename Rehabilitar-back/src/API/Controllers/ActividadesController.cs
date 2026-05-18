@@ -22,9 +22,10 @@ public class ActividadesController : ApiControllerBase
         [FromQuery] TipoEspecialidad? tipo,
         [FromQuery] FrecuenciaActividad? frecuencia,
         [FromQuery] EstadoActividad? estado,
+        [FromQuery] Guid? profesorId,
         CancellationToken ct)
     {
-        var result = await _actividadService.ListarActividades(tipo, frecuencia, estado, ct);
+        var result = await _actividadService.ListarActividades(tipo, frecuencia, estado, profesorId, ct);
         return result.Match(
             actividades => Ok(actividades),
             errores => Problem(errores)
@@ -78,6 +79,26 @@ public class ActividadesController : ApiControllerBase
             return BadRequest("El ID de la serie en la URL no coincide con el del cuerpo de la solicitud.");
 
         var result = await _actividadService.ModificarActividadRecurrente(request, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPut("{id:guid}/asignar-profesor")]
+    public async Task<IActionResult> AsignarProfesor(Guid id, [FromBody] AsignarProfesorRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.AsignarProfesorActividad(id, request, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPut("{id:guid}/remover-profesor")]
+    public async Task<IActionResult> RemoverProfesor(Guid id, [FromBody] RemoverProfesorRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.RemoverProfesorActividad(id, request, ct);
         return result.Match(
             actividad => Ok(actividad),
             errores => Problem(errores)
