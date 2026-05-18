@@ -13,6 +13,7 @@ interface RecurrenteGroupProps {
   onReservar: (act: Actividad) => void;
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
+  onVerReservas?: (act: Actividad) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
   salas: Sala[];
@@ -23,6 +24,7 @@ export function RecurrenteGroup({
   actividades,
   onUpdate,
   onError,
+  onVerReservas,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
@@ -157,7 +159,7 @@ export function RecurrenteGroup({
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
-              <Badge className="bg-secondary/20 text-secondary">Recurrente</Badge>
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
             </div>
             <Badge variant="info">
               {count} actividades
@@ -198,15 +200,39 @@ export function RecurrenteGroup({
 
           <div className="flex flex-col gap-2">
             {hasRole(["Administrador"]) && (
+              <div className="flex gap-2">
+                <Button
+                  variant="verde"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEditGroup();
+                  }}
+                >
+                  Modificar todas
+                </Button>
+                <Button
+                  variant="violeta"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscribe();
+                  }}
+                >
+                  Ver Subsctiptores
+                </Button>
+              </div>
+            )}
+            {hasRole(["Recepción"]) && onVerReservas && (
               <Button
-                variant="verde"
+                variant="violeta"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleOpenEditGroup();
+                  handleSubscribe();
                 }}
               >
-                Modificar todas
+                Ver Subscriptores
               </Button>
             )}
             {hasRole(["Cliente Registrado"]) && (
@@ -355,6 +381,7 @@ export function RecurrenteGroup({
                   key={act.id}
                   actividad={act}
                   {...cardProps}
+                  onVerReservas={onVerReservas}
                   onModificar={(a) => {
                     setExpanded(false);
                     cardProps.onModificar(a);

@@ -31,6 +31,8 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
     {
         return await _context.Reservas
         .Where(r => r.ActividadId == id)
+        .Include(r => r.Cliente)
+        .ThenInclude(c => c.User)
         .AsNoTracking()
         .ToListAsync();
     }

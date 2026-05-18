@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
@@ -39,6 +40,10 @@ const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
 export function MisClasesPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetProfesorId = searchParams.get('profesorId');
+  const targetName = searchParams.get('nombre');
+  const effectiveProfesorId = targetProfesorId ?? user?.id;
   const [clases, setClases] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -48,10 +53,10 @@ export function MisClasesPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
+      if (!effectiveProfesorId) return;
       setLoading(true);
       try {
-        const res = await profesorApi.getMisClases(user.id);
+        const res = await profesorApi.getMisClases(effectiveProfesorId);
         setClases(res);
       } catch {
         setClases([]);
@@ -60,7 +65,7 @@ export function MisClasesPage() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [effectiveProfesorId]);
 
   const { grupos, individuales } = useMemo(() => {
     const gruposMap = new Map<string, Actividad[]>();
@@ -117,7 +122,7 @@ export function MisClasesPage() {
   };
 
   return (
-    <MainLayout title="Mis Clases">
+    <MainLayout title={targetName ? `Clases de ${targetName}` : 'Mis Clases'}>
       <div className="space-y-6">
         {loading ? (
           <Card>
@@ -170,7 +175,7 @@ export function MisClasesPage() {
                               </svg>
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-sm font-medium text-dark dark:text-gray-100 truncate">{first.nombre}</span>
-                                <Badge className="bg-secondary/20 text-secondary text-xs shrink-0">Recurrente</Badge>
+                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs shrink-0">Recurrente</Badge>
                               </div>
                             </div>
                           </td>

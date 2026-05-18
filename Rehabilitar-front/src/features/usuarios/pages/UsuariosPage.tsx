@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
-import { usuariosApi } from '../../../api';
-import { User, Role } from '../../../types';
+import { usuariosApi, reservasApi, actividadesApi, profesorApi } from '../../../api';
+import { User, Role, Reserva, Actividad } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
@@ -24,11 +25,21 @@ export function UsuariosPage() {
   const [filters, setFilters] = useState({
     rol: 'all',
     estado: 'all',
+    especialidad: 'all',
   });
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+
+  const [reservasModalUser, setReservasModalUser] = useState<User | null>(null);
+  const [reservasModalData, setReservasModalData] = useState<Reserva[]>([]);
+  const [reservasModalLoading, setReservasModalLoading] = useState(false);
+  const [reservasActividadesMap, setReservasActividadesMap] = useState<Record<string, Actividad>>({});
+
+  const [clasesModalUser, setClasesModalUser] = useState<User | null>(null);
+  const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
+  const [clasesModalLoading, setClasesModalLoading] = useState(false);
 
   const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
 
@@ -49,6 +60,7 @@ export function UsuariosPage() {
   const filteredUsuarios = usuarios.filter(u => {
     if (isReception && u.rol !== 'Cliente Registrado') return false;
     if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
+    if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
     if (filters.estado === 'active' && !u.activo) return false;
     if (filters.estado === 'suspended' && u.activo) return false;
     if (searchTerm) {
@@ -114,6 +126,38 @@ export function UsuariosPage() {
     setUserToReactivar(user);
   };
 
+  const handleOpenReservas = async (u: User) => {
+    setReservasModalUser(u);
+    setReservasModalLoading(true);
+    try {
+      const [res, acts] = await Promise.all([
+        reservasApi.getAll({ usuarioId: u.id }),
+        actividadesApi.getAll(),
+      ]);
+      setReservasModalData(res);
+      const actsMap: Record<string, Actividad> = {};
+      acts.forEach((a) => { actsMap[a.id] = a; });
+      setReservasActividadesMap(actsMap);
+    } catch {
+      setReservasModalData([]);
+    } finally {
+      setReservasModalLoading(false);
+    }
+  };
+
+  const handleOpenClases = async (u: User) => {
+    setClasesModalUser(u);
+    setClasesModalLoading(true);
+    try {
+      const res = await profesorApi.getMisClases(u.id);
+      setClasesModalData(res);
+    } catch {
+      setClasesModalData([]);
+    } finally {
+      setClasesModalLoading(false);
+    }
+  };
+
   const handleConfirmReactivar = async () => {
     if (!userToReactivar) return;
     try {
@@ -161,24 +205,38 @@ export function UsuariosPage() {
     {
       key: 'acciones',
       header: 'Acciones',
+      headerClass: 'text-center',
       render: (u: User) => (
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           <Button variant="verde" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
           {u.activo ? (
-            <Button variant="naranja" size="sm" onClick={() => setUserToSuspend(u)}>
+            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="naranja" size="sm" onClick={() => handleReactivar(u)}>
+            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )}
-          {!isReception && (
+          {!isReception ? (
             <Button variant="rojo" size="sm" onClick={() => setUserToDelete(u)}>
               Eliminar
             </Button>
+          ) : (
+            <span className="min-w-[70px] inline-block" />
+          )}
+          {u.rol === 'Cliente Registrado' ? (
+            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+              Reservas
+            </Button>
+          ) : u.rol === 'Profesor' ? (
+            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+              Clases
+            </Button>
+          ) : (
+            <span className="min-w-[90px] inline-block" />
           )}
         </div>
       ),
@@ -199,7 +257,17 @@ export function UsuariosPage() {
                     { value: 'all', label: 'Todos' },
                     ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
                   ],
-                }] : []),
+                },
+                ...(filters.rol === 'Profesor' ? [{
+                  key: 'especialidad',
+                  label: 'Especialidad',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    { value: 'TrenSuperior', label: 'Tren Superior' },
+                    { value: 'TrenMedio', label: 'Tren Medio' },
+                    { value: 'TrenInferior', label: 'Tren Inferior' },
+                  ],
+                }] : [])] : []),
                 {
                   key: 'estado',
                   label: 'Estados',
@@ -212,7 +280,7 @@ export function UsuariosPage() {
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ rol: 'all', estado: 'all' })}
+              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all' })}
               onOpenChange={setFilterOpen}
             />
             <div className={filterOpen ? 'invisible' : ''}>
@@ -282,6 +350,140 @@ export function UsuariosPage() {
           message={toastMessage}
           onClose={() => setShowToast(false)}
         />
+      )}
+
+      {reservasModalUser && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setReservasModalUser(null)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setReservasModalUser(null)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasModalUser.nombre} {reservasModalUser.apellido}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasModalData.length} reserva(s)</p>
+            </div>
+            {reservasModalLoading ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+            ) : reservasModalData.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reservasModalData.map((res) => {
+                  const act = reservasActividadesMap[res.actividadId];
+                  const completado = res.montoPendiente === 0;
+                  return (
+                    <Card key={res.id} className="flex flex-col">
+                      <div className="flex items-start justify-between mb-3">
+                        <Badge variant={
+                          res.estadoDeReserva === 'Activa' ? 'success' :
+                          res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                          res.estadoDeReserva === 'EnEspera' ? 'info' :
+                          res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
+                        }>
+                          {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente de pago' :
+                           res.estadoDeReserva === 'Activa' ? 'Activa' :
+                           res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                           res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
+                        </Badge>
+                        {completado && <Badge variant="success">Pagado</Badge>}
+                      </div>
+                      <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">{act?.nombre || 'Actividad'}</h3>
+                      {act && (
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {new Date(act.fechaYHora).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-sm text-dark dark:text-gray-100 space-y-1 mt-auto">
+                        <p>Pagado: <span className="font-semibold">${(res.montoTotal - res.montoPendiente).toFixed(2)}</span> / <span className="font-semibold">${res.montoTotal.toFixed(2)}</span></p>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {clasesModalUser && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setClasesModalUser(null)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setClasesModalUser(null)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Clases de {clasesModalUser.nombre} {clasesModalUser.apellido}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{clasesModalData.length} clase(s)</p>
+            </div>
+            {clasesModalLoading ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+            ) : clasesModalData.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin clases asignadas</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clasesModalData.map((act) => (
+                  <Card key={act.id} className="flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <Badge variant="success">{act.tipo === 'TrenSuperior' ? 'Tren Superior' : act.tipo === 'TrenMedio' ? 'Tren Medio' : 'Tren Inferior'}</Badge>
+                      <Badge variant={
+                        act.estado === 'Cancelada' ? 'warning' :
+                        act.estado === 'EnCurso' ? 'info' :
+                        act.estado === 'Aprobada' ? 'success' :
+                        act.estado === 'Propuesta' ? 'amber' : 'default'
+                      }>
+                        {act.estado === 'EnCurso' ? 'En Curso' : act.estado}
+                      </Badge>
+                    </div>
+                    <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">{act.nombre}</h3>
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {new Date(act.fechaYHora).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {act.salaNombre || 'Sin sala'}
+                      </div>
+                    </div>
+                    <div className="text-sm text-dark dark:text-gray-100 mt-auto">
+                      <span className="font-medium">{act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}</span> cupos
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </MainLayout>
   );
