@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button, Input, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
@@ -36,6 +36,10 @@ export function ReservasPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const targetUserId = searchParams.get('usuarioId');
+  const targetName = searchParams.get('nombre');
+  const effectiveUserId = targetUserId ?? user?.id;
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [actividades, setActividades] = useState<Record<string, Actividad>>({});
   const [loading, setLoading] = useState(true);
@@ -61,11 +65,11 @@ export function ReservasPage() {
   const successMessageHandled = useRef(false);
 
   const fetchReservas = useCallback(async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     setLoading(true);
     try {
       const [res, acts] = await Promise.all([
-        reservasApi.getAll({ usuarioId: user.id }),
+        reservasApi.getAll({ usuarioId: effectiveUserId }),
         actividadesApi.getAll(),
       ]);
       setReservas(res);
@@ -81,7 +85,7 @@ export function ReservasPage() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [effectiveUserId]);
 
   useEffect(() => {
     fetchReservas();
@@ -164,7 +168,7 @@ export function ReservasPage() {
   });
 
   return (
-    <MainLayout title="Mis reservas">
+    <MainLayout title={targetName ? `Reservas de ${targetName}` : 'Mis reservas'}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">

@@ -5,6 +5,7 @@ interface Column<T> {
   header: string;
   render?: (item: T) => ReactNode;
   width?: string;
+  headerClass?: string;
 }
 
 interface TableProps<T> {
@@ -23,7 +24,7 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100${col.width ? ` ${col.width}` : ''}`}
+                className={`px-4 py-3 text-sm font-medium text-dark dark:text-gray-100${col.width ? ` ${col.width}` : ''} ${col.headerClass ?? 'text-left'}`}
               >
                 {col.header}
               </th>
