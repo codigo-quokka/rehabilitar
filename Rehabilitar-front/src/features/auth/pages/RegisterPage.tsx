@@ -15,7 +15,8 @@ import axios from "axios";
 import { DniScanner } from "../components/DniScanner";
 
 const passwordReqs: Requirement[] = [
-  { label: "Al menos 6 caracteres", test: (v) => v.length >= 6 },
+  { label: "Mínimo 8 caracteres", test: (v) => v.length >= 8 },
+  { label: "Al menos una mayúscula", test: (v) => /[A-Z]/.test(v) },
   { label: "Al menos una minúscula", test: (v) => /[a-z]/.test(v) },
   { label: "Al menos un número", test: (v) => /[0-9]/.test(v) },
   {
@@ -50,7 +51,7 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
-  const MIN_PASSWORD_LENGTH = 6;
+  const MIN_PASSWORD_LENGTH = 8;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
@@ -154,8 +155,40 @@ export function RegisterPage() {
       return;
     }
 
-    if (passwordReqs.some((r) => !r.test(formData.password))) {
-      const msg = "La contraseña no cumple los requisitos de seguridad.";
+    if (formData.password.length < 8) {
+      const msg = "La contraseña debe tener al menos 8 caracteres.";
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      const msg = "La contraseña debe contener al menos una mayúscula.";
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      const msg = "La contraseña debe contener al menos una minúscula.";
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      const msg = "La contraseña debe contener al menos un número.";
+      setToastType("error");
+      setToastMessage(msg);
+      setShowToast(true);
+      addNotification(msg, "error");
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(formData.password)) {
+      const msg = "La contraseña debe contener al menos un carácter especial.";
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
