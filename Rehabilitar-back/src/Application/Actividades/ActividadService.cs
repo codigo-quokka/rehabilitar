@@ -334,7 +334,7 @@ public class ActividadService : IActividadService
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
-            return Error.Conflict($"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+            return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
         if (profesorId.HasValue)
@@ -348,7 +348,7 @@ public class ActividadService : IActividadService
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
             if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
-                return Error.Conflict($"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+                return Error.Conflict("El profesor no está disponible en la fecha y hora seleccionada");
         }
 
         return Result.Success;
