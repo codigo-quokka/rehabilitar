@@ -10,6 +10,7 @@ export function DashboardPage() {
   const [metricas, setMetricas] = useState<Metricas | null>(null);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [actividadNombreMap, setActividadNombreMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const isAdmin = hasRole(['Administrador']);
@@ -51,6 +52,27 @@ export function DashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (reservas.length === 0) return;
+
+    const known = actividades.reduce<Record<string, string>>((acc, a) => {
+      acc[a.id] = a.nombre;
+      return acc;
+    }, {});
+
+    const missing = reservas
+      .filter((r) => !known[r.actividadId])
+      .map((r) => r.actividadId);
+
+    Promise.all(missing.map((id) => actividadesApi.getById(id))).then((acts) => {
+      const fresh: Record<string, string> = { ...known };
+      for (const a of acts) {
+        fresh[a.id] = a.nombre;
+      }
+      setActividadNombreMap(fresh);
+    });
+  }, [actividades, reservas]);
 
   return (
     <MainLayout title="Dashboard">
@@ -127,17 +149,21 @@ export function DashboardPage() {
                 {reservas.map((res) => (
                   <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <p className="font-medium text-dark dark:text-gray-100">Actividad #{res.actividadId}</p>
+                      <p className="font-medium text-dark dark:text-gray-100">{actividadNombreMap[res.actividadId] ?? `Actividad #${res.actividadId}`}</p>
                       <p className="text-sm text-gray-500">{res.fechaReserva}</p>
                     </div>
                     <Badge
                       variant={
-                        res.estado === 'confirmada' ? 'success' :
-                        res.estado === 'cancelada' ? 'danger' :
-                        res.estado === 'completada' ? 'info' : 'default'
+                        res.estadoDeReserva === 'Activa' ? 'success' :
+                        res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                        res.estadoDeReserva === 'EnEspera' ? 'info' :
+                        res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
                       }
                     >
-                      {res.estado}
+                      {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
+                       res.estadoDeReserva === 'Activa' ? 'Activa' :
+                       res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                       res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
                     </Badge>
                   </div>
                 ))}
