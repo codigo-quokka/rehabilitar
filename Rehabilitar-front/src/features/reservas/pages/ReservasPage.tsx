@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button } from '../../../components/ui';
@@ -47,6 +47,8 @@ export function ReservasPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  const successMessageHandled = useRef(false);
+
   const fetchReservas = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -74,6 +76,17 @@ export function ReservasPage() {
     fetchReservas();
   }, [fetchReservas, location.state?._refresh]);
 
+  useEffect(() => {
+    if (successMessageHandled.current) return;
+    const msg = (location.state as Record<string, unknown> | null)?._successMessage;
+    if (typeof msg === 'string') {
+      successMessageHandled.current = true;
+      setToastType('success');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  }, [location.state]);
+
   const handlePagar = (reserva: Reserva) => {
     const montoPagado = reserva.montoTotal - reserva.montoPendiente;
     navigate(`/reservas/confirmar/${reserva.id}`, {
@@ -94,11 +107,13 @@ export function ReservasPage() {
 
   const handleConfirmCancel = async () => {
     if (!selectedReserva) return;
-    setCancelandoId(selectedReserva.id);
+    const reservaId = selectedReserva.id;
+    const actividadId = selectedReserva.actividadId;
+    setCancelandoId(reservaId);
     setShowConfirmCancel(false);
     try {
-      await reservasApi.cancelar(selectedReserva.id, selectedReserva.actividadId);
-      setReservas((prev) => prev.filter((r) => r.id !== selectedReserva.id));
+      await reservasApi.cancelar(reservaId, actividadId);
+      setReservas((prev) => prev.map((r) => r.id === reservaId ? { ...r, estadoDeReserva: 'Cancelada' } : r));
       setToastType('success');
       setToastMessage('Reserva cancelada correctamente');
       setShowToast(true);

@@ -81,7 +81,7 @@ export function ActividadesPage() {
     setReservandoId(actividad.id);
     try {
       await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate("/reservas");
+      navigate("/reservas", { state: { _successMessage: '¡Reserva agregada!' } });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
