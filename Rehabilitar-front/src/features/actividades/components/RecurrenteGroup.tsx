@@ -73,28 +73,44 @@ export function RecurrenteGroup({
     setShowEditGroup(true);
   };
 
+  const handleSubscribe = () => {
+      onError?.('Falta implementar subscripcion');
+      return;
+    }
+
   const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditLoading(true);
     try {
-      const payload = {
+      const serieId = actividades[0]?.serieId;
+      if (!serieId || serieId === NULL_GUID) {
+        onError?.('No se pudo identificar la serie recurrente');
+        return;
+      }
+      const firstAct = actividades[0];
+      const actividadBase = {
         nombre: editForm.nombre,
         descripcion: editForm.descripcion,
-        tipo: editForm.tipo as Actividad['tipo'],
+        tipo: editForm.tipo as string,
         salaId: editForm.salaId,
-        estado: editForm.estado as Actividad['estado'],
+        estado: editForm.estado as string,
+        frecuencia: firstAct.frecuencia,
+        fechaYHora: firstAct.fechaYHora,
+        cupoMaximo: firstAct.cupoMaximo,
+        profesorId: firstAct.profesorId && firstAct.profesorId !== NULL_GUID ? firstAct.profesorId : null,
+        serieId: serieId,
       };
-      const results = await Promise.allSettled(actividades.map((act) => actividadesApi.update(act.id, payload)));
-      const failed = results.filter(r => r.status === 'rejected');
-      if (failed.length > 0) {
-        onError?.(`${failed.length} de ${actividades.length} actividades no pudieron modificarse`);
-      } else {
-        setShowEditGroup(false);
-      }
+      await actividadesApi.updateSerie(serieId, {
+        actividadBase,
+        serieId,
+      });
+      setShowEditGroup(false);
       onUpdate();
     } catch (err) {
       console.error('Error al modificar grupo', err);
-      onError?.('Error al modificar las actividades');
+      const axiosErr = err as { response?: { data?: { error?: string; title?: string } }; message?: string };
+      const msg = axiosErr?.response?.data?.error || axiosErr?.response?.data?.title || axiosErr?.message || 'Error desconocido';
+      onError?.(`Error al modificar la serie: ${msg}`);
     } finally {
       setEditLoading(false);
     }
@@ -134,10 +150,10 @@ export function RecurrenteGroup({
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') setExpanded(true);
         }}
-        className="cursor-pointer "
+        className="cursor-pointer flex flex-col h-full"
       >
-      <div>
-        <Card className="flex flex-col transition-shadow hover:shadow-gray-700 pb-4 dark:hover:shadow-gray-500">
+      <div className="flex flex-col flex-1">
+        <Card className="flex flex-col flex-1 transition-shadow hover:shadow-gray-700 pb-4 dark:hover:shadow-gray-500">
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
@@ -152,7 +168,7 @@ export function RecurrenteGroup({
             {first.nombre}
           </h3>
 
-          <p className="text-dark dark:text-gray-400 text-sm mb-4 flex-1 line-clamp-2">
+          <p className="text-dark dark:text-gray-400 text-sm mb-4 line-clamp-2">
             {first.descripcion}
           </p>
 
@@ -178,30 +194,46 @@ export function RecurrenteGroup({
             </div>
           </div>
 
-          {hasRole(["Administrador"]) && (
-            <Button
-              variant="verde"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenEditGroup();
-              }}
-            >
-              Modificar todas
-            </Button>
-          )}
-          {hasRole(["Profesor"]) && unassignedCount > 0 && (
-            <Button
-              variant="verde"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleTomarTodas();
-              }}
-            >
-              Tomar todas ({unassignedCount} disponibles)
-            </Button>
-          )}
+          <div className="flex-1" />
+
+          <div className="flex flex-col gap-2">
+            {hasRole(["Administrador"]) && (
+              <Button
+                variant="verde"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenEditGroup();
+                }}
+              >
+                Modificar todas
+              </Button>
+            )}
+            {hasRole(["Cliente Registrado"]) && (
+              <Button
+                variant="verde"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubscribe();
+                }}
+              >
+                Subscribirse
+              </Button>
+            )}
+            {hasRole(["Profesor"]) && unassignedCount > 0 && (
+              <Button
+                variant="verde"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTomarTodas();
+                }}
+              >
+                Tomar todas ({unassignedCount} disponibles)
+              </Button>
+            )}
+          </div>
         </Card>
         <div className={`${stripe} shadow -mt5 w-[92%] mx-auto`} />
         <div className={`${stripe} shadow-md -mt5 w-[84%] mx-auto`} />

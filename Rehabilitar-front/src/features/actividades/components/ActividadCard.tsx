@@ -48,7 +48,7 @@ export function ActividadCard({
       <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
         {act.nombre}
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 flex-1">
+      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
         {act.descripcion}
       </p>
 
@@ -80,34 +80,38 @@ export function ActividadCard({
         </div>
       </div>
 
-      {hasRole(["Cliente Registrado"]) && (
-        <Button
-          variant={act.cupoDisponible <= 0 ? "outline" : "primary"}
-          className="w-full mt-auto"
-          disabled={act.cupoDisponible <= 0}
-          onClick={() => onReservar(act)}
-        >
-          {act.cupoDisponible <= 0 ? "Completo" : "Reservar"}
-        </Button>
-      )}
-      {hasRole(["Administrador"]) && (
-        <Button
-          variant="verde"
-          className="w-full mt-auto"
-          onClick={() => onModificar(act)}
-        >
-          Modificar
-        </Button>
-      )}
-      {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
-        <Button
-          variant="verde"
-          className="w-full mt-auto"
-          onClick={() => onTomarActividad(act)}
-        >
-          Tomar actividad
-        </Button>
-      )}
+      <div className="flex-1" />
+
+      <div className="flex flex-col gap-2">
+        {hasRole(["Cliente Registrado"]) && (
+          <Button
+            variant={act.cupoDisponible <= 0 ? "outline" : "primary"}
+            className="w-full"
+            disabled={act.cupoDisponible <= 0}
+            onClick={() => onReservar(act)}
+          >
+            {act.cupoDisponible <= 0 ? "Completo" : "Reservar"}
+          </Button>
+        )}
+        {hasRole(["Administrador"]) && (
+          <Button
+            variant="verde"
+            className="w-full"
+            onClick={() => onModificar(act)}
+          >
+            Modificar
+          </Button>
+        )}
+        {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
+          <Button
+            variant="verde"
+            className="w-full"
+            onClick={() => onTomarActividad(act)}
+          >
+            Tomar actividad
+          </Button>
+        )}
+      </div>
     </Card>
   );
 }

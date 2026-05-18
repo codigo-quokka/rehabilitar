@@ -398,7 +398,8 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError }: Activ
           fechaYHora: actividad.fechaYHora.slice(0, 16),
           cupoMaximo: actividad.cupoMaximo,
           salaId: actividad.salaId,
-          profesorId: isAdmin ? actividad.profesorId || undefined : undefined,
+          profesorId: isAdmin ? (actividad.profesorId && actividad.profesorId !== '00000000-0000-0000-0000-000000000000' ? actividad.profesorId : undefined) : undefined,
+          serieId: actividad.serieId && actividad.serieId !== '00000000-0000-0000-0000-000000000000' ? actividad.serieId : undefined,
         }
       : {
           nombre: "",
