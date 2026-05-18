@@ -3,6 +3,7 @@ using Application.Auth;
 using Application.Profesores;
 using Application.Salas;
 using Application.Usuarios;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Common;
@@ -16,6 +17,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IProfesorService, ProfesorService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
+
+        services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
 
         return services;
     }

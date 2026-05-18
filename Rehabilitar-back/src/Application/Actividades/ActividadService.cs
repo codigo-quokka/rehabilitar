@@ -245,7 +245,7 @@ public class ActividadService : IActividadService
             var profesor = await _profesorRepo.GetByIdAsync(actividad.ProfesorId.Value, ct);
 
             if (profesor == null)
-                return Error.NotFound("Prfoesor.NotFound", "Profesor no encontrado.");
+                return Error.NotFound("Profesor.NotFound", "Profesor no encontrado.");
 
             nombreProfesor = profesor.User.FirstName + " " + profesor.User.LastName;
         }
@@ -277,8 +277,8 @@ public class ActividadService : IActividadService
         
         if (sala == null) return Error.NotFound("Sala no encontrada");
 
-        if (cupoMaximo <= 0 || cupoMaximo > sala.Capacidad) 
-            return Error.Validation($"Cupo máximo debe ser mayor a 0 y menor o igual a la capacidad de la sala ({sala.Capacidad})");
+        if (cupoMaximo > sala.Capacidad) 
+            return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, ct))
             return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");
