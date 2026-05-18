@@ -50,6 +50,9 @@ public class ActividadService : IActividadService
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividadRecurrente(CrearActividadRecurrenteRequest request, CancellationToken ct = default)
     {
+        if (request.FechaFinRecurrente <= request.ActividadBase.FechaYHora)
+            return Error.Validation("La fecha fin de recurrencia debe ser posterior a la fecha de inicio.");
+
         Guid serieId = Guid.NewGuid();
         
         DateTime fechaInicio = request.ActividadBase.FechaYHora;
@@ -272,6 +275,9 @@ public class ActividadService : IActividadService
     {
         if (estado == EstadoActividad.Finalizada)
             return Error.Validation("No se puede crear o editar una actividad en estado finalizada.");
+
+        if (fechaYHora < DateTime.Now)
+            return Error.Validation("La fecha y hora de la actividad no puede ser en el pasado.");
 
         var sala = await _salaRepo.GetByIdAsync(salaId, ct);
         

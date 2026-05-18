@@ -275,6 +275,10 @@ export function RecurrenteGroup({
                   key={act.id}
                   actividad={act}
                   {...cardProps}
+                  onModificar={(a) => {
+                    setExpanded(false);
+                    cardProps.onModificar(a);
+                  }}
                 />
               ))}
             </div>
