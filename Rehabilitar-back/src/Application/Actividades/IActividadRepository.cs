@@ -9,6 +9,6 @@ public interface IActividadRepository : IRepositoryBase<Actividad>
     Task<Actividad> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default);
     Task<ICollection<Actividad>> ListarPorSerieIdAsync(Guid serieId, CancellationToken ct = default);
     Task<ICollection<Actividad>> ListarPorProfesorIdAsync(Guid profesorId, CancellationToken ct = default);
-    Task<bool> ExisteActividadSuperpuestaEnSalaAsync(Guid salaId, DateTime fechaYHora, Guid? actividadId, CancellationToken ct = default);
-    Task<bool> ExisteActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime fechaYHora, Guid? actividadId, CancellationToken ct = default);
+    Task<bool> ExisteActividadSuperpuestaEnSalaAsync(Guid salaId, DateTime fechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default);
+    Task<bool> ExisteActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime fechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default);
 }
