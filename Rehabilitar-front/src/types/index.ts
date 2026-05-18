@@ -67,6 +67,7 @@ export type TipoCliente = 'noAbonado' | 'Abonado';
 export interface Reserva {
   id: string;
   clienteId: string;
+  nombreCliente?: string;
   actividadId: string;
   fechaReserva: string;
   tipoCliente: TipoCliente;

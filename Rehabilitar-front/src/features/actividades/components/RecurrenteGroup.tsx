@@ -13,6 +13,7 @@ interface RecurrenteGroupProps {
   onReservar: (act: Actividad) => void;
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
+  onVerReservas?: (act: Actividad) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
   salas: Sala[];
@@ -23,6 +24,7 @@ export function RecurrenteGroup({
   actividades,
   onUpdate,
   onError,
+  onVerReservas,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
@@ -198,15 +200,39 @@ export function RecurrenteGroup({
 
           <div className="flex flex-col gap-2">
             {hasRole(["Administrador"]) && (
+              <div className="flex gap-2">
+                <Button
+                  variant="verde"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEditGroup();
+                  }}
+                >
+                  Modificar todas
+                </Button>
+                <Button
+                  variant="violeta"
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscribe();
+                  }}
+                >
+                  Ver Subsctiptores
+                </Button>
+              </div>
+            )}
+            {hasRole(["Recepción"]) && onVerReservas && (
               <Button
-                variant="verde"
+                variant="naranja"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleOpenEditGroup();
+                  onVerReservas(first);
                 }}
               >
-                Modificar todas
+                Ver reservas
               </Button>
             )}
             {hasRole(["Cliente Registrado"]) && (
@@ -355,6 +381,7 @@ export function RecurrenteGroup({
                   key={act.id}
                   actividad={act}
                   {...cardProps}
+                  onVerReservas={onVerReservas}
                   onModificar={(a) => {
                     setExpanded(false);
                     cardProps.onModificar(a);

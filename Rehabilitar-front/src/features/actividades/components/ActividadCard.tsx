@@ -8,6 +8,7 @@ interface ActividadCardProps {
   onReservar: (act: Actividad) => void;
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
+  onVerReservas?: (act: Actividad) => void;
 }
 
 export function ActividadCard({
@@ -16,6 +17,7 @@ export function ActividadCard({
   onReservar,
   onModificar,
   onTomarActividad,
+  onVerReservas,
 }: ActividadCardProps) {
   return (
     <Card className="flex flex-col">
@@ -93,13 +95,40 @@ export function ActividadCard({
             {act.cupoDisponible <= 0 ? "Completo" : "Reservar"}
           </Button>
         )}
-        {hasRole(["Administrador"]) && (
+        {hasRole(["Administrador"]) && onVerReservas && (
+          <div className="flex gap-2">
+            <Button
+              variant="verde"
+              className="flex-1"
+              onClick={() => onModificar(act)}
+            >
+              Modificar
+            </Button>
+            <Button
+              variant="violeta"
+              className="flex-1"
+              onClick={() => onVerReservas(act)}
+            >
+              Ver reservas
+            </Button>
+          </div>
+        )}
+        {hasRole(["Administrador"]) && !onVerReservas && (
           <Button
             variant="verde"
             className="w-full"
             onClick={() => onModificar(act)}
           >
             Modificar
+          </Button>
+        )}
+        {hasRole(["Recepción"]) && onVerReservas && (
+          <Button
+            variant="violeta"
+            className="w-full"
+            onClick={() => onVerReservas(act)}
+          >
+            Ver reservas
           </Button>
         )}
         {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
