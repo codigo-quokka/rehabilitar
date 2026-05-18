@@ -157,7 +157,7 @@ export function RecurrenteGroup({
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
-              <Badge className="bg-secondary/20 text-secondary">Recurrente</Badge>
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
             </div>
             <Badge variant="info">
               {count} actividades

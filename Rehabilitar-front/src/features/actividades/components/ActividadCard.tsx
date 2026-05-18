@@ -22,7 +22,7 @@ export function ActividadCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex gap-2">
           <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
-          <Badge className="bg-secondary/20 text-secondary">{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
+          <Badge className={act.frecuencia === 'Recurrente' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}>{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
           {hasRole(["Administrador", "Profesor", "Recepción"]) && (
             <Badge variant={
               act.estado === 'Cancelada' ? 'warning' :

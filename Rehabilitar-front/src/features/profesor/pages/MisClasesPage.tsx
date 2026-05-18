@@ -170,7 +170,7 @@ export function MisClasesPage() {
                               </svg>
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-sm font-medium text-dark dark:text-gray-100 truncate">{first.nombre}</span>
-                                <Badge className="bg-secondary/20 text-secondary text-xs shrink-0">Recurrente</Badge>
+                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs shrink-0">Recurrente</Badge>
                               </div>
                             </div>
                           </td>
