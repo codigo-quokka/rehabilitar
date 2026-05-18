@@ -1,3 +1,5 @@
+using Domain.Clientes;
+
 namespace Application.Usuarios.Responses;
 
 public class UsuarioResponse
@@ -13,6 +15,6 @@ public class UsuarioResponse
     public string? FechaNacimiento { get; set; }
     public string? Documento { get; set; }
     public bool? AptitudFisica { get; set; }
-    public string? FechaAptitud { get; set; }
+    public SaldoAFavor? SaldoAFavor { get; set; }
     public string? Especialidad { get; set; }
 }
