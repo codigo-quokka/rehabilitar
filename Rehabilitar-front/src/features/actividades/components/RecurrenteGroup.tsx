@@ -219,7 +219,7 @@ export function RecurrenteGroup({
                     handleSubscribe();
                   }}
                 >
-                  Ver Subscriptores
+                  Ver suscriptores
                 </Button>
               </div>
             )}
@@ -232,7 +232,7 @@ export function RecurrenteGroup({
                   handleSubscribe();
                 }}
               >
-                Ver Subscriptores
+                Ver suscriptores
               </Button>
             )}
             {hasRole(["Cliente Registrado"]) && (
