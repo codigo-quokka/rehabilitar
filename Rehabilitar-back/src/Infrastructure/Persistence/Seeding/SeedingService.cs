@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Domain.Actividades;
 using Domain.Reservas;
 using Domain.Enums;
+using Application.Actividades;
+using Application.Actividades.DTOs;
 
 namespace Infrastructure.Persistence.Seeding;
 
@@ -18,16 +20,19 @@ public class SeedingService : ISeedingService
     private readonly UserManager<User> _userManager;
     private readonly RehabilitarDbContext _dbContext;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IActividadService _actividadService;
 
     public SeedingService(RoleManager<Role> roleManager,
                         UserManager<User> userManager,
                         RehabilitarDbContext dbContext,
-                        IPasswordHasher<User> passwordHasher)
+                        IPasswordHasher<User> passwordHasher,
+                        IActividadService actividadService)
     {
         _roleManager = roleManager;
         _userManager = userManager;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _actividadService = actividadService;
     }
 
     public async Task SeedAsync()
@@ -66,13 +71,13 @@ public class SeedingService : ISeedingService
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var now = DateTime.Today.AddDays(1);
         await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
-        await SeedActividadAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, peter.UserId);
-        await SeedActividadAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, salaC.Id, bruce.UserId);
+        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
+        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
         await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(6).AddHours(14), 25, salaD.Id, bruce.UserId);
-        await SeedActividadAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddHours(8), 12, salaE.Id, clark.UserId);
-        await SeedActividadAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, salaA.Id, peter.UserId);
+        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.EnCurso, now.AddHours(8), 12, salaE.Id, clark.UserId, now.AddHours(8).AddDays(30));
+        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
         await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
-        await SeedActividadAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, salaC.Id, bruce.UserId);
+        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
         // await SeedReservaAsync();
 
         System.Console.WriteLine();
@@ -255,6 +260,37 @@ public class SeedingService : ISeedingService
         await _dbContext.SaveChangesAsync();
     }
 
+    private async Task SeedActividadRecurrenteAsync(string nombre, string descripcion, TipoEspecialidad tipo,
+                                        EstadoActividad estado, DateTime fechaInicio,
+                                        int cupoMaximo, Guid salaId, Guid? profesorId, DateTime fechaFinRecurrente)
+    {
+        var request = new CrearActividadRecurrenteRequest(
+            new CrearActividadRequest(
+                Nombre: nombre,
+                Descripcion: descripcion,
+                Tipo: tipo,
+                Frecuencia: FrecuenciaActividad.Recurrente,
+                Estado: estado,
+                FechaYHora: fechaInicio,
+                CupoMaximo: cupoMaximo,
+                SalaId: salaId,
+                ProfesorId: profesorId
+            ),
+            FechaFinRecurrente: fechaFinRecurrente
+        );
+
+        var result = await _actividadService.CrearActividadRecurrente(request);
+
+        if (result.IsError)
+        {
+            Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+        }
+        else
+        {
+            Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
+        }
+    }
+
     private async Task SeedReservaAsync(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva, TipoCliente tipoCliente)
     {
         if (await _dbContext.Reservas.AnyAsync(r =>
@@ -267,6 +303,7 @@ public class SeedingService : ISeedingService
         _dbContext.Reservas.Add(reserva);
         await _dbContext.SaveChangesAsync();
     }
+    
 
     private async Task ExecuteWithTransactionAsync(Func<Task<bool>> action)
     {
