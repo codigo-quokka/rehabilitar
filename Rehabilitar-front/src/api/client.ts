@@ -19,7 +19,14 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const renewedToken = response.headers["x-renewed-token"];
+    if (renewedToken) {
+      localStorage.setItem("token", renewedToken);
+      // Actualizamos también el estado de autenticación (esto lo manejará React indirectamente)
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401 && !error.config?.ignoreAuthInterceptor) {
       localStorage.removeItem("token");
