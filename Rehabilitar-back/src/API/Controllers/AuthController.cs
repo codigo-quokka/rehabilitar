@@ -2,10 +2,12 @@ using Application.Auth;
 using Application.Auth.DTOs;
 using Application.Common.Interfaces;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ApiControllerBase

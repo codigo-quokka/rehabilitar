@@ -29,8 +29,17 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials()
+              .WithExposedHeaders("X-Renewed-Token");
     });
+});
+
+// Configure Global Authorization Policy
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 var app = builder.Build();
@@ -50,6 +59,9 @@ app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+app.UseMiddleware<API.Middlewares.JwtRenewalMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();
