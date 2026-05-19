@@ -52,7 +52,7 @@ export function Header({ title }: HeaderProps) {
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-5000 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
