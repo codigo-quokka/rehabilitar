@@ -3,7 +3,8 @@ import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input } from '../../../components/ui';
 import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
-import { usuariosApi } from '../../../api';
+import { authApi, usuariosApi } from '../../../api';
+import { Notitoast } from '../../../components/Notitoast';
 
 export function PerfilPage() {
   const { user } = useAuth();
@@ -19,6 +20,23 @@ export function PerfilPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToastMessage = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setLoading(true);
@@ -28,6 +46,38 @@ export function PerfilPage() {
     } catch (err) {
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
+      showToastMessage('Todos los campos son obligatorios.', 'error');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      showToastMessage('La nueva contraseña debe tener al menos 8 caracteres.', 'error');
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      showToastMessage('La nueva contraseña y la confirmación no coinciden.', 'error');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const result = await authApi.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmNewPassword: passwordData.confirmNewPassword,
+      });
+      showToastMessage(result.message || 'Contraseña actualizada exitosamente.', 'success');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+    } catch (err: any) {
+      const message = err?.response?.data?.title || err?.response?.data?.error || 'Error al actualizar la contraseña.';
+      showToastMessage(message, 'error');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -117,6 +167,8 @@ export function PerfilPage() {
                 label="Contraseña actual"
                 type={showCurrentPassword ? 'text' : 'password'}
                 className="pr-16"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
               />
               <PrivacyEye show={showCurrentPassword} onToggle={() => setShowCurrentPassword(prev => !prev)} />
             </div>
@@ -125,6 +177,8 @@ export function PerfilPage() {
                 label="Nueva contraseña"
                 type={showNewPassword ? 'text' : 'password'}
                 className="pr-16"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
               />
               <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
             </div>
@@ -133,13 +187,22 @@ export function PerfilPage() {
                 label="Confirmar contraseña"
                 type={showConfirmPassword ? 'text' : 'password'}
                 className="pr-16"
+                value={passwordData.confirmNewPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })}
               />
               <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
             </div>
-            <Button>Actualizar contraseña</Button>
+            <Button onClick={handleChangePassword} loading={passwordLoading}>Actualizar contraseña</Button>
           </div>
         </Card>
       </div>
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </MainLayout>
   );
 }
