@@ -122,6 +122,12 @@ export interface ResetPasswordData {
   newPassword: string;
 }
 
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;

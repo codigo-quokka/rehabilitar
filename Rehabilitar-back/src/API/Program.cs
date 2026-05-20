@@ -50,8 +50,9 @@ await app.UseSeedingAsync();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
+    // AllowAnonymous en el MapOpenApi y MapScalarApiReference para que la documentación de la API sea accesible sin autenticación, lo cual es útil durante el desarrollo. En producción, se podría querer proteger esta documentación con autenticación.
 }
 
 app.UseCors("AllowFrontend");

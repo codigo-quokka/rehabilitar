@@ -16,4 +16,5 @@ public interface IAuthService
     Task<ErrorOr<Success>> SendResetPasswordEmailAsync(EmailRequest email);
 
     Task<ErrorOr<Success>> ResetPasswordAsync(ResetPasswordRequest request);
+    Task<ErrorOr<Success>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
 }

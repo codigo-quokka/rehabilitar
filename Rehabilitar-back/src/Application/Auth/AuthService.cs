@@ -169,6 +169,24 @@ public class AuthService : IAuthService
         return Result.Success;
     }
 
+    public async Task<ErrorOr<Success>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
+        if (request.NewPassword != request.ConfirmNewPassword)
+            return Error.Validation("Passwords.NoMatch", "La nueva contraseña y la confirmación no coinciden.");
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+            return errors;
+        }
+        return Result.Success;
+    }
+
     // métodos privados para funcionalidades específicas:
 
     private Cliente CrearCliente(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
