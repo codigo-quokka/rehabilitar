@@ -4,10 +4,11 @@ using Application.Common.Interfaces;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace API.Controllers;
 
-[AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ApiControllerBase
@@ -21,6 +22,7 @@ public class AuthController : ApiControllerBase
         _documentScannerService = documentScannerService;
     }
 
+    [AllowAnonymous]
     [HttpPost("scan-dni")]
     public async Task<IActionResult> ScanDni(IFormFile frontImage)
     {
@@ -41,6 +43,7 @@ public class AuthController : ApiControllerBase
         return BadRequest(new { Error = result.ErrorMessage ?? "No se pudo leer el DNI." });
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody]RegisterRequest request)
     {
@@ -60,6 +63,7 @@ public class AuthController : ApiControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody]LoginRequest request)
     {
@@ -82,6 +86,7 @@ public class AuthController : ApiControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromBody]VerifyEmailRequest request)
     {
@@ -120,6 +125,7 @@ public class AuthController : ApiControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("resend-verification-email")]
     public async Task<IActionResult> ResendVerificationEmail([FromBody]EmailRequest request)
     {
@@ -130,6 +136,7 @@ public class AuthController : ApiControllerBase
         return BadRequest(new { Error = "Usuario no existente o ya verificado."});
     }
 
+    [AllowAnonymous]
     [HttpPost("recover")]
     public async Task<IActionResult> SendResetPasswordEmail([FromBody]EmailRequest request)
     {
@@ -141,6 +148,7 @@ public class AuthController : ApiControllerBase
         );
     }
 
+    [AllowAnonymous]
     [HttpPost("reset")]
     public async Task<IActionResult> ResetPassword([FromBody]ResetPasswordRequest request)
     {
@@ -155,5 +163,20 @@ public class AuthController : ApiControllerBase
             errors => Problem(errors)
         );
 
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { Error = "Usuario no autenticado." });
+
+        var result = await _authService.ChangePasswordAsync(userId, request);
+        return result.Match(
+            _ => Ok(new { Message = "Contraseña actualizada exitosamente." }),
+            errors => Problem(errors)
+        );
     }
 }
