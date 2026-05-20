@@ -12,14 +12,14 @@ public static class ValidationRulesExtensions
         return ruleBuilder.MinimumLength(8)
                         .MaximumLength(32)
                         .Matches(passwordPattern)
-                        .NotEmpty();
+                        .WithMessage("La contraseña debe tener al menos una mayúscula, una minúscula, un número y un caracter especial.");
     } 
 
     public static IRuleBuilderOptions<T, string> DniValido<T>(this IRuleBuilder<T, string> ruleBuilder)
     {
-        return ruleBuilder.NotEmpty()
-                        .MinimumLength(7)
+        return ruleBuilder.MinimumLength(7)
                         .MaximumLength(8)
-                        .Matches("^[0-9]{7,8}$");
+                        .Matches("^[0-9]{7,8}$")
+                        .WithMessage("El DNI debe tener 7 u 8 dígitos.");
     } 
 }
