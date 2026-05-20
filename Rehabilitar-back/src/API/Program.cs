@@ -18,6 +18,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.ConfigureApiBehavior();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
