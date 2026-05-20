@@ -96,15 +96,10 @@ export function RecurrenteGroup({
   const canGoPrev = currentIdx > 0;
   const canGoNext = currentIdx < availableMonthKeys.length - 1;
 
-  const filteredByMonth = useMemo(() => {
-    const filtered = actividades.filter((act) => {
-      const d = new Date(act.fechaYHora);
-      return d.getFullYear() === verMonth.getFullYear() && d.getMonth() === verMonth.getMonth();
-    });
-    return filtered.sort(
-      (a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime()
-    );
-  }, [actividades, verMonth]);
+  const filteredByMonth = actividades.filter((act) => {
+    const d = new Date(act.fechaYHora);
+    return d.getFullYear() === verMonth.getFullYear() && d.getMonth() === verMonth.getMonth();
+  });
 
   useEffect(() => {
     if (!expanded) return;

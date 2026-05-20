@@ -190,29 +190,6 @@ export function UsuariosPage() {
     };
   }, [clasesModalUser]);
 
-  const handleDeleteClick = async (u: User) => {
-    if (u.rol === 'Profesor') {
-      try {
-        const actividades = await profesorApi.getMisClases(u.id);
-        const pendientes = actividades.filter(
-          (a: Actividad) => a.estado !== 'Finalizada' && a.estado !== 'Cancelada'
-        );
-        if (pendientes.length > 0) {
-          setToastType('error');
-          setToastMessage('No se puede eliminar un profesor con actividades pendientes');
-          setShowToast(true);
-          return;
-        }
-      } catch {
-        setToastType('error');
-        setToastMessage('Error al verificar actividades del profesor');
-        setShowToast(true);
-        return;
-      }
-    }
-    setUserToDelete(u);
-  };
-
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
