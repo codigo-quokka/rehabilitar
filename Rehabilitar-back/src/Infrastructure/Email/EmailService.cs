@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Settings;
 using ErrorOr;
 using Microsoft.Extensions.Configuration;
 // using Microsoft.Extensions.Logging;
@@ -10,11 +11,13 @@ public class EmailService : IEmailService
 {
     private readonly IResend _resend;
     private readonly IConfiguration _config;
+    private readonly FrontendSettings _frontendSettings;
     // private readonly ILogger<EmailService> _logger; se puede implementar logger eventualmente.
 
-    public EmailService(IResend resend, IConfiguration config)
+    public EmailService(IResend resend, IConfiguration config, FrontendSettings frontendSettings)
     {
         _resend = resend;
+        _frontendSettings = frontendSettings;
         _config = config;
     }
 
@@ -231,6 +234,9 @@ public class EmailService : IEmailService
                     body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; line-height: 1.6; color: #2F4858; background-color: #FBFBFB; margin: 0; padding: 20px; }}
                     .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(47, 72, 88, 0.05), 0 2px 4px -1px rgba(47, 72, 88, 0.03); overflow: hidden; border: 1px solid #E8E8ED; }}
                     .header {{ text-align: center; padding: 30px 20px; background-color: #2F6274; color: #ffffff; border-bottom: 4px solid #6DD3A8; }}
+                    .button-container {{ text-align: center; margin: 40px 0; }}
+                    .confirm-button {{ display: inline-block; padding: 14px 40px; background-color: #48B7A5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s; }}
+                    .confirm-button:hover {{ background-color: #309B9B; }}
                     .logo {{ font-size: 28px; font-weight: bold; letter-spacing: 1px; margin: 0; }}
                     .logo span {{ color: #6DD3A8; }}
                     .content {{ padding: 40px 30px; }}
@@ -250,7 +256,7 @@ public class EmailService : IEmailService
                     <div class='content'>
                         <p class='greeting'>¡Hola!</p>
                         <p class='message'>Te damos la bienvenida a <strong>RehabilitAR.</strong> Un administrador ha creado una cuenta para vos en nuestro sistema.</p>
-                        <p class='message'>A continuación, te enviamos tu contraseña temporal para que puedas iniciar sesión por primera vez. Te recomendamos cambiarla una vez que ingreses.</p>
+                        <p class='message'>A continuación, te enviamos una contraseña generada aleatoriamente para que puedas iniciar sesión por primera vez. Te recomendamos cambiarla una vez que ingreses.</p>
                         
                         <div class='credentials-box'>
                             <p style='margin: 0 0 10px 0; color: #666; font-size: 14px;'>Tu contraseña temporal es:</p>
