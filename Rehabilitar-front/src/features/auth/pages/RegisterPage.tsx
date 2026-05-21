@@ -29,7 +29,8 @@ const dniReqs: Requirement[] = [
 ];
 
 export function RegisterPage() {
-  const [phase, setPhase] = useState<'scan' | 'form'>('scan');
+  // const [phase, setPhase] = useState<'scan' | 'form'>('form');
+  const [phase, setPhase] = useState('form');
   const [formData, setFormData] = useState({
     email: "",
     password: "",
