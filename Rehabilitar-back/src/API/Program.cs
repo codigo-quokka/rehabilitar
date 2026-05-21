@@ -7,6 +7,10 @@ using FluentValidation.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var frontendUrl = builder.Configuration.GetValue<string>("Frontend:BaseUrl")
+    ?? throw new InvalidOperationException("Frontend:BaseUrl is not configured.");
+builder.Services.AddSingleton(new Application.Common.Settings.FrontendSettings(frontendUrl));
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
