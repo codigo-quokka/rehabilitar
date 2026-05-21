@@ -9,7 +9,6 @@ import {
 } from "../../../components/InformRequirements";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
-import { useNotifications } from "../../../hooks/useNotifications";
 import logo from "../../../assets/logo.png";
 import axios from "axios";
 import { DniScanner } from "../components/DniScanner";
@@ -51,7 +50,6 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
-  const { addNotification } = useNotifications();
   const MIN_PASSWORD_LENGTH = 8;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
@@ -138,7 +136,6 @@ export function RegisterPage() {
     setToastType("success");
     setToastMessage("Datos leídos correctamente.");
     setShowToast(true);
-    addNotification("DNI leído exitosamente. Verificá que los datos sean correctos.", "success");
     setPhase('form');
   };
 
@@ -153,7 +150,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -162,7 +158,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[A-Z]/.test(formData.password)) {
@@ -170,7 +165,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[a-z]/.test(formData.password)) {
@@ -178,7 +172,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[0-9]/.test(formData.password)) {
@@ -186,7 +179,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[^a-zA-Z0-9]/.test(formData.password)) {
@@ -194,7 +186,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -203,7 +194,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -224,7 +214,6 @@ export function RegisterPage() {
         setToastType("error");
         setToastMessage(msg);
         setShowToast(true);
-        addNotification(msg, "error");
         return;
       }
     }
@@ -247,7 +236,6 @@ export function RegisterPage() {
       setToastType("success");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "success");
     } catch (err: unknown) {
       let msg = "Error al registrar usuario. Intenta de nuevo.";
 
@@ -263,7 +251,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       setError(msg);
     } finally {
       setLoading(false);
