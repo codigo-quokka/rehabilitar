@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(frontendUrl)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials()
@@ -48,6 +48,12 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+var mpSecret = app.Configuration["MercadoPago:WebhookSecret"];
+if (string.IsNullOrEmpty(mpSecret) || mpSecret == "WEBHOOK_SECRET")
+{
+    app.Logger.LogWarning("MercadoPago:WebhookSecret is not configured properly. Webhooks will not be validated.");
+}
 
 // Seed de roles al iniciar la aplicación
 await app.UseSeedingAsync();
