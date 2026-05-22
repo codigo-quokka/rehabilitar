@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Card, Badge, Button, Modal, Input, Select } from "../../../components/ui";
 import { Actividad, Role, Sala, User } from "../../../types";
@@ -41,6 +41,22 @@ export function RecurrenteGroup({
     (act) => !act.profesorId || act.profesorId === NULL_GUID
   ).length;
 
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  const sorted = [...actividades].sort(
+    (a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime()
+  );
+  const primerFecha = sorted[0].fechaYHora;
+  const ultimaFecha = sorted[count - 1].fechaYHora;
+
+  const [verMonth, setVerMonth] = useState(() => {
+    const d = new Date(sorted[0].fechaYHora);
+    return new Date(d.getFullYear(), d.getMonth());
+  });
+
   const [editForm, setEditForm] = useState({
     nombre: first.nombre,
     descripcion: first.descripcion,
@@ -49,19 +65,51 @@ export function RecurrenteGroup({
     estado: first.estado,
   });
 
-  const sorted = [...actividades].sort(
-    (a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime()
-  );
-  const primerFecha = sorted[0].fechaYHora;
-  const ultimaFecha = sorted[count - 1].fechaYHora;
+  const availableMonthKeys = useMemo(() => {
+    const months = new Set<string>();
+    for (const act of actividades) {
+      const d = new Date(act.fechaYHora);
+      months.add(`${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`);
+    }
+    return Array.from(months).sort();
+  }, [actividades]);
+
+  const currentKey = `${verMonth.getFullYear()}-${String(verMonth.getMonth()).padStart(2, '0')}`;
+  const currentIdx = availableMonthKeys.indexOf(currentKey);
+
+  const goPrevMonth = () => {
+    if (currentIdx > 0) {
+      const [y, m] = availableMonthKeys[currentIdx - 1].split('-');
+      setVerMonth(new Date(parseInt(y), parseInt(m)));
+    }
+  };
+
+  const goNextMonth = () => {
+    if (currentIdx < availableMonthKeys.length - 1) {
+      const [y, m] = availableMonthKeys[currentIdx + 1].split('-');
+      setVerMonth(new Date(parseInt(y), parseInt(m)));
+    }
+  };
+
+  const canGoPrev = currentIdx > 0;
+  const canGoNext = currentIdx < availableMonthKeys.length - 1;
+
+  const filteredByMonth = actividades.filter((act) => {
+    const d = new Date(act.fechaYHora);
+    return d.getFullYear() === verMonth.getFullYear() && d.getMonth() === verMonth.getMonth();
+  });
 
   useEffect(() => {
     if (!expanded) return;
+    document.body.style.overflow = 'hidden';
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setExpanded(false);
     };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handler);
+    };
   }, [expanded]);
 
   const handleOpenEditGroup = () => {
@@ -159,7 +207,7 @@ export function RecurrenteGroup({
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
-              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
+              <Badge className="bg-purple-200 text-purple-500 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
             </div>
             <Badge variant="info">
               {count} actividades
@@ -274,6 +322,7 @@ export function RecurrenteGroup({
         title="Modificar todas las actividades"
         size="lg"
       >
+        
         <form onSubmit={handleEditGroup} className="space-y-4">
           <Input
             label="Nombre"
@@ -355,7 +404,7 @@ export function RecurrenteGroup({
             onClick={() => setExpanded(false)}
           />
           <div
-            className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col items-center text-center mb-6 relative">
@@ -371,27 +420,66 @@ export function RecurrenteGroup({
               <h2 className="text-xl font-bold text-dark dark:text-gray-100">
                 {first.nombre}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {count} {count === 1 ? 'actividad recurrente' : 'actividades recurrentes'}
+              <div className="flex items-center justify-center gap-3 mt-3">
+                <button
+                  onClick={(e) => { e.stopPropagation(); goPrevMonth(); }}
+                  disabled={!canGoPrev}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    canGoPrev
+                      ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-dark dark:text-gray-100'
+                      : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  }`}
+                  aria-label="Mes anterior"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-base font-semibold text-dark dark:text-gray-100 min-w-36 text-center">
+                  {monthNames[verMonth.getMonth()]} {verMonth.getFullYear()}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); goNextMonth(); }}
+                  disabled={!canGoNext}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    canGoNext
+                      ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-dark dark:text-gray-100'
+                      : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  }`}
+                  aria-label="Mes siguiente"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
+                {filteredByMonth.length} {filteredByMonth.length === 1 ? 'actividad' : 'actividades'} en {monthNames[verMonth.getMonth()]}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {actividades.map((act) => (
-                <ActividadCard
-                  key={act.id}
-                  actividad={act}
-                  {...cardProps}
-                  onVerReservas={onVerReservas}
-                  onModificar={(a) => {
-                    setExpanded(false);
-                    cardProps.onModificar(a);
-                  }}
-                  onTomarActividad={async (a) => {
-                    setExpanded(false);
-                    await cardProps.onTomarActividad(a);
-                  }}
-                />
-              ))}
+              {filteredByMonth.length > 0 ? (
+                filteredByMonth.map((act) => (
+                  <ActividadCard
+                    key={act.id}
+                    actividad={act}
+                    {...cardProps}
+                    onVerReservas={onVerReservas}
+                    onModificar={(a) => {
+                      setExpanded(false);
+                      cardProps.onModificar(a);
+                    }}
+                    onTomarActividad={async (a) => {
+                      setExpanded(false);
+                      await cardProps.onTomarActividad(a);
+                    }}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+                  No hay actividades en {monthNames[verMonth.getMonth()]}
+                </div>
+              )}
             </div>
           </div>
         </div>,
