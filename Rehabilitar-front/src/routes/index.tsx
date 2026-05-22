@@ -13,6 +13,8 @@ import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
 import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
 import { ReservasPage } from "../features/reservas/pages/ReservasPage";
 import { ConfirmarPagoPage } from "../features/reservas/pages/ConfirmarPagoPage";
+import { PaymentSuccess } from "../features/reservas/pages/PaymentSuccess";
+import { PaymentError } from "../features/reservas/pages/PaymentError";
 import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
 import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
@@ -85,6 +87,14 @@ export const routes = [
           {
             path: "confirmar/:reservaId",
             element: <ConfirmarPagoPage />,
+          },
+          {
+            path: "pago/exito",
+            element: <PaymentSuccess />,
+          },
+          {
+            path: "pago/error",
+            element: <PaymentError />,
           },
         ],
       },
