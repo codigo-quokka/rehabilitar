@@ -179,7 +179,17 @@ export function ActividadesPage() {
         ind.push(act);
       }
     }
-    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+    const sortByDate = (a: Actividad, b: Actividad) =>
+      new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime();
+    ind.sort(sortByDate);
+    for (const [, acts] of gruposMap) {
+      acts.sort(sortByDate);
+    }
+    const sortedGrupos = Array.from(gruposMap.entries()).sort(
+      ([, actsA], [, actsB]) =>
+        new Date(actsA[0].fechaYHora).getTime() - new Date(actsB[0].fechaYHora).getTime()
+    );
+    return { grupos: sortedGrupos, individuales: ind };
   }, [filteredActividades]);
 
   return (
