@@ -523,7 +523,7 @@ export function ActividadesPage() {
   );
 }
 
-interface ActividadFormProps {
+export interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
   profesores: User[];
@@ -532,7 +532,7 @@ interface ActividadFormProps {
   onSuccess: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
+export function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
