@@ -112,82 +112,115 @@ public class EmailService : IEmailService
         return await SendEmailAsync(userEmail, "Apto físico rechazado", content);
     }
 
-    public async Task<ErrorOr<Success>> SendReservaRealizadaEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendReservaConfirmadaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
     {
-        // cuando se hizo el pago. debería informar si está en lista de espera o no
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que tu reserva para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} está confirmada.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Reserva confirmada", content);
     }
 
-    public async Task<ErrorOr<Success>> SendReservaCanceladaEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendReservaCanceladaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
     {
-        // cuando se cancela la reserva. Debería informar si se hizo un reembolso (en plata o rehabiliCoin) o no,
-        // y por qué no en caso de que no se lo haya hecho (ej cancelación dentro de las 24hs). Además 
-        // debería informar del descuento que le pertenece dependiendo de las cancelaciones consecutivas que tenga
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que la cancelación de tu reserva para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido efectuada.</p>
+            <p class='message'>Si corresponde, se te reembolsará el monto o el crédito correspondiente en los próximos días.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Reserva cancelada", content);
     }
 
-    public async Task<ErrorOr<Success>> SendCupoLiberadoEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendCancelacionDeActividadParaClientesEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string motivoCancelacion)
     {
-        // Cuando se libera un cupo en una actividad, informa a los clientes en la lista de espera 
-        // que se liberó un cupo (debería mandarse todas las veces? o sólo al cliente que entró por el cupo liberado? 
-        // si son las dos debería hacerse un SendReservaConfirmadaEmail)
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido cancelada.</p>
+            <p class='message'>El motivo de la cancelación es: {motivoCancelacion}</p>
+            <p class='message'>Se te reembolsará el monto o el crédito correspondiente en los próximos días.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad cancelada", content);
     }
 
-    public async Task<ErrorOr<Success>> SendSuscripcionRealizadaEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendCancelacionDeActividadParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string motivoCancelacion)
     {
-        // cuando el cliente realiza una suscripción. Debería informar las reservas que se realizaron, 
-        // incluyendo para cada una si quedó activa o en lista de espera
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido cancelada.</p>
+            <p class='message'>El motivo de la cancelación es: {motivoCancelacion}</p>
+            <p class='message'>Por favor, contactá a un administrador para más información sobre cómo se manejará tu situación laboral respecto a esta actividad.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad cancelada", content);
     }
 
-    public async Task<ErrorOr<Success>> SendRecordatorioSuscripcionEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendOportunidadDeActividadParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
     {
-        // No es tan importante. Si el cliente tiene una suscripción activa y se vence el mes, 
-        // se podría mandar un recordatorio para renovar la suscripción 
-        // (también podría mutar a un SendSuscripcionCanceladaEmail)
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} no tiene profesor asignado.</p>
+            <p class='message'>Si te interesa, podés dictarla.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Oportunidad de actividad", content);
     }
 
-    public async Task<ErrorOr<Success>> SendActividadCanceladaEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendCuentaSuspendidaEmail(string userEmail)
     {
-        // Cuando se cancela una actividad. Debería informar a clientes y profesores que se canceló 
-        // la actividad (y el motivo?), e informar además a los clientes de su respectivo reembolso
-        throw new NotImplementedException();
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que tu cuenta ha sido suspendida por haber infringido las políticas del sitio.</p>
+            <p class='message'>Si creés que esto es un error, por favor contactá a un administrador para resolver la situación.</p>
+            
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Cuenta suspendida", content);
     }
 
-    public async Task<ErrorOr<Success>> SendDictadoPendienteEmail(string userEmail, string link)
+    public async Task<ErrorOr<Success>> SendCuentaReactivadaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
     {
-        // Cuando hay una actividad con dictado pendiente, se informa a los profesores aptos 
-        // para dictarlos (según el tren) que está dispo pa dictarla
-        throw new NotImplementedException();
-    }
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
 
-    public async Task<ErrorOr<Success>> SendRecordatorioActividadProximaEmail(string userEmail, string link)
-    {
-        // Cuando faltan 24 horas para que empiece una actividad, debería informar a clientes con reservas 
-        // realizadas que se vienen cositas (2do Sprint)
-        throw new NotImplementedException();
-    }
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que tu cuenta ha sido reactivada.</p>
+            <p class='message'>Ya podés ingresar nuevamente a nuestra plataforma y participar de nuestras actividades.</p>
 
-    public async Task<ErrorOr<Success>> SendCagadaAPedoPorAusenciaEmail(string userEmail, string link)
-    {
-        // Cuando termina una actividad, debería informar a los clientes que no pasaron el presente 
-        // cuantas ausencias consecutivas tiene y las penalizaciones correspondientes si llega a 3
-        throw new NotImplementedException();
-    }
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
 
-    public async Task<ErrorOr<Success>> SendCuentaSuspendidaEmail(string userEmail, string link)
-    {
-        // Cuando se suspende una cuenta. Debería informar la razón de la suspensión 
-        // y los pasos a seguir para reactivarla
-        throw new NotImplementedException();
-    }
-
-    public async Task<ErrorOr<Success>> SendCuentaReactivadaEmail(string userEmail, string link)
-    {
-        // Cuando se reactiva una cuenta. Debería informar al cliente que se porte bien
-        throw new NotImplementedException();
+        return await SendEmailAsync(userEmail, "Cuenta reactivada", content);
     }
 
     // --- MÉTODOS PRIVADOS DE INFRAESTRUCTURA ---
@@ -214,49 +247,9 @@ public class EmailService : IEmailService
         {
             return Error.Failure("Email.Connection", "No se pudo conectar con el servidor de correos.");
         }
-
-    }
-
-    public async Task<ErrorOr<Success>> SendNewUserWithCredentialsEmail(string userEmail, string password)
-    {
-        try
-        {
-            var response = await _resend.EmailSendAsync(NewUserWithCredentialsEmail(userEmail, password));
-            if (response == null)
-                return Error.Failure("Error de resend al enviar el email.");
-            
-            return Result.Success;
-        }
-        catch (Exception)
-        {
-            return Error.Failure("Email.Connection", "No se pudo conectar con el servidor de correos.");
-        }
-
     }
 
     private static string BuildBaseHtml(string content)
-    {
-        return new EmailMessage
-        {
-            From = _config["Resend:FromEmail"]!,
-            To = "codigoquokka@hotmail.com", // debería ser To = userEmail pero hasta que haya dominio real sólo podemos enviarlo al mail de codigoquokka
-            Subject = "Restablecé tu contraseña en RehabilitAR",
-            HtmlBody = BuildPasswordResetHtml(link)
-        };
-    }
-
-    private EmailMessage NewUserWithCredentialsEmail(string userEmail, string password)
-    {
-        return new EmailMessage
-        {
-            From = _config["Resend:FromEmail"]!,
-            To = "codigoquokka@hotmail.com", // debería ser To = userEmail pero hasta que haya dominio real sólo podemos enviarlo al mail de codigoquokka
-            Subject = "Te damos la bienvenida a RehabilitAR",
-            HtmlBody = BuildNewUserWithCredentialsHtml(password)
-        };
-    }
-
-    private static string BuildConfirmationHtml(string verificationLink)
     {
         return $@"
             <!DOCTYPE html>
@@ -293,114 +286,7 @@ public class EmailService : IEmailService
                     </div>
                     <div class='footer'>
                         <p class='footer-text'>© 2026 RehabilitAR. Todos los derechos reservados.</p>
-                        <p class='footer-text'>Si no solicitaste crear esta cuenta, podés ignorar este correo de forma segura.</p>
-                    </div>
-                </div>
-            </body>
-            </html>";
-    }
-
-    private static string BuildPasswordResetHtml(string link)
-    {
-        return $@"
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset='UTF-8'>
-                <style>
-                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; line-height: 1.6; color: #2F4858; background-color: #FBFBFB; margin: 0; padding: 20px; }}
-                    .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(47, 72, 88, 0.05), 0 2px 4px -1px rgba(47, 72, 88, 0.03); overflow: hidden; border: 1px solid #E8E8ED; }}
-                    .header {{ text-align: center; padding: 30px 20px; background-color: #2F6274; color: #ffffff; border-bottom: 4px solid #6DD3A8; }}
-                    .logo {{ font-size: 28px; font-weight: bold; letter-spacing: 1px; margin: 0; }}
-                    .logo span {{ color: #6DD3A8; }}
-                    .content {{ padding: 40px 30px; }}
-                    .greeting {{ font-size: 20px; font-weight: 600; margin-bottom: 20px; color: #2F6274; }}
-                    .message {{ color: #2F4858; margin-bottom: 30px; font-size: 16px; }}
-                    .button-container {{ text-align: center; margin: 40px 0; }}
-                    .confirm-button {{ display: inline-block; padding: 14px 40px; background-color: #48B7A5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s; }}
-                    .confirm-button:hover {{ background-color: #309B9B; }}
-                    .alternative-text {{ color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #E8E8ED; padding-top: 20px; }}
-                    .alternative-link {{ color: #48B7A5; word-break: break-all; font-size: 13px; }}
-                    .footer {{ background-color: #F5F5F7; padding: 20px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #E8E8ED; }}
-                    .footer-text {{ margin: 5px 0; }}
-                </style>
-            </head>
-            <body>
-                <div class='container'>
-                    <div class='header'>
-                        <p class='logo'>Rehabilit<span>AR</span></p>
-                    </div>
-                    <div class='content'>
-                        <p class='greeting'>¡Hola!</p>
-                        <p class='message'>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>RehabilitAR.</strong></p>
-                        <div class='button-container'>
-                            <a href='{link}' class='confirm-button'>Restablecer contraseña</a>
-                        </div>
-                        <p class='alternative-text'>
-                            Si el botón no funciona, podés copiar y pegar este enlace en tu navegador:
-                        </p>
-                        <p class='alternative-link'>{link}</p>
-                        <p class='message' style='margin-top: 20px; color: #666; font-size: 13px;'>
-                            Por razones de seguridad, este enlace expirará en 24 horas.
-                        </p>
-                    </div>
-                    <div class='footer'>
-                        <p class='footer-text'>© 2026 RehabilitAR. Todos los derechos reservados.</p>
-                        <p class='footer-text'>Si no solicitaste un restablecimiento de contraseña, por favor ignora este correo de forma segura.</p>
-                    </div>
-                </div>
-            </body>
-            </html>";
-    }
-
-    private static string BuildNewUserWithCredentialsHtml(string password)
-    {
-        return $@"
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset='UTF-8'>
-                <style>
-                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; line-height: 1.6; color: #2F4858; background-color: #FBFBFB; margin: 0; padding: 20px; }}
-                    .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(47, 72, 88, 0.05), 0 2px 4px -1px rgba(47, 72, 88, 0.03); overflow: hidden; border: 1px solid #E8E8ED; }}
-                    .header {{ text-align: center; padding: 30px 20px; background-color: #2F6274; color: #ffffff; border-bottom: 4px solid #6DD3A8; }}
-                    .logo {{ font-size: 28px; font-weight: bold; letter-spacing: 1px; margin: 0; }}
-                    .logo span {{ color: #6DD3A8; }}
-                    .content {{ padding: 40px 30px; }}
-                    .greeting {{ font-size: 20px; font-weight: 600; margin-bottom: 20px; color: #2F6274; }}
-                    .message {{ color: #2F4858; margin-bottom: 30px; font-size: 16px; }}
-                    .credentials-box {{ background-color: #F5F5F7; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; border: 1px dashed #E8E8ED; }}
-                    .password {{ font-size: 24px; font-weight: bold; color: #2F6274; letter-spacing: 2px; }}
-                    .footer {{ background-color: #F5F5F7; padding: 20px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #E8E8ED; }}
-                    .footer-text {{ margin: 5px 0; }}
-                </style>
-            </head>
-            <body>
-                <div class='container'>
-                    <div class='header'>
-                        <p class='logo'>Rehabilit<span>AR</span></p>
-                    </div>
-                    <div class='content'>
-                        <p class='greeting'>¡Hola!</p>
-                        <p class='message'>Te damos la bienvenida a <strong>RehabilitAR.</strong> Un administrador ha creado una cuenta para vos en nuestro sistema.</p>
-                        <p class='message'>A continuación, te enviamos tu contraseña temporal para que puedas iniciar sesión por primera vez. Te recomendamos cambiarla una vez que ingreses.</p>
-                        
-                        <div class='credentials-box'>
-                            <p style='margin: 0 0 10px 0; color: #666; font-size: 14px;'>Tu contraseña temporal es:</p>
-                            <p class='password'>{password}</p>
-                        </div>
-                        
-                        <div class='button-container'>
-                            <a href='http://localhost:5173/login' class='confirm-button'>Ir al sitio</a>
-                        </div>
-                        
-                        <p class='message' style='color: #666; font-size: 13px;'>
-                            Ya podés acceder a nuestra plataforma y comenzar a utilizar nuestros servicios.
-                        </p>
-                    </div>
-                    <div class='footer'>
-                        <p class='footer-text'>© 2026 RehabilitAR. Todos los derechos reservados.</p>
-                        <p class='footer-text'>Este es un correo automático, por favor no respondas a esta dirección.</p>
+                        <p class='footer-text'>Si este correo no es para vos, podés ignorarlo de forma segura.</p>
                     </div>
                 </div>
             </body>
