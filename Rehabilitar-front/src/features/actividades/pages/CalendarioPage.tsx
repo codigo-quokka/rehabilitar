@@ -110,7 +110,7 @@ export function CalendarioPage() {
                 <div
                   key={index}
                   className={`min-h-24 p-2 border-b border-r border-border dark:border-gray-700 ${
-                    day ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50' : 'bg-gray-50 dark:bg-gray-800/30'
+                    day ? 'hover:bg-gray-100 dark:hover:bg-gray-800/50' : 'bg-gray-100 dark:bg-gray-800/30'
                   }`}
                 >
                   {day && (
