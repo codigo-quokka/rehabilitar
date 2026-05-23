@@ -20,6 +20,7 @@ import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
 import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
 import { MisClasesPage } from "../features/profesor/pages/MisClasesPage";
+import { AdminAptosFisicosPage } from '../features/aptosFisicos/pages/AdminAptosFisicosPage';
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
@@ -139,6 +140,16 @@ export const routes = [
           {
             index: true,
             element: <MetricasPage />,
+          },
+        ],
+      },
+      {
+        path: '/aptos-fisicos',
+        element: <ProtectedRoute allowedRoles={['Administrador', 'Recepción']} />,
+        children: [
+          {
+            index: true,
+            element: <AdminAptosFisicosPage />,
           },
         ],
       },

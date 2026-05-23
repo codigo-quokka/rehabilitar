@@ -147,3 +147,19 @@ export interface Notification {
   read: boolean;
   type?: 'success' | 'error' | 'info';
 }
+
+export type EstadoAptoFisico = 'Pendiente' | 'Aprobado' | 'Rechazado';
+
+export interface AptoFisico {
+  id: string;
+  clienteId: string;
+  clienteNombre?: string;
+  nombreArchivo: string;
+  contentType: string;
+  tamaño: number;
+  estado: EstadoAptoFisico;
+  fechaSubida: string;
+  fechaEvaluacion?: string;
+  evaluadoPorNombre?: string;
+  motivoRechazo?: string;
+}
