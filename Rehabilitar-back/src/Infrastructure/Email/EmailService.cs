@@ -112,6 +112,117 @@ public class EmailService : IEmailService
         return await SendEmailAsync(userEmail, "Apto físico rechazado", content);
     }
 
+    public async Task<ErrorOr<Success>> SendReservaConfirmadaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que tu reserva para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} está confirmada.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Reserva confirmada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendReservaCanceladaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que la cancelación de tu reserva para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido efectuada.</p>
+            <p class='message'>Si corresponde, se te reembolsará el monto o el crédito correspondiente en los próximos días.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Reserva cancelada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendCancelacionDeActividadParaClientesEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string motivoCancelacion)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido cancelada.</p>
+            <p class='message'>El motivo de la cancelación es: {motivoCancelacion}</p>
+            <p class='message'>Se te reembolsará el monto o el crédito correspondiente en los próximos días.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad cancelada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendCancelacionDeActividadParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string motivoCancelacion)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido cancelada.</p>
+            <p class='message'>El motivo de la cancelación es: {motivoCancelacion}</p>
+            <p class='message'>Por favor, contactá a un administrador para más información sobre cómo se manejará tu situación laboral respecto a esta actividad.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad cancelada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendOportunidadDeActividadParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} no tiene profesor asignado.</p>
+            <p class='message'>Si te interesa, podés dictarla.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Oportunidad de actividad", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendCuentaSuspendidaEmail(string userEmail)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que tu cuenta ha sido suspendida por haber infringido las políticas del sitio.</p>
+            <p class='message'>Si creés que esto es un error, por favor contactá a un administrador para resolver la situación.</p>
+            
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Cuenta suspendida", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendCuentaReactivadaEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que tu cuenta ha sido reactivada.</p>
+            <p class='message'>Ya podés ingresar nuevamente a nuestra plataforma y participar de nuestras actividades.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Cuenta reactivada", content);
+    }
+
     // --- MÉTODOS PRIVADOS DE INFRAESTRUCTURA ---
 
     private async Task<ErrorOr<Success>> SendEmailAsync(string userEmail, string subject, string htmlContent)
