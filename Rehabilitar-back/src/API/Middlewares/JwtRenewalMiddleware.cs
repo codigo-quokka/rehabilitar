@@ -34,7 +34,8 @@ public class JwtRenewalMiddleware
                         var user = await userManager.FindByIdAsync(userIdClaim.Value);
                         if (user != null)
                         {
-                            var newToken = jwtProvider.GenerateJwtToken(user);
+                            var roles = await userManager.GetRolesAsync(user);
+                            var newToken = jwtProvider.GenerateJwtToken(user, roles);
                             context.Response.Headers.Append("X-Renewed-Token", newToken);
                         }
                     }

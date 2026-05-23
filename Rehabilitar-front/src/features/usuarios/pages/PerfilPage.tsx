@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '../../../components/layout';
-import { Card, Button, Input } from '../../../components/ui';
+import { Card, Button, Input, Modal, Badge } from '../../../components/ui';
 import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
 import { authApi, usuariosApi } from '../../../api';
 import { Notitoast } from '../../../components/Notitoast';
+import { aptosFisicosApi } from '../../../api/aptosFisicos';
+import { AptoFisico } from '../../../types';
+import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
+import { AptoFisicoViewer } from '../../aptosFisicos/components/AptoFisicoViewer';
 
 export function PerfilPage() {
   const { user } = useAuth();
@@ -30,6 +34,25 @@ export function PerfilPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
+
+  // New states for AptoFisico
+  const [aptos, setAptos] = useState<AptoFisico[]>([]);
+  const [aptosCargando, setAptosCargando] = useState(true);
+  const [subiendo, setSubiendo] = useState(false);
+  const [verArchivo, setVerArchivo] = useState(false);
+
+  const aptoActual = aptos.length > 0 ? aptos[0] : null;
+
+  useEffect(() => {
+    if (user?.rol === 'Cliente Registrado') {
+      aptosFisicosApi.getMisAptos()
+        .then(setAptos)
+        .catch(() => {})
+        .finally(() => setAptosCargando(false));
+    } else {
+      setAptosCargando(false);
+    }
+  }, [user]);
 
   const showToastMessage = (message: string, type: 'success' | 'error') => {
     setToastMessage(message);
@@ -146,11 +169,73 @@ export function PerfilPage() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Fecha de nacimiento</p>
                   <p className="text-dark dark:text-gray-100">{user?.fechaNacimiento || 'No registrada'}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Aptitud física</p>
-                  <p className="text-dark dark:text-gray-100">{user?.aptitudFisica ? 'Aprobada' : 'Pendiente'}</p>
-                </div>
-               
+                {user?.rol === 'Cliente Registrado' && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Aptitud física</p>
+                    {aptosCargando ? (
+                      <p className="text-dark dark:text-gray-100">Cargando...</p>
+                    ) : aptoActual ? (
+                      <div className="mt-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          {aptoActual.estado === 'Aprobado' && (
+                            <>
+                              <Badge variant="success">Aprobado</Badge>
+                              {aptoActual.fechaEvaluacion && (
+                                <span className="text-xs text-gray-500">
+                                  {new Date(aptoActual.fechaEvaluacion).toLocaleDateString()}
+                                </span>
+                              )}
+                            </>
+                          )}
+                          {aptoActual.estado === 'Pendiente' && (
+                            <Badge variant="warning">Pendiente de revisión</Badge>
+                          )}
+                          {aptoActual.estado === 'Rechazado' && (
+                            <div className="space-y-1">
+                              <Badge variant="danger">Rechazado</Badge>
+                              {aptoActual.motivoRechazo && (
+                                <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                                  Motivo: {aptoActual.motivoRechazo}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Archivo: {aptoActual.nombreArchivo} — {(aptoActual.tamaño / 1024).toFixed(1)} KB
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setVerArchivo(true)}
+                          >
+                            Ver archivo
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setSubiendo(true)}
+                          >
+                            {aptoActual.estado === 'Pendiente' ? 'Cargar de nuevo' : aptoActual.estado === 'Rechazado' ? 'Reintentar' : 'Actualizar'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-1">
+                        <p className="text-dark dark:text-gray-100">Todavía no cargaste un apto físico</p>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setSubiendo(true)}
+                        >
+                          Subir apto físico
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="pt-4">
                 <Button onClick={() => setEditing(true)}>Editar perfil</Button>
@@ -195,14 +280,30 @@ export function PerfilPage() {
             <Button onClick={handleChangePassword} loading={passwordLoading}>Actualizar contraseña</Button>
           </div>
         </Card>
+
+        {/* Modal de subida */}
+        <Modal isOpen={subiendo} onClose={() => setSubiendo(false)} title="Subir apto físico">
+          <AptoFisicoUploader onSuccess={() => {
+            setSubiendo(false);
+            aptosFisicosApi.getMisAptos().then(setAptos);
+          }} />
+        </Modal>
+
+        {/* Modal de visualización */}
+        <Modal isOpen={verArchivo} onClose={() => setVerArchivo(false)} title="Apto físico" size="lg">
+          {aptoActual && (
+            <AptoFisicoViewer aptoFisico={aptoActual} onClose={() => setVerArchivo(false)} />
+          )}
+        </Modal>
+
+        {showToast && (
+          <Notitoast
+            type={toastType}
+            message={toastMessage}
+            onClose={() => setShowToast(false)}
+          />
+        )}
       </div>
-      {showToast && (
-        <Notitoast
-          type={toastType}
-          message={toastMessage}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </MainLayout>
   );
 }
