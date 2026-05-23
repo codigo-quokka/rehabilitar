@@ -332,14 +332,38 @@ export function CalendarioPage() {
           onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
         />
 
-        {loading ? (
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        ) : (
-          <Card padding="none">
-            <div className="grid grid-cols-7 border-b border-gray-300 dark:border-gray-700">
-              {weekDays.map((day) => (
-                <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 dark:text-gray-600">
-                  {day}
+              return (
+                <div
+                  key={index}
+                  className={`min-h-24 p-2 border-b border-r border-border dark:border-gray-700 ${
+                    day ? 'hover:bg-gray-100 dark:hover:bg-gray-800/50' : 'bg-gray-100 dark:bg-gray-800/30'
+                  }`}
+                >
+                  {day && (
+                    <>
+                      <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary' : 'text-dark dark:text-gray-100'}`}>
+                        {day}
+                        {isToday && (
+                          <span className="ml-1 text-xs text-primary">Hoy</span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        {dayActividades.slice(0, 2).map((act) => (
+                          <div
+                            key={act.id}
+                            className="text-xs p-1 bg-primary/10 text-primary rounded truncate"
+                          >
+                            {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} {act.nombre}
+                          </div>
+                        ))}
+                        {dayActividades.length > 2 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            +{dayActividades.length - 2} más
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
