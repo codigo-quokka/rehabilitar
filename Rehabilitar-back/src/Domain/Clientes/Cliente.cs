@@ -71,4 +71,9 @@ public class Cliente
     {
         AptoFisicoAprobado = true;
     }
+
+    public void RechazarAptoFisico()
+    {
+        AptoFisicoAprobado = false;
+    }
 }
