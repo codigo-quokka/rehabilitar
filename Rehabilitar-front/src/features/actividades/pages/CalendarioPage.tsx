@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
-import { Card, Badge, Modal, Button, FilterDropdown } from '../../../components/ui';
+import { Card, Badge, Modal } from '../../../components/ui';
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from '../../../api';
 import { Actividad, Reserva, Sala, User } from '../../../types';
 import { useAuth } from '../../../hooks/useAuth';
 import { ActividadCard } from '../components/ActividadCard';
 import { ActividadForm } from './ActividadesPage';
 import { Notitoast } from '../../../components/Notitoast';
-import { estadoLabel, frecuenciaLabel, tipoLabel } from '../constants';
 
 export function CalendarioPage() {
   const { user, hasRole } = useAuth();
@@ -20,45 +19,21 @@ export function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
   const [showActividadModal, setShowActividadModal] = useState(false);
-  const [selectedDayActividades, setSelectedDayActividades] = useState<Actividad[]>([]);
-  const [showDayModal, setShowDayModal] = useState(false);
-  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  const [filterOpen, setFilterOpen] = useState(false);
   const [showReservasModal, setShowReservasModal] = useState(false);
   const [reservasActNombre, setReservasActNombre] = useState('');
   const [reservasData, setReservasData] = useState<Reserva[]>([]);
   const [reservasLoading, setReservasLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    frecuencia: 'all',
-    tipo: 'all',
-    estado: 'all',
-    sala: 'all',
-    profesor: 'all',
-  });
+
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-
-  const hasActiveFilters = filters.frecuencia !== 'all' || filters.tipo !== 'all' || filters.estado !== 'all' || filters.sala !== 'all' || filters.profesor !== 'all';
 
   const navigate = useNavigate();
 
   const profesores = usuarios.filter(u => u.rol === 'Profesor' && u.activo);
-
-  const filteredActividades = actividades.filter(a => {
-    if (hasRole(['Cliente Registrado']) && a.estado !== 'Aprobada') return false;
-    if (filters.frecuencia !== 'all' && a.frecuencia !== filters.frecuencia) return false;
-    if (filters.tipo !== 'all' && a.tipo !== filters.tipo) return false;
-    if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
-    if (filters.sala !== 'all' && a.salaId !== filters.sala) return false;
-    if (filters.profesor === 'all') return true;
-    if (filters.profesor === 'unassigned') return !a.profesorId || a.profesorId === '00000000-0000-0000-0000-000000000000';
-    if (a.profesorId !== filters.profesor) return false;
-    return true;
-  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,55 +59,28 @@ export function CalendarioPage() {
   }, [currentDate]);
 
   useEffect(() => {
-    if (!loading && filteredActividades.length === 0 && hasActiveFilters) {
-      setToastType('error');
-      setToastMessage('No hay actividades que coincidan con los filtros seleccionados');
-      setShowToast(true);
-    }
-  }, [loading, filteredActividades.length, hasActiveFilters]);
-
-  useEffect(() => {
-    if (!showReservasModal && !showDayModal && !showActividadModal) return;
+    if (!showReservasModal) return;
     document.body.style.overflow = 'hidden';
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showReservasModal) setShowReservasModal(false);
-        if (showDayModal) { setShowDayModal(false); setSelectedDayActividades([]); setSelectedDayNumber(null); }
-        if (showActividadModal) { setShowActividadModal(false); setSelectedActividad(null); }
-      }
+      if (e.key === 'Escape') setShowReservasModal(false);
     };
     document.addEventListener('keydown', handler);
     return () => {
       document.body.style.overflow = 'unset';
       document.removeEventListener('keydown', handler);
     };
-  }, [showReservasModal, showDayModal, showActividadModal]);
+  }, [showReservasModal]);
 
   const handleOpenActividad = (act: Actividad) => {
     setSelectedActividad(act);
     setShowActividadModal(true);
   };
 
-  const handleOpenDay = (day: number) => {
-    const acts = getActividadesForDay(day);
-    setSelectedDayActividades(acts);
-    setSelectedDayNumber(day);
-    setShowDayModal(true);
-  };
-
   const handleReservar = async (actividad: Actividad) => {
     if (!user) return;
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate(`/reservas/confirmar/${reserva.id}`, {
-        state: {
-          reservaId: reserva.id,
-          actividadId: reserva.actividadId,
-          montoTotal: reserva.montoTotal,
-          montoPagado: 0,
-          montoPendiente: reserva.montoPendiente,
-        },
-      });
+      await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      navigate("/reservas", { state: { _successMessage: '¡Reserva agregada!' } });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       const data = axiosErr?.response?.data;
@@ -277,93 +225,14 @@ export function CalendarioPage() {
           <div />
         </div>
 
-        <FilterDropdown
-          inline
-          open={filterOpen}
-          filters={[
-            {
-              key: 'frecuencia',
-              label: 'Frecuencia',
-              options: [
-                { value: 'all', label: 'Todas' },
-                ...Object.entries(frecuenciaLabel).map(([value, label]) => ({ value, label })),
-              ],
-            },
-            {
-              key: 'tipo',
-              label: 'Especialidad',
-              options: [
-                { value: 'all', label: 'Todas' },
-                ...Object.entries(tipoLabel).map(([value, label]) => ({ value, label })),
-              ],
-            },
-            {
-              key: 'profesor',
-              label: 'Profesor',
-              options: [
-                { value: 'all', label: 'Todos' },
-                { value: 'unassigned', label: 'Sin asignar' },
-                ...profesores.map((p) => ({ value: p.id, label: `${p.nombre} ${p.apellido}` })),
-              ],
-            },
-            {
-              key: 'sala',
-              label: 'Sala',
-              options: [
-                { value: 'all', label: 'Todas' },
-                ...salas.map((s) => ({ value: s.id, label: s.nombre })),
-              ],
-            },
-            ...(!hasRole(['Cliente Registrado'])
-              ? [
-                  {
-                    key: 'estado',
-                    label: 'Estado',
-                    options: [
-                      { value: 'all', label: 'Todos' },
-                      ...Object.entries(estadoLabel).map(([value, label]) => ({ value, label })),
-                    ],
-                  },
-                ]
-              : []),
-          ]}
-          values={filters}
-          onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-          onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
-        />
-
-              return (
-                <div
-                  key={index}
-                  className={`min-h-24 p-2 border-b border-r border-border dark:border-gray-700 ${
-                    day ? 'hover:bg-gray-100 dark:hover:bg-gray-800/50' : 'bg-gray-100 dark:bg-gray-800/30'
-                  }`}
-                >
-                  {day && (
-                    <>
-                      <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary' : 'text-dark dark:text-gray-100'}`}>
-                        {day}
-                        {isToday && (
-                          <span className="ml-1 text-xs text-primary">Hoy</span>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        {dayActividades.slice(0, 2).map((act) => (
-                          <div
-                            key={act.id}
-                            className="text-xs p-1 bg-primary/10 text-primary rounded truncate"
-                          >
-                            {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} {act.nombre}
-                          </div>
-                        ))}
-                        {dayActividades.length > 2 && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            +{dayActividades.length - 2} más
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
+        {loading ? (
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
+        ) : (
+          <Card padding="none">
+            <div className="grid grid-cols-7 border-b border-border dark:border-gray-700">
+              {weekDays.map((day) => (
+                <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {day}
                 </div>
               ))}
             </div>
@@ -377,8 +246,8 @@ export function CalendarioPage() {
                 return (
                   <div
                     key={index}
-                    className={`h-32 p-2 border-b-2 border-r-2  border-gray-300 dark:border-gray-800 overflow-hidden ${
-                      day ? 'hover:bg-primary/10 dark:hover:bg-gray-800/50' : 'bg-primary/20 dark:bg-gray-800/30'
+                    className={`min-h-24 p-2 border-b border-r border-border dark:border-gray-700 ${
+                      day ? 'hover:bg-gray-100 dark:hover:bg-gray-800/50' : 'bg-gray-100 dark:bg-gray-800/30'
                     }`}
                   >
                     {day && (
@@ -394,21 +263,14 @@ export function CalendarioPage() {
                             <button
                               key={act.id}
                               onClick={() => handleOpenActividad(act)}
-                              className="w-full text-left text-xs p-1 dark:bg-dark-green dark:hover:bg-darkest-green dark:text-gray-100 bg-primary/50 text-dark-green rounded truncate hover:bg-primary/70 transition-colors cursor-pointer"
+                              className="w-full text-left text-xs p-1 bg-primary/10 text-primary rounded truncate hover:bg-primary/20 transition-colors cursor-pointer"
                             >
                               {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} {act.nombre}
                             </button>
                           ))}
                           {dayActividades.length > 2 && (
-                            <div
-                              onClick={() => handleOpenDay(day!)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') handleOpenDay(day!); }}
-                              role="button"
-                              tabIndex={0}
-                              aria-label={`Ver las ${dayActividades.length} actividades del día ${day}`}
-                              className="text-xs rounded-lg justify-center bg-primary/20 hover:bg-primary/40 flex items-center text-gray-500 dark:text-gray-400 dark:bg-gray-800   dark:hover:bg-gray-700  cursor-pointer transition-colors"
-                            >
-                              +{dayActividades.length - 2} más - Ver todas
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              +{dayActividades.length - 2} más
                             </div>
                           )}
                         </div>
@@ -422,79 +284,21 @@ export function CalendarioPage() {
         )}
       </div>
 
-      {showActividadModal && selectedActividad && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => { setShowActividadModal(false); setSelectedActividad(null); }} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center text-center mb-6 relative">
-              <button
-                onClick={() => { setShowActividadModal(false); setSelectedActividad(null); }}
-                className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
-                aria-label="Cerrar"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">{selectedActividad.nombre}</h2>
-            </div>
-            <div className="max-w-lg mx-auto">
-              <ActividadCard
-                actividad={selectedActividad}
-                hasRole={hasRole}
-                onReservar={handleReservar}
-                onModificar={handleModificar}
-                onTomarActividad={handleTomarActividad}
-                onVerReservas={handleVerReservas}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {showDayModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => { setShowDayModal(false); setSelectedDayActividades([]); setSelectedDayNumber(null); }} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center text-center mb-6 relative">
-              <button
-                onClick={() => { setShowDayModal(false); setSelectedDayActividades([]); setSelectedDayNumber(null); }}
-                className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
-                aria-label="Cerrar"
-              >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">
-                {selectedDayNumber ? `${selectedDayNumber} de ${monthNames[currentDate.getMonth()]}` : ''}
-              </h2>
-              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
-                {selectedDayActividades.length} {selectedDayActividades.length === 1 ? 'actividad' : 'actividades'}
-              </p>
-            </div>
-            {selectedDayActividades.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-12">Sin actividades para este día</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedDayActividades.map((act) => (
-                  <ActividadCard
-                    key={act.id}
-                    actividad={act}
-                    hasRole={hasRole}
-                    onReservar={handleReservar}
-                    onModificar={handleModificar}
-                    onTomarActividad={handleTomarActividad}
-                    onVerReservas={handleVerReservas}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+      <Modal
+        isOpen={showActividadModal}
+        onClose={() => { setShowActividadModal(false); setSelectedActividad(null); }}
+        title=""
+        size="lg"
+      >
+        <ActividadCard
+          actividad={selectedActividad!}
+          hasRole={hasRole}
+          onReservar={handleReservar}
+          onModificar={handleModificar}
+          onTomarActividad={handleTomarActividad}
+          onVerReservas={handleVerReservas}
+        />
+      </Modal>
 
       {showReservasModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
