@@ -37,15 +37,18 @@ public class ReservaService : IReservaService
             try
             {
                 var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(request.ActividadId, ct);
-
+                    
                 if (reservas.Any(r => r.ClienteId == request.ClienteId && r.EstadoDeReserva != EstadoDeReserva.Cancelada))
-                    return Error.Conflict("El cliente ya tiene una reserva para esta actividad");
+                    return Error.Conflict("Reserva.Conflict", "Ya tiene una reserva para esta actividad");
                 
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
-                if (actividad == null) return Error.NotFound("Actividad no encontrada");
+                if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
                 var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
-                if (cliente == null) return Error.NotFound("Cliente no encontrado");
+                if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
+
+                if (!cliente.AptoFisicoAprobado)
+                    return Error.Forbidden("Reserva.AptoFisicoNoAprobado", "Debe tener apto físico aprobado");
 
                 Reserva reserva = actividad.IniciarReserva(cliente, request.TipoCliente);
                 _reservaRepo.Add(reserva);
@@ -54,7 +57,7 @@ public class ReservaService : IReservaService
 
                 var reservaCompleta = await _reservaRepo.GetByIdAsync(reserva.Id, ct);
                 if (reservaCompleta == null)
-                    return Error.NotFound("Error al recuperar la reserva después de crearla.");
+                    return Error.NotFound("Reserva.NotFound", "Error al recuperar la reserva después de crearla.");
 
                 return MapToReservaResponse(reservaCompleta);
             }
@@ -63,7 +66,7 @@ public class ReservaService : IReservaService
                 System.Console.WriteLine($"ReservaService: ConcurrencyException en intento {i + 1}/{maxRetries}: {ex.InnerException?.Message}");
 
                 if (i == maxRetries - 1)
-                    return Error.Conflict("El sistema está muy ocupado. Por favor, intenta de nuevo en unos segundos.");
+                    return Error.Conflict("Sistema.Ocupado", "El sistema está muy ocupado. Por favor, intenta de nuevo en unos segundos.");
 
                 _uow.ClearChangeTracker();
                 await Task.Delay(new Random().Next(10, delayPerRetry), ct);
@@ -76,7 +79,7 @@ public class ReservaService : IReservaService
     public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
         if (request.Actividades.Count() < 4 && request.TipoCliente == TipoCliente.Abonado)
-            return Error.Validation("se debe tener mas de 4 actividades para reservar como abonado");
+            return Error.Validation("Reserva.ActividadCountInvalid", "Se debe tener más de 4 actividades para reservar como abonado");
         foreach (Actividad a in request.Actividades)
         {
             ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
@@ -95,14 +98,14 @@ public class ReservaService : IReservaService
         for (int i = 0; i < 3; i++) {
             try {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
-                if (actividad == null) return Error.NotFound("Actividad no encontrada");
+                if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
                 
                 actividad.ProcesarPagoReserva(reservaId, request.Monto); // Lógica de dominio actualizada
                 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
                 return Result.Success;
             } catch (ConcurrencyException) {
-                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                if (i == 2) return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
                 _uow.ClearChangeTracker();
                 await Task.Delay(new Random().Next(10, 100), ct);
             }
@@ -115,7 +118,7 @@ public class ReservaService : IReservaService
         for (int i = 0; i < 3; i++) {
             try {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
-                if (actividad == null) return Error.NotFound("Actividad no encontrada");
+                if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
                                 
                 actividad.CancelarReserva(reservaId); // Lógica de dominio
@@ -123,7 +126,7 @@ public class ReservaService : IReservaService
                 await _uow.SaveChangesAsync(ct);
                 return Result.Deleted;
             } catch (ConcurrencyException) {
-                if (i == 2) return Error.Conflict("Sistema ocupado, reintente.");
+                if (i == 2) return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
                 _uow.ClearChangeTracker();
                 await Task.Delay(new Random().Next(10, 100), ct);
             }
@@ -136,7 +139,7 @@ public class ReservaService : IReservaService
         var reserva = await _reservaRepo.GetByIdAsync(id, ct);
 
         if (reserva == null)
-            return Error.NotFound("Reserva no encontrada");
+            return Error.NotFound("Reserva.NotFound", "Reserva no encontrada");
 
         return MapToReservaResponse(reserva);
     }
