@@ -10,15 +10,17 @@ public class AptoFisicoService : IAptoFisicoService
     private readonly IAptoFisicoRepository _aptoFisicoRepository;
     private readonly IClienteRepository _clienteRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
 
     private static readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
-    public AptoFisicoService(IAptoFisicoRepository aptoFisicoRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork)
+    public AptoFisicoService(IAptoFisicoRepository aptoFisicoRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork, IEmailService emailService)
     {
         _aptoFisicoRepository = aptoFisicoRepository;
         _clienteRepository = clienteRepository;
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
     }
 
     public async Task<ErrorOr<AptoFisicoResponse>> SubirAsync(Guid clienteId, Stream archivoStream, string nombreArchivo, string contentType)
@@ -92,6 +94,7 @@ public class AptoFisicoService : IAptoFisicoService
         {
             aptoFisico.Aprobar(evaluadoPor);
             aptoFisico.Cliente.AprobarAptoFisico(); // Actualiza el estado del cliente
+            await _emailService.SendAptoFisicoAprobadoEmail(aptoFisico.Cliente.User.Email!);
         }
         else
         {
@@ -102,6 +105,7 @@ public class AptoFisicoService : IAptoFisicoService
             aptoFisico.Rechazar(evaluadoPor, motivoRechazo);
             // Si se rechaza, el apto fisico del cliente no esta aprobado
             aptoFisico.Cliente.RechazarAptoFisico();
+            await _emailService.SendAptoFisicoRechazadoEmail(aptoFisico.Cliente.User.Email!, motivoRechazo);
         }
 
         await _unitOfWork.SaveChangesAsync();
