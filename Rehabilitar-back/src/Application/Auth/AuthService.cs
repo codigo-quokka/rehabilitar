@@ -94,9 +94,9 @@ public class AuthService : IAuthService
         if (await _userManager.IsLockedOutAsync(user))
             return Error.Forbidden("User.Suspended", "Usuario suspendido.");
 
-        var token = _jwt.GenerateJwtToken(user);
-
         var roles = await _userManager.GetRolesAsync(user);
+        var token = _jwt.GenerateJwtToken(user, roles);
+
         var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
