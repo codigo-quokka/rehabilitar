@@ -126,6 +126,8 @@ public class ReservaService : IReservaService
                 
                 actividad.ProcesarPagoReserva(reservaId, montoAPagar); // Lógica de dominio actualizada
                 
+                actividad.ProcesarPagoReserva(reservaId, montoAPagar); // Lógica de dominio actualizada
+                
                 // Si la reserva se completó (o alcanzó la seña), reseteamos las penalizaciones del cliente
                 if (reserva.EstadoDeReserva == EstadoDeReserva.Activa || reserva.EstadoDeReserva == EstadoDeReserva.EnEspera)
                 {
