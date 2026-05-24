@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IReservaRepository, ReservaRepository>();
         services.AddScoped<IAptoFisicoRepository, AptoFisicoRepository>();
+        services.AddScoped<ISuscripcionRepository, SuscripcionRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
         services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
         {
