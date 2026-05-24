@@ -36,7 +36,7 @@ public class ActividadService : IActividadService
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividad(CrearActividadRequest request, CancellationToken ct = default)
     {   
-        var validacion = await ValidarActividad(null, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
+        var validacion = await ValidarActividad(null, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, request.SerieId ?? Guid.Empty, ct);
         
         if (validacion.IsError)
             return validacion.Errors;
@@ -65,6 +65,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.ProfesorId,
             request.ActividadBase.Tipo,
             request.ActividadBase.Estado,
+            serieId,
             ct);
 
         if (validacionLote.IsError)
@@ -108,6 +109,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.ProfesorId,
             request.ActividadBase.Tipo,
             request.ActividadBase.Estado,
+            request.SerieId,
             ct);
 
         if (validacionLote.IsError) return validacionLote.Errors;
@@ -142,7 +144,7 @@ public class ActividadService : IActividadService
 
         if (actividad == null) return Error.NotFound("Actividad no encontrada");   
 
-        var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
+        var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, request.SerieId ?? Guid.Empty, ct);
         
         if (validacion.IsError)
             return validacion.Errors;
@@ -207,7 +209,7 @@ public class ActividadService : IActividadService
         if (profesor.Especialidad != actividad.Tipo)
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
-        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, ct))
+        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
             return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
@@ -326,11 +328,12 @@ public class ActividadService : IActividadService
         Guid? profesorId,
         TipoEspecialidad tipo,
         EstadoActividad estado,
+        Guid serieId,
         CancellationToken ct)
     {
         foreach (var item in items)
         {
-            var validacion = await ValidarActividad(item.ActividadId, cupo, salaId, item.Fecha, profesorId, tipo, estado, ct);
+            var validacion = await ValidarActividad(item.ActividadId, cupo, salaId, item.Fecha, profesorId, tipo, estado, serieId, ct);
             if (validacion.IsError)
                 return validacion.Errors;
         }
