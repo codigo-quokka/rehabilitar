@@ -164,6 +164,9 @@ public class ReservaServiceTests
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
 
+        _reservaRepoMock.Setup(x => x.GetByIdAsync(reservaId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reserva);
+
         // Act
         var result = await _sut.ConfirmarPagoReservaAsync(request, reservaId);
 
@@ -198,6 +201,9 @@ public class ReservaServiceTests
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
+
+        _reservaRepoMock.Setup(x => x.GetByIdAsync(reservaId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reserva);
 
         // Act
         var result = await _sut.ConfirmarPagoReservaAsync(request, reservaId);
