@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Pagos.Requests;
 using Application.Reservas;
+using Application.Suscripciones;
 using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +17,15 @@ public class PagosController : ApiControllerBase
 {
     private readonly IMercadoPagoService _mercadoPagoService;
     private readonly IReservaService _reservaService;
+    private readonly ISuscripcionService _suscripcionService;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, IConfiguration configuration)
+    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, ISuscripcionService suscripcionService, IConfiguration configuration)
     {
         _mercadoPagoService = mercadoPagoService;
         _reservaService = reservaService;
+        _suscripcionService = suscripcionService;
         _configuration = configuration;
     }
 
@@ -34,13 +37,23 @@ public class PagosController : ApiControllerBase
         return await reserva.MatchAsync(
             async r =>
             {
-                var result = await _mercadoPagoService.CreatePreferenceAsync(request.ReservaId.ToString(), r.MontoTotal, "Pago de reserva");
+                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", r.MontoTotal, "Pago de reserva");
                 return result.Match(
                     p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
                     errors => Problem(errors)
                 );
             },
             errors => Task.FromResult(Problem(errors))
+        );
+    }
+
+    [HttpPost("mercadopago/preferencia-suscripcion")]
+    public async Task<IActionResult> CrearPreferenciaSuscripcion([FromBody] CrearPreferenciaSuscripcionRequest request)
+    {
+        var result = await _mercadoPagoService.CreatePreferenceAsync($"SUSC_{request.ClienteId}_{request.SerieId}", 10000, "Suscripción Mensual");
+        return result.Match(
+            p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
+            errors => Problem(errors)
         );
     }
 
@@ -95,29 +108,52 @@ public class PagosController : ApiControllerBase
         // Always return Ok to MercadoPago to stop retries, even if payment is not approved or not found
         if (result.IsError || !result.Value.IsApproved) return Ok();
 
-        if (!Guid.TryParse(result.Value.ReservaId, out var reservaId))
+        var externalReference = result.Value.ExternalReference;
+        if (externalReference.StartsWith("RES_"))
         {
-            return BadRequest("Invalid ReservaId format");
+            var reservaIdString = externalReference.Substring(4);
+            if (!Guid.TryParse(reservaIdString, out var reservaId))
+            {
+                return BadRequest("Invalid ReservaId format");
+            }
+            
+            var reserva = await _reservaService.ObtenerReservaPorId(reservaId);
+            
+            return await reserva.MatchAsync(
+                async r =>
+                {
+                    var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, r.MontoTotal);
+                    var confirmResult = await _reservaService.ConfirmarPagoReservaAsync(pagoRequest, reservaId);
+                    
+                    return confirmResult.Match(
+                        _ => Ok(),
+                        errors => Problem(errors)
+                    );
+                },
+                errors => Task.FromResult(Problem(errors))
+            );
+        }
+        else if (externalReference.StartsWith("SUSC_"))
+        {
+            var parts = externalReference.Substring(5).Split('_');
+            if (parts.Length != 2 || !Guid.TryParse(parts[0], out var clienteId) || !Guid.TryParse(parts[1], out var serieId))
+            {
+                return BadRequest("Invalid Suscripcion format");
+            }
+            
+            var suscripcionResult = await _suscripcionService.SuscribirAsync(clienteId, serieId);
+            
+            return suscripcionResult.Match(
+                _ => Ok(),
+                errors => Problem(errors)
+            );
         }
         
-        var reserva = await _reservaService.ObtenerReservaPorId(reservaId);
-        
-        return await reserva.MatchAsync(
-            async r =>
-            {
-                var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, r.MontoTotal);
-                var confirmResult = await _reservaService.ConfirmarPagoReservaAsync(pagoRequest, reservaId);
-                
-                return confirmResult.Match(
-                    _ => Ok(),
-                    errors => Problem(errors)
-                );
-            },
-            errors => Task.FromResult(Problem(errors))
-        );
+        return BadRequest("Unknown external reference format");
     }
 }
 
 public record CrearPreferenciaRequest(Guid ReservaId);
+public record CrearPreferenciaSuscripcionRequest(Guid ClienteId, Guid SerieId);
 public record WebhookPayload(string Topic, string Action, string Type, WebhookData Data);
 public record WebhookData(string Id);
