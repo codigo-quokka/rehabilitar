@@ -84,6 +84,19 @@ export function ActividadesPage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!showReservasModal) return;
+    document.body.style.overflow = 'hidden';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowReservasModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handler);
+    };
+  }, [showReservasModal]);
+
   const handleVerReservas = async (actividad: Actividad) => {
     setReservasActNombre(actividad.nombre);
     setReservasLoading(true);
@@ -166,7 +179,17 @@ export function ActividadesPage() {
         ind.push(act);
       }
     }
-    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+    const sortByDate = (a: Actividad, b: Actividad) =>
+      new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime();
+    ind.sort(sortByDate);
+    for (const [, acts] of gruposMap) {
+      acts.sort(sortByDate);
+    }
+    const sortedGrupos = Array.from(gruposMap.entries()).sort(
+      ([, actsA], [, actsB]) =>
+        new Date(actsA[0].fechaYHora).getTime() - new Date(actsB[0].fechaYHora).getTime()
+    );
+    return { grupos: sortedGrupos, individuales: ind };
   }, [filteredActividades]);
 
   return (
@@ -432,7 +455,7 @@ export function ActividadesPage() {
       {showReservasModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center mb-6 relative">
               <button onClick={() => setShowReservasModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -500,7 +523,7 @@ export function ActividadesPage() {
   );
 }
 
-interface ActividadFormProps {
+export interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
   profesores: User[];
@@ -509,7 +532,7 @@ interface ActividadFormProps {
   onSuccess: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
+export function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
