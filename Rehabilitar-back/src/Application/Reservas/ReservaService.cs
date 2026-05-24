@@ -104,10 +104,27 @@ public class ReservaService : IReservaService
         // Reintentamos 3 veces si hay choque de versiones (concurrencia)
         for (int i = 0; i < 3; i++) {
             try {
+                var reserva = await _reservaRepo.GetByIdAsync(reservaId, ct);
+                if (reserva == null) return Error.NotFound("Reserva.NotFound", "Reserva no encontrada");
+
+                if (request.MetodoPago == MetodoPago.RehabiliCoins)
+                {
+                    var cliente = await _clienteRepo.GetByIdAsync(reserva.ClienteId, ct);
+                    if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado");
+                    
+                    if (cliente.RehabiliCoins <= 0)
+                        return Error.Validation("Cliente.SinRehabiliCoins", "No tiene RehabiliCoins suficientes.");
+                    
+                    cliente.CanjearRehabilicoin();
+                    _clienteRepo.Update(cliente);
+                }
+
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
                 
-                actividad.ProcesarPagoReserva(reservaId, request.Monto); // Lógica de dominio actualizada
+                decimal montoAPagar = request.MetodoPago == MetodoPago.RehabiliCoins ? actividad.Precio : request.Monto;
+                
+                actividad.ProcesarPagoReserva(reservaId, montoAPagar); // Lógica de dominio actualizada
                 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
                 return Result.Success;
