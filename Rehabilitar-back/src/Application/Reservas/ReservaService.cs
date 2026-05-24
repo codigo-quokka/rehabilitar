@@ -2,6 +2,7 @@ using Application.Reservas.DTOs;
 using ErrorOr;
 using Application.Actividades;
 using Application.Clientes;
+using Application.Suscripciones;
 using Application.Common.Interfaces;
 using Domain.Reservas;
 using Domain.Actividades;
@@ -16,14 +17,16 @@ public class ReservaService : IReservaService
     private readonly IReservaRepository _reservaRepo;
     private readonly IActividadRepository _actividadRepo;
     private readonly IClienteRepository _clienteRepo;
+    private readonly ISuscripcionService _suscripcionService;
     private readonly IUnitOfWork _uow;
 
     public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
-                        IClienteRepository clienteRepo, IUnitOfWork uow)
+                        IClienteRepository clienteRepo, ISuscripcionService suscripcionService, IUnitOfWork uow)
     {
         _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
         _clienteRepo = clienteRepo;
+        _suscripcionService = suscripcionService;
         _uow = uow;
     }
 
@@ -44,13 +47,16 @@ public class ReservaService : IReservaService
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
+                var suscripcion = await _suscripcionService.ObtenerSuscripcionActivaAsync(request.ClienteId, actividad.SerieId ?? Guid.Empty);
+                var tipoCliente = suscripcion != null ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
                 var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
                 if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
 
                 if (!cliente.AptoFisicoAprobado)
                     return Error.Forbidden("Reserva.AptoFisicoNoAprobado", "Debe tener apto físico aprobado");
 
-                Reserva reserva = actividad.IniciarReserva(cliente, request.TipoCliente);
+                Reserva reserva = actividad.IniciarReserva(cliente, tipoCliente);
                 _reservaRepo.Add(reserva);
 
                 await _uow.SaveChangesAsync(ct);
@@ -78,14 +84,15 @@ public class ReservaService : IReservaService
 
     public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
-        if (request.Actividades.Count() < 4 && request.TipoCliente == TipoCliente.Abonado)
-            return Error.Validation("Reserva.ActividadCountInvalid", "Se debe tener más de 4 actividades para reservar como abonado");
         foreach (Actividad a in request.Actividades)
         {
+            var suscripcion = await _suscripcionService.ObtenerSuscripcionActivaAsync(request.ClienteId, a.SerieId ?? Guid.Empty);
+            var tipoCliente = suscripcion != null ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
             ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
                 a.Id, 
                 request.ClienteId,
-                request.TipoCliente
+                tipoCliente
             );
             await ReservarActividadAsync(nuevaReserva, ct);
         }
