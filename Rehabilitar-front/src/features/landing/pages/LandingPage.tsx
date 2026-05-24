@@ -246,7 +246,7 @@ export const LandingPage = () => {
                 </li>
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />
-                  <span className="text-gray-700 dark:text-gray-300">Sistema de créditos y reintegros ante cancelaciones (con 48hs o 24hs de anticipación).</span>
+                  <span className="text-gray-700 dark:text-gray-300">Sistema de créditos y reintegros ante cancelaciones.</span>
                 </li>
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />

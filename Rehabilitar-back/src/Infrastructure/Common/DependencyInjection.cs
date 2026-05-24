@@ -1,4 +1,6 @@
 using System.Text;
+using System.Net.Http.Headers;
+using Application.AptosFisicos;
 using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Seeding;
@@ -21,6 +23,7 @@ using Resend;
 using Application.Profesores;
 using Infrastructure.Profesores;
 using Application.Clientes;
+using Infrastructure.Services;
 
 namespace Infrastructure.Common;
 
@@ -92,7 +95,14 @@ public static class DependencyInjection
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IReservaRepository, ReservaRepository>();
+        services.AddScoped<IAptoFisicoRepository, AptoFisicoRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
+        services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
+        {
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            client.BaseAddress = new Uri("https://api.mercadopago.com/");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration["MercadoPago:AccessToken"]);
+        });
 
         return services;
     }

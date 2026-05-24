@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Domain;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -17,7 +18,7 @@ public class JwtProvider : IJwtProvider
         _config = config;
     }
 
-    public string GenerateJwtToken(User user)
+    public string GenerateJwtToken(User user, IList<string> roles)
     {
         var jwtSettings = _config.GetSection("JwtSettings");
         var secretKey = jwtSettings["Secret"] ?? throw new Exception("JWT Secret not configured.");
@@ -30,6 +31,12 @@ public class JwtProvider : IJwtProvider
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        // Agregar roles como claims
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
