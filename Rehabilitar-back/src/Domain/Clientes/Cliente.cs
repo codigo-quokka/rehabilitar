@@ -11,6 +11,7 @@ public class Cliente
 
     public User User { get; private set; }
     public int RehabiliCoins {get; private set;}
+    public int CancelacionesConsecutivas { get; private set; }
     public SaldoAFavor SaldoAFavor { get; private set; }
     public bool AptoFisicoAprobado { get; private set;}
 
@@ -59,12 +60,12 @@ public class Cliente
 
     public void Reembolsar(decimal monto)
     {
-        SaldoAFavor.AgregarSaldo(monto);
+        SaldoAFavor = SaldoAFavor.AgregarSaldo(monto);
     }
 
     public void RegistrarPago(decimal monto)
     {
-        SaldoAFavor.RestarSaldo(monto);
+        SaldoAFavor = SaldoAFavor.RestarSaldo(monto);
     }
     
     public void AprobarAptoFisico()
@@ -75,5 +76,15 @@ public class Cliente
     public void RechazarAptoFisico()
     {
         AptoFisicoAprobado = false;
+    }
+
+    public void ResetearCancelaciones()
+    {
+        CancelacionesConsecutivas = 0;
+    }
+
+    public void RegistrarCancelacion()
+    {
+        CancelacionesConsecutivas++;
     }
 }
