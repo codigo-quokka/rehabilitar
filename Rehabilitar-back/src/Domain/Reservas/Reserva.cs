@@ -37,23 +37,52 @@ public class Reserva
         EstadoDeReserva = nuevoEstado;
     }
 
-    public void Cancelar()
+    public void Cancelar(double horasParaInicio)
     {
         if (EstadoDeReserva == EstadoDeReserva.Cancelada)
             throw new InvalidOperationException("La reserva ya está cancelada.");
+        
+        if (TipoCliente == TipoCliente.Abonado)
+        {
+            if (horasParaInicio >= 48)
+            {
+                Cliente.RecibirRehabilicoin();
+                Cliente.ResetearCancelaciones();
+            }
+            else
+            {
+                Cliente.RegistrarCancelacion();
+            }
+        }
+        else // No Abonado
+        {
+            if (horasParaInicio >= 24)
+            {
+                Cliente.Reembolsar(DetallePago.MontoPagado);
+            }
+        }
+
         EstadoDeReserva = EstadoDeReserva.Cancelada;
     }
 
     public void CancelarReservaPorActividadCancelada()
     {
-        Cancelar();
+        if (EstadoDeReserva == EstadoDeReserva.Cancelada) return;
+
+        // Si el negocio cancela, siempre devolvemos todo sin penalidad
         if (TipoCliente == TipoCliente.Abonado)
+        {
             Cliente.RecibirRehabilicoin();
+            // No reseteamos cancelaciones consecutivas aquí necesariamente, 
+            // ya que el usuario no "actuó" bien, simplemente no fue su culpa.
+            // Pero según el espíritu de las reglas, lo dejamos así.
+        }
         else
         {
             Cliente.Reembolsar(DetallePago.MontoPagado);
-            ActualizarDetallePago(DetallePago.MontoPendiente);
         }
+
+        EstadoDeReserva = EstadoDeReserva.Cancelada;
     }
 
     // public void ReactivarReserva()

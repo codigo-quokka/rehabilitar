@@ -103,6 +103,9 @@ public class Actividad
 	{
 		Version = Guid.NewGuid();
         var reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
+        
+        var horasParaInicio = (FechaYHora - DateTime.UtcNow).TotalHours;
+
         if (reserva.EstadoDeReserva == EstadoDeReserva.Activa)
 		{
 			//Reservas.Remove(reserva); lo maneja EFCore (creo)
@@ -113,7 +116,7 @@ public class Actividad
 		{
 			CupoEsperaOcupado--;
 		}
-		reserva.Cancelar();
+		reserva.Cancelar(horasParaInicio);
 		return reserva;
 	}
 	private bool BuscarYPromoverReservaEnEspera(TipoCliente tipoCliente)
