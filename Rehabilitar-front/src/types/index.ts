@@ -122,6 +122,12 @@ export interface ResetPasswordData {
   newPassword: string;
 }
 
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;
@@ -140,4 +146,20 @@ export interface Notification {
   timestamp: string;
   read: boolean;
   type?: 'success' | 'error' | 'info';
+}
+
+export type EstadoAptoFisico = 'Pendiente' | 'Aprobado' | 'Rechazado';
+
+export interface AptoFisico {
+  id: string;
+  clienteId: string;
+  clienteNombre?: string;
+  nombreArchivo: string;
+  contentType: string;
+  tamaño: number;
+  estado: EstadoAptoFisico;
+  fechaSubida: string;
+  fechaEvaluacion?: string;
+  evaluadoPorNombre?: string;
+  motivoRechazo?: string;
 }

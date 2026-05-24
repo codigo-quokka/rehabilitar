@@ -1,104 +1,106 @@
 using Application.Auth.DTOs;
 using Application.Common.Interfaces;
+using Application.Clientes;
 using Domain;
 using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
-using Domain.Exceptions;
-using Application.Clientes;
 using ErrorOr;
+using Application.Common.Settings;
 
 namespace Application.Auth;
 
 public class AuthService : IAuthService
 {
-    private readonly UserManager<User> _userManager; // esto sería como repo de users
-    private readonly IUnitOfWork _uow; // uow lo traigo para hacer lo que hacía dbcontext
+    private readonly UserManager<User> _userManager;
+    private readonly IUnitOfWork _uow;
     private readonly IClienteRepository _clienteRepo;
     private readonly IEmailService _emailService;
     private readonly IJwtProvider _jwt;
-
-    private const string Dominio = "localhost:5173";
+    private readonly FrontendSettings _frontendSettings;
 
     public AuthService(UserManager<User> userManager,
                         IClienteRepository clienteRepo,
                         IUnitOfWork uow,
                         IEmailService emailService,
-                        IJwtProvider jwt)
+                        IJwtProvider jwt,
+                        FrontendSettings frontendSettings)
     {
         _userManager = userManager;
         _clienteRepo = clienteRepo;
         _uow = uow;
         _emailService = emailService;
         _jwt = jwt;
+        _frontendSettings = frontendSettings;
     }
 
-    public async Task RegisterAsync(RegisterRequest request)
-
+    public async Task<ErrorOr<Success>> RegisterAsync(RegisterRequest request)
     {
         await _uow.BeginTransactionAsync();
-        
+
         try {
             var user = User.Create(
                 request.FirstName,
                 request.LastName,
-                // request.FechaNacimiento,
                 request.Email
-                // request.Dni,
-                // request.Telefono
             );
 
             var result = await _userManager.CreateAsync(user, request.Password);
-            Cliente c = CrearCliente(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
 
             if (!result.Succeeded)
             {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Error al registrar usuario: {errors}");
+                await _uow.RollbackTransactionAsync();
+                return result.Errors
+                    .Select(e => Error.Validation($"Identity.{e.Code}", e.Description))
+                    .ToList();
             }
 
             // Asignar rol de cliente registrado por defecto
             await _userManager.AddToRoleAsync(user, "Cliente Registrado");
 
+            Cliente c = CrearCliente(user.Id, request.FechaNacimiento, request.Dni, request.Telefono);
             _clienteRepo.Add(c);
-            await EnviarEmailDeVerificacion(user);
+
+            var emailResult = await EnviarEmailDeVerificacion(user);
+            if (emailResult.IsError)
+            {
+                await _uow.RollbackTransactionAsync();
+                return Error.Unexpected("Email.SendFailed", "No se pudo enviar el correo de verificación.");
+            }
 
             await _uow.SaveChangesAsync();
             await _uow.CommitTransactionAsync();
+
+            return Result.Success;
         }
         catch (Exception)
         {
             await _uow.RollbackTransactionAsync();
-            throw;
+            return Error.Failure("Auth.UnexpectedError", "Ocurrió un error inesperado durante el registro.");
         }
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<ErrorOr<AuthResponse>> LoginAsync(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
-            throw new Exception("Credenciales incorrectas.");
+            return Error.Unauthorized("Auth.InvalidCredentials", "Credenciales incorrectas.");
 
         if (!await _userManager.CheckPasswordAsync(user, request.Password))
-            throw new Exception("Credenciales incorrectas.");
+            return Error.Unauthorized("Auth.InvalidCredentials", "Credenciales incorrectas.");
 
         if (!user.EmailConfirmed)
-            throw new EmailNotVerifiedException("Email no confirmado.");
+            return Error.Forbidden(code: "Email.NotVerified", description: "Email no confirmado.");
 
         if (await _userManager.IsLockedOutAsync(user))
-            throw new DomainException("Usuario suspendido.");
+            return Error.Forbidden("User.Suspended", "Usuario suspendido.");
 
-        var token = _jwt.GenerateJwtToken(user);
-
-        // Obtener rol del usuario
         var roles = await _userManager.GetRolesAsync(user);
+        var token = _jwt.GenerateJwtToken(user, roles);
+
         var rol = roles.FirstOrDefault() ?? "Cliente Registrado";
 
-        // Datos extra del Cliente (DNI, fecha nac., teléfono) viven en otra tabla.
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
-            // .AsNoTracking()
-            // .FirstOrDefaultAsync(c => c.UserId == user.Id);
 
-        // Crear objeto UserResponse con los datos del usuario
         var userResponse = new UserResponse
         {
             Id = user.Id,
@@ -107,7 +109,6 @@ public class AuthService : IAuthService
             Apellido = user.LastName,
             Rol = rol,
             Activo = user.EmailConfirmed,
-            FechaAlta = DateTime.UtcNow,
             Telefono = cliente?.Telefono,
             FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
             Documento = cliente?.Dni.Valor
@@ -116,37 +117,44 @@ public class AuthService : IAuthService
         return new AuthResponse(token, userResponse);
     }
 
-
-    public async Task<bool> ResendVerificationEmailAsync(EmailRequest request)
-    {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null || user.EmailConfirmed)
-            return false;
-
-        await EnviarEmailDeVerificacion(user);
-
-        return true;
-    }
-
-    public async Task<bool> VerifyEmailAsync(VerifyEmailRequest request)
+    public async Task<ErrorOr<Success>> VerifyEmailAsync(VerifyEmailRequest request)
     {
         var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
-            throw new UserNotFoundException($"No se encontró al usuario con id {request.UserId}.");
+            return Error.NotFound("User.NotFound", "No se encontró al usuario.");
 
         if (user.EmailConfirmed)
-            throw new EmailAlreadyVerifiedException("El email del usuario ya se encuentra verificado.");
+            return Error.Conflict("Email.AlreadyVerified", "El email del usuario ya se encuentra verificado.");
 
         var result = await _userManager.ConfirmEmailAsync(user, request.ConfirmationToken);
-        return result.Succeeded;
+        if (!result.Succeeded)
+            return Error.Validation("Token.InvalidVerification", "El token de confirmación no es válido.");
+
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> ResendVerificationEmailAsync(EmailRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
+        if (user.EmailConfirmed)
+            return Error.Conflict("Email.AlreadyVerified", "El email ya se encuentra verificado.");
+
+        var result = await EnviarEmailDeVerificacion(user);
+        if (result.IsError)
+            return Error.Unexpected("Email.SendFailed", "No se pudo reenviar el correo de verificación.");
+
+        return Result.Success;
     }
 
     public async Task<ErrorOr<Success>> SendResetPasswordEmailAsync(EmailRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
-            return Error.NotFound("Usuario no encontrado.");
-        
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
         var result = await EnviarEmailDeResetPassword(user);
         return result;
     }
@@ -155,7 +163,7 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
-            return Error.NotFound("Usuario no encontrado.");
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
 
         if (await _userManager.CheckPasswordAsync(user, request.NewPassword))
             return Error.Validation("Password.SameAsOld", "La nueva contraseña no puede ser idéntica a la actual.");
@@ -163,38 +171,52 @@ public class AuthService : IAuthService
         var result = await _userManager.ResetPasswordAsync(user, request.PasswordResetToken, request.NewPassword);
         if (!result.Succeeded)
         {
-            var errors = result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+            var errors = result.Errors.Select(e => Error.Validation($"Identity.{e.Code}", e.Description)).ToList();
             return errors;
         }
         return Result.Success;
     }
 
-    // métodos privados para funcionalidades específicas:
+    public async Task<ErrorOr<Success>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
+        if (request.NewPassword != request.ConfirmNewPassword)
+            return Error.Validation("Passwords.NoMatch", "La nueva contraseña y la confirmación no coinciden.");
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.Select(e => Error.Validation($"Identity.{e.Code}", e.Description)).ToList();
+            return errors;
+        }
+        return Result.Success;
+    }
 
     private Cliente CrearCliente(Guid userId, DateOnly fechaNac, string dni, string? telefono = null)
     {
-        var dniObj = new Dni(dni); // crear el value object (dni validado). 
-        var c = Cliente.Create(userId, fechaNac, dniObj, telefono); // se manda a la factory.
+        var dniObj = new Dni(dni);
+        var c = Cliente.Create(userId, fechaNac, dniObj, telefono);
         return c;
     }
 
-    private async Task EnviarEmailDeVerificacion(User user)
+    private async Task<ErrorOr<Success>> EnviarEmailDeVerificacion(User user)
     {
         var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         string verificationLink =
-            $"http://{Dominio}/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
+            $"{_frontendSettings.BaseUrl}/email-verification?userId={user.Id}&confirmationToken={Uri.EscapeDataString(confirmationToken)}";
         var emailResult = await _emailService.SendConfirmationEmail(user.Email!, verificationLink);
-        if (emailResult.IsError)
-            throw new Exception("El usuario no pudo ser creado porque falló el envío del correo de verificación.");
+        return emailResult;
     }
 
     private async Task<ErrorOr<Success>> EnviarEmailDeResetPassword(User user)
     {
         var passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         string link =
-            $"http://{Dominio}/reset-password?userId={user.Id}&passwordResetToken={Uri.EscapeDataString(passwordResetToken)}";
+            $"{_frontendSettings.BaseUrl}/reset-password?userId={user.Id}&passwordResetToken={Uri.EscapeDataString(passwordResetToken)}";
         var emailResult = await _emailService.SendPasswordResetEmail(user.Email!, link);
-
         return emailResult;
     }
 }

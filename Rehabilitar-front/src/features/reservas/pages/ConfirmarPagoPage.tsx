@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Select } from '../../../components/ui';
-import { reservasApi, actividadesApi } from '../../../api';
-import { Actividad, Reserva } from '../../../types';
-import { Notitoast } from '../../../components/Notitoast';
+import { reservasApi, actividadesApi, apiClient } from '../../../api';
+import { Actividad } from '../../../types';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { MercadoFake } from '../../../components/MercadoFake';
 
 const metodoPagoOptions = [
@@ -30,11 +30,7 @@ export function ConfirmarPagoPage() {
   const [metodoPago, setMetodoPago] = useState('MercadoPago');
   const [loading, setLoading] = useState(false);
 
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
-
-  const [showMercadoFake, setShowMercadoFake] = useState(false);
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     if (!state) return;
@@ -67,9 +63,8 @@ export function ConfirmarPagoPage() {
   }
 
   const { montoTotal, montoPagado, montoPendiente } = state;
-  const nuevoTotalPagado = montoPagado + monto;
   const depositoMinimo = montoTotal / 2;
-  const confirmaReserva = montoPagado < depositoMinimo && nuevoTotalPagado >= depositoMinimo;
+  const confirmaReserva = montoPagado < depositoMinimo && (montoPagado + monto) >= depositoMinimo;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -98,19 +93,14 @@ export function ConfirmarPagoPage() {
       const completado = reservaActualizada.montoPendiente === 0;
 
       if (completado) {
-        setToastType('success');
-        setToastMessage('¡Pago completo! Tu reserva está totalmente saldada.');
+        addNotification('¡Pago completo! Tu reserva está totalmente saldada.', 'success');
       } else if (nuevoEstado === 'Activa') {
-        setToastType('success');
-        setToastMessage('¡Reserva confirmada! Tu lugar está asegurado.');
+        addNotification('¡Reserva confirmada! Tu lugar está asegurado.', 'success');
       } else if (nuevoEstado === 'EnEspera') {
-        setToastType('success');
-        setToastMessage('Pago registrado. Quedaste en lista de espera.');
+        addNotification('Pago registrado. Quedaste en lista de espera.', 'success');
       } else {
-        setToastType('success');
-        setToastMessage('Pago registrado correctamente.');
+        addNotification('Pago registrado correctamente.', 'success');
       }
-      setShowToast(true);
 
       setTimeout(() => {
         navigate('/reservas', { replace: true });
@@ -118,59 +108,33 @@ export function ConfirmarPagoPage() {
     } catch (err) {
       const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
       const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al procesar el pago';
-      setToastType('error');
-      setToastMessage(msg);
-      setShowToast(true);
+      addNotification(msg, 'error');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleMercadoFakeSuccess = (reservaActualizada: Reserva) => {
-    setShowMercadoFake(false);
-    const completado = reservaActualizada.montoPendiente === 0;
-
-    if (completado) {
-      setToastType('success');
-      setToastMessage('¡Pago completo! Tu reserva está totalmente saldada.');
-    } else if (reservaActualizada.estadoDeReserva === 'Activa') {
-      setToastType('success');
-      setToastMessage('¡Reserva confirmada! Tu lugar está asegurado.');
-    } else if (reservaActualizada.estadoDeReserva === 'EnEspera') {
-      setToastType('success');
-      setToastMessage('Pago registrado. Quedaste en lista de espera.');
-    } else {
-      setToastType('success');
-      setToastMessage('Pago registrado correctamente.');
-    }
-    setShowToast(true);
-
-    setTimeout(() => {
-      navigate('/reservas', { replace: true });
-    }, 1500);
-  };
-
-  const handleMercadoPagoRedirect = () => {
-    if (monto < montoMinimoMP) {
-      setToastType('error');
-      setToastMessage('El monto mínimo para pagar con Mercado Pago es el 50% del valor de la actividad.');
-      setShowToast(true);
-      return;
-    }
-    if (monto > montoPendiente) {
-      setToastType('error');
-      setToastMessage('El monto no puede exceder el saldo pendiente');
-      setShowToast(true);
-      return;
-    }
-    setShowMercadoFake(true);
   };
 
   const handleRealizarPago = async () => {
     const amountToPay = esMercadoPago ? monto : montoPendiente;
 
     if (esMercadoPago) {
-      handleMercadoPagoRedirect();
+      if (monto < montoMinimoMP) {
+        addNotification('El monto mínimo para pagar con Mercado Pago es el 50% del valor de la actividad.', 'error');
+        return;
+      }
+      if (monto > montoPendiente) {
+        addNotification('El monto no puede exceder el saldo pendiente', 'error');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await apiClient.post('/pagos/mercadopago/preferencia', { reservaId });
+        window.location.href = response.data.initPoint;
+      } catch (err) {
+        addNotification('Error al iniciar el pago con Mercado Pago', 'error');
+        setLoading(false);
+      }
       return;
     }
 
@@ -286,35 +250,20 @@ export function ConfirmarPagoPage() {
             disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
             onClick={handleRealizarPago}
           >
-            Realizar Pago
+            {esMercadoPago ? 'Ir a Mercado Pago' : 'Realizar Pago'}
+          </Button>
+          <Button
+            hidden={!esMercadoPago}
+            variant="primary"
+            className="flex-1"
+            loading={loading}
+            disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
+            // onClick={}
+          >
+            {'Ejecutar MercadoFake (no implementado)'}
           </Button>
         </div>
       </div>
-
-      <MercadoFake
-        isOpen={showMercadoFake}
-        onClose={() => setShowMercadoFake(false)}
-        amount={monto}
-        reservaId={reservaId!}
-        actividadId={state.actividadId}
-        metodoPago={metodoPago}
-        onSuccess={handleMercadoFakeSuccess}
-        onError={(msg) => {
-          setShowMercadoFake(false);
-          setToastType('error');
-          setToastMessage(msg);
-          setShowToast(true);
-        }}
-        activityName={actividad?.nombre}
-      />
-
-      {showToast && (
-        <Notitoast
-          type={toastType}
-          message={toastMessage}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </MainLayout>
   );
 }

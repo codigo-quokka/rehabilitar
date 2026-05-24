@@ -39,7 +39,7 @@ export function LoginPage() {
       await login(email, password);
       navigate("/dashboard");
     } catch (err: any) {
-      if (err.response?.data?.errorCode === "EMAIL_NOT_VERIFIED") {
+      if (err.response?.data?.errorCode === "Email.NotVerified") {
         setUnverifiedEmail(email);
         setToastType("error");
         setToastMessage(

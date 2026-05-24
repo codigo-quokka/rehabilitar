@@ -8,6 +8,8 @@ namespace API.Controllers
     {
         protected IActionResult Problem(List<Error> errors)
         {
+            if (errors.Count is 0) return Ok();
+
             var primerError = errors.First();
 
             var statusCode = primerError.Type switch
@@ -21,10 +23,16 @@ namespace API.Controllers
                 _ => StatusCodes.Status500InternalServerError
             };
 
+            var fieldErrors = errors
+                .Where(e => e.Type == ErrorType.Validation)
+                .GroupBy(e => e.Code)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray());
+
             return StatusCode(statusCode, new
             {
                 Error = primerError.Description,
-                ErrorCode = primerError.Code
+                ErrorCode = primerError.Type != ErrorType.Validation ? primerError.Code : null,
+                FieldErrors = fieldErrors
             });
         }
     }

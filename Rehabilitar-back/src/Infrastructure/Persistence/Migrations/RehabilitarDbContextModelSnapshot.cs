@@ -77,6 +77,59 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Actividades", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.AptosFisicos.AptoFisico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Archivo")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("EvaluadoPor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaEvaluacion")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaSubida")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MotivoRechazo")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Tamaño")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EvaluadoPor");
+
+                    b.ToTable("AptosFisicos", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -390,6 +443,24 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Profesor");
 
                     b.Navigation("Sala");
+                });
+
+            modelBuilder.Entity("Domain.AptosFisicos.AptoFisico", b =>
+                {
+                    b.HasOne("Domain.Clientes.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.User", "Evaluador")
+                        .WithMany()
+                        .HasForeignKey("EvaluadoPor")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Evaluador");
                 });
 
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>

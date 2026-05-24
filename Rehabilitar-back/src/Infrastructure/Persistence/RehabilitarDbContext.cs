@@ -4,6 +4,7 @@ using Domain.Reservas;
 using Domain.Clientes;
 using Domain.Profesores;
 using Domain.Actividades;
+using Domain.AptosFisicos;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Profesor> Profesores { get; set; }
     public DbSet<Sala> Salas { get; set; }
     public DbSet<Actividad> Actividades { get; set; }
+    public DbSet<AptoFisico> AptosFisicos { get; set; }
 
     public RehabilitarDbContext(DbContextOptions<RehabilitarDbContext> options) : base(options) { }
 
@@ -108,6 +110,30 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
         {
            entity.ToTable("Salas");
            entity.HasIndex(s => s.Nombre).IsUnique();
+        });
+
+        builder.Entity<AptoFisico>(entity =>
+        {
+            entity.ToTable("AptosFisicos");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Archivo).HasColumnType("BLOB");
+            entity.Property(a => a.NombreArchivo).HasMaxLength(255).IsRequired();
+            entity.Property(a => a.ContentType).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.MotivoRechazo).HasMaxLength(500);
+            entity.Property(a => a.Estado)
+                  .HasConversion<string>()
+                  .HasMaxLength(20)
+                  .IsRequired();
+            
+            entity.HasOne(a => a.Cliente)
+                  .WithMany()
+                  .HasForeignKey(a => a.ClienteId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  
+            entity.HasOne(a => a.Evaluador)
+                  .WithMany()
+                  .HasForeignKey(a => a.EvaluadoPor)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

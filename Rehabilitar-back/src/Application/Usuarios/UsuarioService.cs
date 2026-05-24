@@ -66,7 +66,7 @@ public class UsuarioService : IUsuarioService
     {
         var user = User.Create(request.Nombre, request.Apellido, request.Email);
 
-        var password = request.Password ?? GenerateRandomPassword();
+        var password = GenerateRandomPassword();
         var result = await _userManager.CreateAsync(user, password);
 
         if (!result.Succeeded)

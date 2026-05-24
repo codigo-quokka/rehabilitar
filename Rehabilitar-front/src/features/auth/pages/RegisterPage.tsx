@@ -9,7 +9,7 @@ import {
 } from "../../../components/InformRequirements";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
-import { useNotifications } from "../../../hooks/useNotifications";
+import { useNotifications } from "../../../hooks/useNotifications"; // Import useNotifications
 import logo from "../../../assets/logo.png";
 import axios from "axios";
 import { DniScanner } from "../components/DniScanner";
@@ -30,7 +30,8 @@ const dniReqs: Requirement[] = [
 ];
 
 export function RegisterPage() {
-  const [phase, setPhase] = useState<'scan' | 'form'>('scan');
+  // const [phase, setPhase] = useState<'scan' | 'form'>('form');
+  const [phase, setPhase] = useState<'scan' | 'form' | 'success'>('form');
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -51,7 +52,6 @@ export function RegisterPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
-  const { addNotification } = useNotifications();
   const MIN_PASSWORD_LENGTH = 8;
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
@@ -92,15 +92,8 @@ export function RegisterPage() {
       navigate("/dashboard", { replace: true });
       return;
     }
-
-    if (registrationSuccess) {
-      const timer = setTimeout(() => {
-        navigate("/login");
-      }, 4300);
-      return () => clearTimeout(timer);
-    }
     return undefined;
-  }, [isAuthenticated, registrationSuccess, navigate]);
+  }, [isAuthenticated, navigate]); // Removed registrationSuccess
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -126,7 +119,14 @@ export function RegisterPage() {
     setFormData({ ...formData, dni: newValue.slice(0, MAX_DNI_LENGTH) });
   };
 
-  const handleScanComplete = (data: any) => {
+interface ScannedDniData {
+  firstName?: string;
+  lastName?: string;
+  dniNumber?: string;
+  fechaNacimiento?: string;
+}
+
+  const handleScanComplete = (data: ScannedDniData) => {
     setFormData(prev => ({
       ...prev,
       firstName: data.firstName || prev.firstName,
@@ -138,7 +138,6 @@ export function RegisterPage() {
     setToastType("success");
     setToastMessage("Datos leídos correctamente.");
     setShowToast(true);
-    addNotification("DNI leído exitosamente. Verificá que los datos sean correctos.", "success");
     setPhase('form');
   };
 
@@ -153,7 +152,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -162,7 +160,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[A-Z]/.test(formData.password)) {
@@ -170,7 +167,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[a-z]/.test(formData.password)) {
@@ -178,7 +174,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[0-9]/.test(formData.password)) {
@@ -186,7 +181,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
     if (!/[^a-zA-Z0-9]/.test(formData.password)) {
@@ -194,7 +188,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -203,7 +196,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       return;
     }
 
@@ -224,7 +216,6 @@ export function RegisterPage() {
         setToastType("error");
         setToastMessage(msg);
         setShowToast(true);
-        addNotification(msg, "error");
         return;
       }
     }
@@ -241,13 +232,7 @@ export function RegisterPage() {
         fechaNacimiento: formData.fechaNacimiento,
         telefono: formData.telefono || undefined,
       });
-      const msg =
-        "¡Éxito! Revisa tu correo para poder inciar sesión por primera vez. \nRedirigiendo...";
-      setRegistrationSuccess(true);
-      setToastType("success");
-      setToastMessage(msg);
-      setShowToast(true);
-      addNotification(msg, "success");
+      setPhase('success');
     } catch (err: unknown) {
       let msg = "Error al registrar usuario. Intenta de nuevo.";
 
@@ -263,7 +248,6 @@ export function RegisterPage() {
       setToastType("error");
       setToastMessage(msg);
       setShowToast(true);
-      addNotification(msg, "error");
       setError(msg);
     } finally {
       setLoading(false);
@@ -299,6 +283,33 @@ export function RegisterPage() {
                   onScanComplete={handleScanComplete} 
                   onManualEntry={() => setPhase('form')} 
                 />
+              ) : phase === 'success' ? (
+                <div className="text-center space-y-6 animate-in fade-in duration-300">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-20 h-20 text-green-500 mx-auto"
+                    aria-hidden="true" // Added aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <h2 className="text-2xl font-semibold text-dark dark:text-gray-100">
+                    ¡Registro exitoso!
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Hemos enviado un correo electrónico a la dirección proporcionada. Por favor, verificá tu bandeja de entrada (y la carpeta de spam) para activar tu cuenta y poder iniciar sesión.
+                  </p>
+                  <Link to="/login">
+                    <Button className="w-full py-3 text-base">
+                      Ir al inicio de sesión
+                    </Button>
+                  </Link>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in duration-300">
                   <div className="grid grid-cols-2 gap-4">
@@ -336,7 +347,11 @@ export function RegisterPage() {
                     name="telefono"
                     value={formData.telefono}
                     onChange={handleChange}
+                    onKeyDown={handleDniKeyDown} // funca igual es para números :P
                     placeholder="+54 221 123 4567"
+                    minLength={12} // que sea un teléfono válido o nada.
+                    // se podría mejorar haciendo el temita de separar código de país y area.
+                    maxLength={12}
                   />
 
                   <div className="grid grid-cols-2 gap-4">
