@@ -1,3 +1,4 @@
+using Application.Suscripciones;
 using Moq;
 using FluentAssertions;
 using Application.Reservas;
@@ -20,6 +21,7 @@ public class ReservaServiceTests
     private readonly Mock<IReservaRepository> _reservaRepoMock;
     private readonly Mock<IActividadRepository> _actividadRepoMock;
     private readonly Mock<IClienteRepository> _clienteRepoMock;
+    private readonly Mock<ISuscripcionService> _suscripcionServiceMock;
     private readonly Mock<IUnitOfWork> _uowMock;
     private readonly ReservaService _sut;
 
@@ -28,12 +30,14 @@ public class ReservaServiceTests
         _reservaRepoMock = new Mock<IReservaRepository>();
         _actividadRepoMock = new Mock<IActividadRepository>();
         _clienteRepoMock = new Mock<IClienteRepository>();
+        _suscripcionServiceMock = new Mock<ISuscripcionService>();
         _uowMock = new Mock<IUnitOfWork>();
 
         _sut = new ReservaService(
             _reservaRepoMock.Object,
             _actividadRepoMock.Object,
             _clienteRepoMock.Object,
+            _suscripcionServiceMock.Object,
             _uowMock.Object);
     }
 
@@ -62,6 +66,9 @@ public class ReservaServiceTests
         
         _clienteRepoMock.Setup(x => x.GetByIdAsync(clienteId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(cliente);
+
+        _suscripcionServiceMock.Setup(x => x.ObtenerSuscripcionActivaAsync(clienteId, It.IsAny<Guid>()))
+            .ReturnsAsync((SuscripcionAbonado?)null);
 
         // Act
         var result = await _sut.ReservarActividadAsync(request);
@@ -101,6 +108,9 @@ public class ReservaServiceTests
 
         _clienteRepoMock.Setup(x => x.GetByIdAsync(clienteId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(cliente);
+
+        _suscripcionServiceMock.Setup(x => x.ObtenerSuscripcionActivaAsync(clienteId, It.IsAny<Guid>()))
+            .ReturnsAsync((SuscripcionAbonado?)null);
 
         // La reserva que se crea
         _reservaRepoMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
