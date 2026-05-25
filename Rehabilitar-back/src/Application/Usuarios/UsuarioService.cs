@@ -207,22 +207,6 @@ public class UsuarioService : IUsuarioService
         return Result.Success;
     }
 
-    public async Task<ErrorOr<Success>> SolicitarReactivacionAsync(Guid id)
-    {
-        var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null)
-            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
-
-        user.SolicitarReactivacion();
-        var result = await _userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-        {
-            return Error.Validation("Usuario.SolicitudReactivacionFallida", string.Join(", ", result.Errors.Select(e => e.Description)));
-        }
-        
-        return Result.Success;
-    }
-
     private async Task<UsuarioResponse> MapToResponse(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);

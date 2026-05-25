@@ -13,5 +13,4 @@ public interface IUsuarioService
     Task<ErrorOr<Success>> DeleteAsync(Guid id);
     Task<ErrorOr<Success>> SuspenderAsync(Guid id);
     Task<ErrorOr<Success>> ReactivarAsync(Guid id);
-    Task<ErrorOr<Success>> SolicitarReactivacionAsync(Guid id);
 }
