@@ -141,6 +141,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("CancelacionesConsecutivas")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("DescuentoProximaReserva")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Dni")
                         .IsRequired()
                         .HasMaxLength(8)
