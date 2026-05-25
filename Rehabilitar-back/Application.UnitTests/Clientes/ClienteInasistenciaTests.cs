@@ -30,7 +30,7 @@ public class ClienteInasistenciaTests
     public void RegistrarInasistencia_CuandoLlegaATres_DebeSuspenderUsuario()
     {
         // Arrange
-        var user = User.Create("Pelo", "Hassan", "pelo@gmail.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
+        var user = User.Create("Pelo", "Hassan", "pelo@gmail.com");
         var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
         typeof(Cliente).GetProperty("User")?.SetValue(cliente, user);
         typeof(Cliente).GetProperty("InasistenciasConsecutivas")?.SetValue(cliente, 2);

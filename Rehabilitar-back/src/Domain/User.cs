@@ -73,4 +73,16 @@ public class User : IdentityUser<Guid>
             throw new DomainException("Debe ser mayor de edad para registrarse en el sitio.");
         }
     }
+
+    public void Suspender()
+    {
+        LockoutEnabled = true;
+        LockoutEnd = DateTimeOffset.MaxValue;
+    }
+
+    public void Reactivar()
+    {
+        LockoutEnabled = false;
+        LockoutEnd = null;
+    }
 }
