@@ -36,4 +36,13 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
         .AsNoTracking()
         .ToListAsync();
     }
+
+    public async Task<bool> TieneReservaActivaConDescuentoAsync(Guid clienteId, Guid reservaIdAExcluir, CancellationToken ct = default)
+    {
+        return await _context.Reservas
+            .AnyAsync(r => r.ClienteId == clienteId 
+                        && r.Id != reservaIdAExcluir 
+                        && r.PorcentajeDescuentoAplicado > 0 
+                        && r.EstadoDeReserva == Domain.Enums.EstadoDeReserva.PendienteDePago, ct);
+    }
 }

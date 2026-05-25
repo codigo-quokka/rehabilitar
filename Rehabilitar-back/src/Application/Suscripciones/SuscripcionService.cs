@@ -1,4 +1,5 @@
 using Application.Clientes;
+using Application.Common.Interfaces;
 using Domain.Clientes;
 using ErrorOr;
 
@@ -7,14 +8,28 @@ namespace Application.Suscripciones;
 public class SuscripcionService : ISuscripcionService
 {
     private readonly ISuscripcionRepository _suscripcionRepository;
+    private readonly IClienteRepository _clienteRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public SuscripcionService(ISuscripcionRepository suscripcionRepository)
+    public SuscripcionService(ISuscripcionRepository suscripcionRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork)
     {
         _suscripcionRepository = suscripcionRepository;
+        _clienteRepository = clienteRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ErrorOr<SuscripcionAbonado>> SuscribirAsync(Guid clienteId, Guid serieId)
     {
+        var cliente = await _clienteRepository.GetByIdAsync(clienteId);
+        if (cliente == null)
+        {
+            return Error.NotFound("Cliente no encontrado.");
+        }
+        if (!cliente.AptoFisicoAprobado)
+        {
+            return Error.Forbidden("Suscripcion.AptoFisicoRequerido", "Debe tener el apto físico aprobado para suscribirse.");
+        }
+
         var suscripcionExistente = await _suscripcionRepository.GetActivaAsync(clienteId, serieId);
         if (suscripcionExistente != null)
         {
