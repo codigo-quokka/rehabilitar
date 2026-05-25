@@ -24,4 +24,7 @@ public interface IActividadService
     
     Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
     Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default);
+    Task<ErrorOr<Success>> IniciarActividadAsync(Guid id, CancellationToken ct = default);
+    Task<ErrorOr<Success>> FinalizarActividadAsync(Guid id, CancellationToken ct = default);
+    Task<ErrorOr<Success>> RegistrarAsistenciaPorDniAsync(Guid actividadId, string dni, CancellationToken ct = default);
 }

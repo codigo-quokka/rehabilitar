@@ -23,6 +23,8 @@ public class Actividad
 	public int CupoOcupado { get; private set;}
 	public int CupoEsperaOcupado { get; private set; }
 	public int CupoDisponible => CupoMaximo - CupoOcupado;
+	public bool ProbabilidadListaEspera => 
+		CupoMaximo > 0 && (CupoOcupado + Reservas.Count(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago)) >= CupoMaximo;
 	public decimal Precio { get; private set; }
 
 	public Guid SalaId { get; private set; }
@@ -31,7 +33,8 @@ public class Actividad
 
 	public Sala Sala { get; private set; }
 	public Profesor? Profesor { get; private set; }
-	public ICollection<Reserva> Reservas { get; private set; } = new List<Reserva>();
+	private readonly List<Reserva> _reservas = new();
+	public ICollection<Reserva> Reservas => _reservas;
 
 
 #nullable disable
@@ -64,7 +67,36 @@ public class Actividad
         SerieId = (frecuencia == FrecuenciaActividad.Recurrente) ? serieId : null; // Para manejar actividades que forman parte de una serie (solo d tipo recurrente)
 		CupoOcupado = 0;
 		CupoEsperaOcupado = 0;
-		Reservas = new List<Reserva>();
+	}
+
+	public void IniciarClase()
+	{
+		Estado = EstadoActividad.EnCurso;
+
+		foreach (var reserva in Reservas.Where(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago))
+		{
+			reserva.CancelarReservaPorActividadCancelada();
+		}
+
+		foreach (var reserva in Reservas.Where(r => r.EstadoDeReserva == EstadoDeReserva.EnEspera))
+		{
+			reserva.CancelarReservaPorActividadCancelada();
+		}
+	}
+
+	public void FinalizarClase(IEnumerable<Cliente> clientes)
+	{
+		Estado = EstadoActividad.Finalizada;
+
+		foreach (var reserva in Reservas.Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa && r.Asistencia == EstadoAsistencia.Pendiente))
+		{
+			reserva.MarcarAusente();
+			var cliente = clientes.FirstOrDefault(c => c.UserId == reserva.ClienteId);
+			if (cliente != null)
+			{
+				cliente.RegistrarCancelacion();
+			}
+		}
 	}
 
 	public Reserva IniciarReserva(Cliente cliente, TipoCliente tipoCliente)
