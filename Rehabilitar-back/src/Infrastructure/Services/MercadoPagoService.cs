@@ -20,7 +20,7 @@ public class MercadoPagoService : IMercadoPagoService
         _logger = logger;
     }
 
-    public async Task<ErrorOr<(string PreferenceId, string InitPoint)>> CreatePreferenceAsync(string reservaId, decimal amount, string description)
+    public async Task<ErrorOr<(string PreferenceId, string InitPoint)>> CreatePreferenceAsync(string externalReference, decimal amount, string description)
     {
         // meto este fix de no http para poder usarlo en localhost y que mercadopago no rompa los huevos
         // si no se configura se harcodea el localhost:5173
@@ -37,7 +37,7 @@ public class MercadoPagoService : IMercadoPagoService
                     unit_price = amount
                 }
             },
-            external_reference = reservaId,
+            external_reference = externalReference,
             back_urls = new
             {
                 success = $"{frontendUrl}/reservas/pago/exito",
@@ -63,7 +63,7 @@ public class MercadoPagoService : IMercadoPagoService
         return (result.id, result.init_point);
     }
 
-    public async Task<ErrorOr<(bool IsApproved, string ReservaId)>> GetPaymentStatusAsync(string paymentId)
+    public async Task<ErrorOr<(bool IsApproved, string ExternalReference)>> GetPaymentStatusAsync(string paymentId)
     {
         var response = await _httpClient.GetAsync($"v1/payments/{paymentId}");
         if (!response.IsSuccessStatusCode)

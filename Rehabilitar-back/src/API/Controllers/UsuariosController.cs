@@ -7,7 +7,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsuariosController : ControllerBase
+public class UsuariosController : ApiControllerBase
 {
     private readonly IUsuarioService _usuarioService;
 
@@ -36,86 +36,50 @@ public class UsuariosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CrearUsuarioRequest request)
     {
-        try
-        {
-            var usuario = await _usuarioService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = usuario.Id }, usuario);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        var result = await _usuarioService.CreateAsync(request);
+        return result.Match(
+            usuario => CreatedAtAction(nameof(GetById), new { id = usuario.Id }, usuario),
+            errors => Problem(errors)
+        );
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] EditarUsuarioRequest request)
     {
-        try
-        {
-            var usuario = await _usuarioService.UpdateAsync(id, request);
-            return Ok(usuario);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Usuario no encontrado." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        var result = await _usuarioService.UpdateAsync(id, request);
+        return result.Match(
+            usuario => Ok(usuario),
+            errors => Problem(errors)
+        );
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            await _usuarioService.DeleteAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Usuario no encontrado." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        var result = await _usuarioService.DeleteAsync(id);
+        return result.Match(
+            _ => NoContent(),
+            errors => Problem(errors)
+        );
     }
 
     [HttpPut("{id:guid}/suspender")]
     public async Task<IActionResult> Suspender(Guid id)
     {
-        try
-        {
-            await _usuarioService.SuspenderAsync(id);
-            return Ok(new { Message = "Usuario suspendido exitosamente." });
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Usuario no encontrado." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        var result = await _usuarioService.SuspenderAsync(id);
+        return result.Match(
+            _ => Ok(new { Message = "Usuario suspendido exitosamente." }),
+            errors => Problem(errors)
+        );
     }
 
     [HttpPut("{id:guid}/reactivar")]
     public async Task<IActionResult> Reactivar(Guid id)
     {
-        try
-        {
-            await _usuarioService.ReactivarAsync(id);
-            return Ok(new { Message = "Usuario reactivado exitosamente." });
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { Error = "Usuario no encontrado." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        var result = await _usuarioService.ReactivarAsync(id);
+        return result.Match(
+            _ => Ok(new { Message = "Usuario reactivado exitosamente." }),
+            errors => Problem(errors)
+        );
     }
 }

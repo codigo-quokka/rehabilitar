@@ -140,7 +140,6 @@ public class EmailService : IEmailService
 
     private static string BuildBaseHtml(string content)
     {
-        // Todos los estilos CSS se mantienen intactos acá
         return $@"
             <!DOCTYPE html>
             <html>

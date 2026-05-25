@@ -54,9 +54,10 @@ public class ProfesorService : IProfesorService
                 actividad.CupoDisponible,
                 actividad.SalaId,
                 nombreSala,
-                actividad.ProfesorId ?? Guid.Empty,
+                actividad.ProfesorId,
                 nombreProfesor,
-                actividad.SerieId ?? Guid.Empty
+                actividad.SerieId,
+                actividad.ProbabilidadListaEspera
             ));
         }
 
