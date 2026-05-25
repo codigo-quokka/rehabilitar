@@ -114,4 +114,34 @@ public class ActividadesController : ApiControllerBase
             errores => Problem(errores)
         );
     }
+
+    [HttpPost("{id:guid}/iniciar")]
+    public async Task<IActionResult> Iniciar(Guid id, CancellationToken ct)
+    {
+        var result = await _actividadService.IniciarActividadAsync(id, ct);
+        return result.Match(
+            _ => Ok(),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPost("{id:guid}/finalizar")]
+    public async Task<IActionResult> Finalizar(Guid id, CancellationToken ct)
+    {
+        var result = await _actividadService.FinalizarActividadAsync(id, ct);
+        return result.Match(
+            _ => Ok(),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPost("{id:guid}/asistencia")]
+    public async Task<IActionResult> RegistrarAsistencia(Guid id, [FromBody] RegistrarAsistenciaRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.RegistrarAsistenciaPorDniAsync(id, request.Dni, ct);
+        return result.Match(
+            _ => Ok(),
+            errores => Problem(errores)
+        );
+    }
 }
