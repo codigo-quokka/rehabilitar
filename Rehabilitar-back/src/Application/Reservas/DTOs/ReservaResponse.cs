@@ -12,5 +12,8 @@ public record ReservaResponse(
     TipoCliente TipoCliente,
     EstadoDeReserva EstadoDeReserva,
     decimal MontoTotal, 
-    decimal MontoPendiente
+    decimal MontoPendiente,
+    decimal MontoDescuento,
+    decimal PorcentajeDescuentoAplicado,
+    bool ProbabilidadListaEspera
     );

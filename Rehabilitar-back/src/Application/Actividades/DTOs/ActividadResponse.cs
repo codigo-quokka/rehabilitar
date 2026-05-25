@@ -17,5 +17,6 @@ public record ActividadResponse(
     string SalaNombre,
     Guid? ProfesorId,
     string? ProfesorNombre,
-    Guid? SerieId
+    Guid? SerieId,
+    bool ProbabilidadListaEspera
 );
