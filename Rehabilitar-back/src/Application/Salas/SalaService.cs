@@ -38,7 +38,7 @@ public class SalaService : ISalaService
         if (request.Nombre != null)
         {
             if (await _repo.ExisteSalaConNombre(request.Nombre, sala.Id)) // se envía el id de la sala a modificar para excluirla de la query.
-                return Error.Conflict($"Ya existe una sala con el nombre \"{request.Nombre}\"");
+                return Error.Conflict("Sala.NombreDuplicado", $"Ya existe una sala con el nombre \"{request.Nombre}\"");
             sala.CambiarNombre(request.Nombre);
         }
         if (request.Capacidad.HasValue)
