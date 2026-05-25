@@ -278,7 +278,6 @@ public class ActividadService : IActividadService
         if (reserva == null) return Error.NotFound("Reserva no encontrada");
 
         reserva.MarcarAsistencia();
-        cliente.ResetearInasistencias();
         await _uow.SaveChangesAsync(ct);
         return Result.Success;
     }
