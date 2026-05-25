@@ -5,5 +5,5 @@ namespace Application.Salas;
 
 public interface ISalaRepository : IRepositoryBase<Sala>
 {
-    Task<bool> ExisteSalaConNombre(string nombre, Guid? idExcluido = null);
+    Task<bool> ExisteSalaConNombre(string nombre, Guid? idExcluido = null, CancellationToken ct = default);
 }
