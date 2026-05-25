@@ -141,6 +141,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<int>("CancelacionesConsecutivas")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("DescuentoProximaReserva")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Dni")
                         .IsRequired()
                         .HasMaxLength(8)
@@ -149,6 +152,9 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("InasistenciasConsecutivas")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("RehabiliCoins")
                         .HasColumnType("INTEGER");
@@ -222,6 +228,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeDescuentoAplicado")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TipoCliente")
@@ -566,6 +575,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.OwnsOne("Domain.Reservas.DetallePago", "DetallePago", b1 =>
                         {
                             b1.Property<Guid>("ReservaId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<decimal>("MontoDescuento")
                                 .HasColumnType("TEXT");
 
                             b1.Property<decimal>("MontoPagado")
