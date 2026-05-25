@@ -94,7 +94,7 @@ public class Actividad
 			var cliente = clientes.FirstOrDefault(c => c.UserId == reserva.ClienteId);
 			if (cliente != null)
 			{
-				cliente.RegistrarCancelacion();
+				cliente.RegistrarInasistencia();
 			}
 		}
 	}
