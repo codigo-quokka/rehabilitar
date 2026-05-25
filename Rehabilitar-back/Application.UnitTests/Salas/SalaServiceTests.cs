@@ -83,7 +83,11 @@ public class SalaServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var sala = Sala.Create("Sala 1", 20, "Descripcion");
+        // Usamos reflexión para crear la sala con el ID específico y que coincida con el mock
+        var sala = (Sala)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Sala));
+        typeof(Sala).GetProperty("Id")?.SetValue(sala, id);
+        typeof(Sala).GetProperty("Nombre")?.SetValue(sala, "Sala 1");
+        
         var request = new EditarSalaRequest("Sala 2", 30, "Nueva Descripcion", true);
         
         _salaRepoMock.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
