@@ -159,7 +159,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("ClienteId")?.SetValue(reserva, clienteId);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -197,7 +197,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("DetallePago")?.SetValue(reserva, new DetallePago(1000m, 0));
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -231,7 +231,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("EstadoDeReserva")?.SetValue(reserva, EstadoDeReserva.Activa);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -273,7 +273,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -313,7 +313,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -352,7 +352,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -390,7 +390,7 @@ public class ReservaServiceTests
         typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
 
         var reservas = new List<Reserva> { reserva };
-        typeof(Actividad).GetProperty("Reservas")?.SetValue(actividad, reservas);
+        typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
 
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(actividad);
@@ -402,5 +402,116 @@ public class ReservaServiceTests
         reserva.EstadoDeReserva.Should().Be(EstadoDeReserva.Cancelada);
         cliente.SaldoAFavor.MontoTotal.Should().Be(0m, "No debe reembolsar la seña al cancelar con < 24hs");
         }
+
+        [Fact]
+        public async Task CancelarReservaAsync_AbonadoMenosDe48hs_PrimeraVez_DebeDar30PorCientoDescuento()
+        {
+            // Arrange
+            var actividadId = Guid.NewGuid();
+            var reservaId = Guid.NewGuid();
+            var clienteId = Guid.NewGuid();
+
+            var actividad = (Actividad)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Actividad));
+            typeof(Actividad).GetProperty("Id")?.SetValue(actividad, actividadId);
+            typeof(Actividad).GetProperty("FechaYHora")?.SetValue(actividad, DateTime.UtcNow.AddDays(1));
+            typeof(Actividad).GetProperty("CupoOcupado")?.SetValue(actividad, 1);
+
+            var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
+            typeof(Cliente).GetProperty("UserId")?.SetValue(cliente, clienteId);
+            typeof(Cliente).GetProperty("CancelacionesConsecutivas")?.SetValue(cliente, 0);
+
+            var reserva = (Reserva)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Reserva));
+            typeof(Reserva).GetProperty("Id")?.SetValue(reserva, reservaId);
+            typeof(Reserva).GetProperty("EstadoDeReserva")?.SetValue(reserva, EstadoDeReserva.Activa);
+            typeof(Reserva).GetProperty("TipoCliente")?.SetValue(reserva, TipoCliente.Abonado);
+            typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
+
+            var reservas = new List<Reserva> { reserva };
+            typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
+
+            _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(actividad);
+
+            // Act
+            await _sut.CancelarReservaAsync(actividadId, reservaId);
+
+            // Assert
+            cliente.CancelacionesConsecutivas.Should().Be(1);
+            cliente.DescuentoProximaReserva.Should().Be(0.30m);
         }
+
+        [Fact]
+        public async Task CancelarReservaAsync_AbonadoMenosDe48hs_SegundaVez_DebeDar20PorCientoDescuento()
+        {
+            // Arrange
+            var actividadId = Guid.NewGuid();
+            var reservaId = Guid.NewGuid();
+            var clienteId = Guid.NewGuid();
+
+            var actividad = (Actividad)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Actividad));
+            typeof(Actividad).GetProperty("Id")?.SetValue(actividad, actividadId);
+            typeof(Actividad).GetProperty("FechaYHora")?.SetValue(actividad, DateTime.UtcNow.AddDays(1));
+            typeof(Actividad).GetProperty("CupoOcupado")?.SetValue(actividad, 1);
+
+            var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
+            typeof(Cliente).GetProperty("UserId")?.SetValue(cliente, clienteId);
+            typeof(Cliente).GetProperty("CancelacionesConsecutivas")?.SetValue(cliente, 1);
+
+            var reserva = (Reserva)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Reserva));
+            typeof(Reserva).GetProperty("Id")?.SetValue(reserva, reservaId);
+            typeof(Reserva).GetProperty("EstadoDeReserva")?.SetValue(reserva, EstadoDeReserva.Activa);
+            typeof(Reserva).GetProperty("TipoCliente")?.SetValue(reserva, TipoCliente.Abonado);
+            typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
+
+            var reservas = new List<Reserva> { reserva };
+            typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
+
+            _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(actividad);
+
+            // Act
+            await _sut.CancelarReservaAsync(actividadId, reservaId);
+
+            // Assert
+            cliente.CancelacionesConsecutivas.Should().Be(2);
+            cliente.DescuentoProximaReserva.Should().Be(0.20m);
+        }
+
+        [Fact]
+        public async Task CancelarReservaAsync_AbonadoMenosDe48hs_TerceraVez_NoDebeDarDescuento()
+        {
+            // Arrange
+            var actividadId = Guid.NewGuid();
+            var reservaId = Guid.NewGuid();
+            var clienteId = Guid.NewGuid();
+
+            var actividad = (Actividad)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Actividad));
+            typeof(Actividad).GetProperty("Id")?.SetValue(actividad, actividadId);
+            typeof(Actividad).GetProperty("FechaYHora")?.SetValue(actividad, DateTime.UtcNow.AddDays(1));
+            typeof(Actividad).GetProperty("CupoOcupado")?.SetValue(actividad, 1);
+
+            var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
+            typeof(Cliente).GetProperty("UserId")?.SetValue(cliente, clienteId);
+            typeof(Cliente).GetProperty("CancelacionesConsecutivas")?.SetValue(cliente, 2);
+
+            var reserva = (Reserva)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Reserva));
+            typeof(Reserva).GetProperty("Id")?.SetValue(reserva, reservaId);
+            typeof(Reserva).GetProperty("EstadoDeReserva")?.SetValue(reserva, EstadoDeReserva.Activa);
+            typeof(Reserva).GetProperty("TipoCliente")?.SetValue(reserva, TipoCliente.Abonado);
+            typeof(Reserva).GetProperty("Cliente")?.SetValue(reserva, cliente);
+
+            var reservas = new List<Reserva> { reserva };
+            typeof(Actividad).GetField("_reservas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(actividad, reservas);
+
+            _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(actividadId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(actividad);
+
+            // Act
+            await _sut.CancelarReservaAsync(actividadId, reservaId);
+
+            // Assert
+            cliente.CancelacionesConsecutivas.Should().Be(3);
+            cliente.DescuentoProximaReserva.Should().Be(0m);
+        }
+    }
 
