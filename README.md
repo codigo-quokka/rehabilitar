@@ -11,10 +11,21 @@
 RehabilitAR busca digitalizar y optimizar la administración de un centro kinesiológico. Permite a los clientes gestionar sus reservas y abonos, mientras que al personal del centro le brinda herramientas de administración, control de cupos, asistencia y métricas de negocio.
 
 ### ✨ Características Principales
-- **Gestión de Usuarios y Roles:** Administrador, Recepción, Profesor y Cliente (con autenticación JWT).
-- **Gestión de Actividades:** Creación de actividades (frecuentes/recurrentes o esporádicas) con control estricto de cupos y salas.
-- **Sistema de Reservas:** Reserva de turnos, listas de espera y pagos (planes de abono y presenciales).
+- **Gestión de Usuarios y Roles:** Administrador, Recepción, Profesor y Cliente (con autenticación JWT y sistema de suspensión por inasistencias).
+- **Gestión de Actividades:** Creación de actividades con control estricto de cupos, salas y ciclo de vida (Iniciar/Finalizar clase).
+- **Sistema de Reservas:** Reserva de turnos, listas de espera priorizadas y pagos con descuentos automáticos por cancelaciones previas.
 - **Métricas:** Reportes y estadísticas para la toma de decisiones.
+
+---
+
+## 🧪 Pruebas Unitarias
+
+El proyecto cuenta con una suite de pruebas robusta (xUnit + FluentAssertions) para asegurar la integridad de las reglas de negocio.
+
+Para ejecutar las pruebas del backend:
+```bash
+dotnet test Rehabilitar-back/Application.UnitTests/Application.UnitTests.csproj
+```
 
 ---
 
