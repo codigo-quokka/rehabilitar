@@ -72,16 +72,16 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                              .ThenInclude(p => p.User)
                              .ToListAsync(ct);
     }
-    public async Task<Actividad> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
+    public async Task<Actividad?> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
     {
-        var actividad = await _context.Actividades
+        return await _context.Actividades
                                       .Include(a => a.Sala)
                                       .Include(a => a.Profesor)
                                       .ThenInclude(p => p.User)
                                       .Include(a => a.Reservas)
+                                          .ThenInclude(r => r.Cliente)
+                                          .ThenInclude(c => c.User)
                                       .FirstOrDefaultAsync(a => a.Id == actividadId, ct);
-        if (actividad == null) throw new KeyNotFoundException("Actividad no encontrada.");
-        return actividad;
     }
 
     // public async Task<Actividad?> EditarActividadAsync(Guid actividadId, EditarActividadRequest request)
