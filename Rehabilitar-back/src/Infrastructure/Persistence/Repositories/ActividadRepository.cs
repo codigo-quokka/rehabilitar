@@ -50,7 +50,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
             query = query.Where(a => a.ProfesorId == profesorId.Value);
 
         List<Actividad> actividades = await query.ToListAsync();
-        return actividades;
+        return actividades.OrderBy(a => a.FechaYHora).ToList();
     }
 
     public async Task<ICollection<Actividad>> ListarPorSerieIdAsync(Guid serieId, CancellationToken ct = default)
