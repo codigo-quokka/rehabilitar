@@ -114,7 +114,7 @@ public class AuthServiceTests
     {
         // Arrange
         var request = new LoginRequest("john@example.com", "Password123!");
-        var user = User.Create("John", "Doe", "john@example.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
+        var user = User.Create("John", "Doe", "john@example.com");
         user.GetType().GetProperty("EmailConfirmed")?.SetValue(user, true);
         
         _userManagerMock.Setup(x => x.FindByEmailAsync(request.Email))
@@ -142,7 +142,7 @@ public class AuthServiceTests
     {
         // Arrange
         var request = new LoginRequest("john@example.com", "Password123!");
-        var user = User.Create("John", "Doe", "john@example.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
+        var user = User.Create("John", "Doe", "john@example.com");
         
         _userManagerMock.Setup(x => x.FindByEmailAsync(request.Email))
             .ReturnsAsync(user);
@@ -163,7 +163,7 @@ public class AuthServiceTests
     {
         // Arrange
         var request = new LoginRequest("john@example.com", "WrongPassword");
-        var user = User.Create("John", "Doe", "john@example.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
+        var user = User.Create("John", "Doe", "john@example.com");
         
         _userManagerMock.Setup(x => x.FindByEmailAsync(request.Email))
             .ReturnsAsync(user);
@@ -184,7 +184,7 @@ public class AuthServiceTests
     {
         // Arrange
         var request = new LoginRequest("john@example.com", "Password123!");
-        var user = User.Create("John", "Doe", "john@example.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
+        var user = User.Create("John", "Doe", "john@example.com");
         user.GetType().GetProperty("EmailConfirmed")?.SetValue(user, true);
         
         _userManagerMock.Setup(x => x.FindByEmailAsync(request.Email))
