@@ -65,7 +65,7 @@ public class ReservaService : IReservaService
                 if (reservaCompleta == null)
                     return Error.NotFound("Reserva.NotFound", "Error al recuperar la reserva después de crearla.");
 
-                return MapToReservaResponse(reservaCompleta);
+                return MapToReservaResponse(reservaCompleta, actividad);
             }
             catch (ConcurrencyException ex)
             {
@@ -126,6 +126,17 @@ public class ReservaService : IReservaService
                 
                 actividad.ProcesarPagoReserva(reservaId, montoAPagar); // Lógica de dominio actualizada
                 
+                // Si la reserva se completó (o alcanzó la seña), reseteamos las penalizaciones del cliente
+                if (reserva.EstadoDeReserva == EstadoDeReserva.Activa || reserva.EstadoDeReserva == EstadoDeReserva.EnEspera)
+                {
+                    var cliente = await _clienteRepo.GetByIdAsync(reserva.ClienteId, ct);
+                    if (cliente != null)
+                    {
+                        cliente.ResetearCancelaciones();
+                        _clienteRepo.Update(cliente);
+                    }
+                }
+
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
                 return Result.Success;
             } catch (ConcurrencyException) {
@@ -165,22 +176,63 @@ public class ReservaService : IReservaService
         if (reserva == null)
             return Error.NotFound("Reserva.NotFound", "Reserva no encontrada");
 
-        return MapToReservaResponse(reserva);
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(reserva.ActividadId, ct);
+        if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
+
+        return MapToReservaResponse(reserva, actividad);
+    }
+
+    public async Task<ErrorOr<ReservaResponse>> PrepararPagoAsync(Guid id, CancellationToken ct = default)
+    {
+        var reserva = await _reservaRepo.GetByIdAsync(id, ct);
+        if (reserva == null) return Error.NotFound("Reserva.NotFound", "Reserva no encontrada");
+
+        var cliente = await _clienteRepo.GetByIdAsync(reserva.ClienteId, ct);
+        if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado");
+
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(reserva.ActividadId, ct);
+        if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
+
+        // Si el cliente tiene descuento y no hay OTRA reserva pendiente que lo esté usando
+        if (cliente.DescuentoProximaReserva > 0 && reserva.PorcentajeDescuentoAplicado == 0)
+        {
+            bool tieneOtraEnVuelo = await _reservaRepo.TieneReservaActivaConDescuentoAsync(cliente.UserId, reserva.Id, ct);
+            if (!tieneOtraEnVuelo)
+            {
+                reserva.AplicarDescuento(cliente.DescuentoProximaReserva);
+                await _uow.SaveChangesAsync(ct);
+            }
+        }
+
+        return MapToReservaResponse(reserva, actividad);
     }
 
     public async Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
     {
         var reservas = await _reservaRepo.GetReservasDeClientePorIdAsync(id, ct);
-        return reservas.Select(MapToReservaResponse).ToList();
+        
+        var response = new List<ReservaResponse>();
+        foreach (var reserva in reservas)
+        {
+            var actividad = await _actividadRepo.ObtenerPorIdAsync(reserva.ActividadId, ct);
+            if (actividad != null)
+            {
+                response.Add(MapToReservaResponse(reserva, actividad));
+            }
+        }
+        return response;
     }
 
     public async Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default)
     {
         var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(id, ct);
-        return reservas.Select(MapToReservaResponse).ToList();
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
+        
+        return reservas.Select(r => MapToReservaResponse(r, actividad)).ToList();
     }
 
-    private static ReservaResponse MapToReservaResponse(Reserva reserva)
+    private static ReservaResponse MapToReservaResponse(Reserva reserva, Actividad actividad)
     {
         string nombreCliente = reserva.Cliente.User.FirstName + " " + reserva.Cliente.User.LastName;
         return new ReservaResponse(
@@ -192,7 +244,10 @@ public class ReservaService : IReservaService
             reserva.TipoCliente,
             reserva.EstadoDeReserva,
             reserva.DetallePago.MontoTotal,
-            reserva.DetallePago.MontoPendiente
+            reserva.DetallePago.MontoPendiente,
+            reserva.DetallePago.MontoDescuento,
+            reserva.PorcentajeDescuentoAplicado,
+            actividad.ProbabilidadListaEspera
         );
     }
 
