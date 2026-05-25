@@ -37,7 +37,7 @@ public class PagosController : ApiControllerBase
         return await reserva.MatchAsync(
             async r =>
             {
-                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", r.MontoTotal, "Pago de reserva");
+                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", r.MontoPendiente, "Pago de reserva");
                 return result.Match(
                     p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
                     errors => Problem(errors)

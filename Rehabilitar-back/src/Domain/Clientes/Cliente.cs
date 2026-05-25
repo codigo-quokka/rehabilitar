@@ -9,6 +9,7 @@ public class Cliente
     public User User { get; private set; }
     public int RehabiliCoins {get; private set;}
     public int CancelacionesConsecutivas { get; private set; }
+    public decimal DescuentoProximaReserva { get; private set; }
     public SaldoAFavor SaldoAFavor { get; private set; }
     public bool AptoFisicoAprobado { get; private set;}
 
@@ -66,10 +67,24 @@ public class Cliente
     public void ResetearCancelaciones()
     {
         CancelacionesConsecutivas = 0;
+        DescuentoProximaReserva = 0m;
     }
 
     public void RegistrarCancelacion()
     {
         CancelacionesConsecutivas++;
+
+        if (CancelacionesConsecutivas == 1)
+        {
+            DescuentoProximaReserva = 0.30m;
+        }
+        else if (CancelacionesConsecutivas == 2)
+        {
+            DescuentoProximaReserva = 0.20m;
+        }
+        else
+        {
+            DescuentoProximaReserva = 0m;
+        }
     }
 }

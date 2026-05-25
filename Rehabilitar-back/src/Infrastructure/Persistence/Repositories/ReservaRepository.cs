@@ -43,6 +43,6 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
             .AnyAsync(r => r.ClienteId == clienteId 
                         && r.Id != reservaIdAExcluir 
                         && r.PorcentajeDescuentoAplicado > 0 
-                        && r.EstadoDeReserva == EstadoDeReserva.PendienteDePago, ct);
+                        && r.EstadoDeReserva == Domain.Enums.EstadoDeReserva.PendienteDePago, ct);
     }
 }
