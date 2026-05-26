@@ -11,8 +11,8 @@ export const aptosFisicosApi = {
     return response.data;
   },
 
-  getMisAptos: async (): Promise<AptoFisico[]> => {
-    const response = await apiClient.get('/aptos-fisicos/mis-aptos');
+  getMiApto: async (): Promise<AptoFisico> => {
+    const response = await apiClient.get('/aptos-fisicos/mi-apto');
     return response.data;
   },
 
@@ -26,14 +26,13 @@ export const aptosFisicosApi = {
     return response.data;
   },
 
-  getArchivo: async (id: string): Promise<{ blob: Blob; contentType: string; nombreArchivo: string }> => {
+  getArchivo: async (id: string): Promise<{ blob: Blob; contentType: string }> => {
     const response = await apiClient.get(`/aptos-fisicos/${id}/archivo`, {
       responseType: 'blob',
     });
     return {
       blob: response.data,
       contentType: (response.headers['content-type'] as string) || 'application/octet-stream',
-      nombreArchivo: response.headers['x-filename'] || 'apto-fisico',
     };
   },
 
