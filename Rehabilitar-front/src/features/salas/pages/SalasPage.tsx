@@ -48,6 +48,12 @@ export function SalasPage() {
     setSalaIdAEliminar(id);
   };
   const HandleDesactivarClick = (s: Sala) => {
+    if (s.activo && tieneActividadesPendientes(s.id)) {
+      setToastType('error');
+      setToastMessage('No se puede desactivar una sala con actividades pendientes.');
+      setShowToast(true);
+      return;
+    }
     setShowDesactivarConfirm(true);
     setSalaADesactivar(s);
   };

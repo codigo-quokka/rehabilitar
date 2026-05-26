@@ -358,11 +358,9 @@ export function UsuariosPage() {
       header: 'Apto Físico',
       render: (u: User) => {
         if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
-        const apto = aptosPorCliente[u.id];
-        if (!apto) return <Badge variant="warning">Sin cargar</Badge>;
         return (
-          <Badge variant={apto.estado === 'Aprobado' ? 'success' : apto.estado === 'Rechazado' ? 'danger' : 'warning'}>
-            {apto.estado === 'Aprobado' ? 'Aprobado' : apto.estado === 'Rechazado' ? 'Rechazado' : 'Pendiente'}
+          <Badge variant={u.aptitudFisica ? 'success' : 'warning'}>
+            {u.aptitudFisica ? 'Aprobado' : 'Pendiente'}
           </Badge>
         );
       },
