@@ -90,14 +90,12 @@ export function UsuariosPage() {
       if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
       if (filters.estado === 'active' && !u.activo) return false;
       if (filters.estado === 'suspended' && u.activo) return false;
-      if (filters.aptoFisico === 'aprobado' && aptosPorCliente[u.id]?.estado !== 'Aprobado') return false;
-      if (filters.aptoFisico === 'pendiente' && aptosPorCliente[u.id]?.estado !== 'Pendiente') return false;
-      if (filters.aptoFisico === 'rechazado' && aptosPorCliente[u.id]?.estado !== 'Rechazado') return false;
-      if (filters.aptoFisico === 'sin_cargar' && !!aptosPorCliente[u.id]) return false;
+      if (filters.aptoFisico === 'aprobado' && !u.aptitudFisica) return false;
+      if (filters.aptoFisico === 'pendiente' && u.aptitudFisica) return false;
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term) && !u.documento?.toLowerCase().includes(term)) return false;
+        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
       }
       return true;
     })
@@ -107,41 +105,6 @@ export function UsuariosPage() {
       if (rolDiff !== 0) return rolDiff;
       return `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`);
     });
-
-  const hasActiveFilters = useMemo(() => {
-    return (
-      Object.values(filters).some(v => v !== 'all')
-    );
-  }, [filters]);
-
-  const hasActiveSearchFilter = useMemo(() => {
-    return (
-      searchTerm !== ''
-    );
-  }, [searchTerm]);
-
-  const getEmptyStateMessage = () => {
-    if (hasActiveSearchFilter && hasActiveFilters) {
-      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveSearchFilter) {
-      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveFilters) {
-      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
-    }
-    return 'No hay usuarios registrados.'
-  }
-
-  const cleanFilters = () => {
-    setFilters({
-      rol: 'all',
-      especialidad: 'all',
-      estado: 'all',
-      aptoFisico: 'all',
-    });
-    setSearchTerm('');
-  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -416,12 +379,49 @@ export function UsuariosPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <Input
-              placeholder="Buscar por nombre, email o DNI..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
-              className="min-w-125"
-              maxLength={40}
+            <FilterDropdown
+              filters={[
+                ...(!isReception ? [{
+                  key: 'rol',
+                  label: 'Roles',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
+                  ],
+                },
+                ...(filters.rol === 'Profesor' ? [{
+                  key: 'especialidad',
+                  label: 'Especialidad',
+                  options: [
+                    { value: 'all', label: 'Todas' },
+                    { value: 'TrenSuperior', label: 'Tren Superior' },
+                    { value: 'TrenMedio', label: 'Tren Medio' },
+                    { value: 'TrenInferior', label: 'Tren Inferior' },
+                  ],
+                }] : []),
+                ...(filters.rol === 'Cliente Registrado' ? [{
+                  key: 'aptoFisico',
+                  label: 'Apto Físico',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'aprobado', label: 'Aprobado' },
+                    { value: 'pendiente', label: 'Pendiente' },
+                  ],
+                }] : [])] : []),
+                {
+                  key: 'estado',
+                  label: 'Estados',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'active', label: 'Activos' },
+                    { value: 'suspended', label: 'Suspendidos' },
+                  ],
+                },
+              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
+              onOpenChange={setFilterOpen}
             />
             <Button
               variant="primary"
