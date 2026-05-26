@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
-import { Table, Badge, Button, Modal, Input } from '../../../components/ui';
+import { Table, Badge, Button, Modal, Input, FilterDropdown } from '../../../components/ui';
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { Loader2, Eye, Check, X, FileText } from 'lucide-react';
 import { AptoFisicoViewer } from '../components/AptoFisicoViewer';
 
 export const AdminAptosFisicosPage: React.FC = () => {
-  const [aptosPendientes, setAptosPendientes] = useState<AptoFisico[]>([]);
+  const [aptos, setAptos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,23 +33,41 @@ export const AdminAptosFisicosPage: React.FC = () => {
   const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
   const [aptoToApprove, setAptoToApprove] = useState<AptoFisico | null>(null);
 
-  const fetchAptosPendientes = async () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    estado: 'all',
+  });
+
+  const filteredAptos = useMemo(() => {
+    return aptos.filter(a => {
+      if (filters.estado !== 'all' && a.estado !== filters.estado) return false;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        if (!a.clienteNombre?.toLowerCase().includes(term)) return false;
+      }
+      return true;
+    });
+  }, [aptos, filters, searchTerm]);
+
+
+  const fetchAptos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await aptosFisicosApi.getPendientes();
-      setAptosPendientes(data);
+      const data = await aptosFisicosApi.getAll();
+      setAptos(data);
     } catch (err) {
-      console.error('Error al obtener aptos físicos pendientes:', err);
-      setError('Error al cargar los aptos físicos pendientes.');
-      showToastMessage('Error al cargar aptos físicos pendientes.', 'error');
+      console.error('Error al obtener aptos físicos:', err);
+      setError('Error al cargar los aptos físicos.');
+      showToastMessage('Error al cargar aptos físicos.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAptosPendientes();
+    fetchAptos();
   }, []);
 
   const handleViewApto = (apto: AptoFisico) => {
@@ -67,7 +85,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
     try {
       await aptosFisicosApi.evaluar(aptoToApprove.id, true);
       showToastMessage('Apto físico aprobado exitosamente.', 'success');
-      fetchAptosPendientes();
+      fetchAptos();
     } catch (err) {
       console.error('Error al aprobar apto físico:', err);
       showToastMessage('Error al aprobar apto físico.', 'error');
@@ -87,7 +105,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
     try {
       await aptosFisicosApi.evaluar(aptoToReject.id, false, rejectReason);
       showToastMessage('Apto físico rechazado exitosamente.', 'success');
-      fetchAptosPendientes();
+      fetchAptos();
     } catch (err) {
       console.error('Error al rechazar apto físico:', err);
       showToastMessage('Error al rechazar apto físico.', 'error');
@@ -143,7 +161,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
             size="sm"
             onClick={() => handleViewApto(apto)}
             aria-label={`Ver archivo de ${apto.clienteNombre}`}
-            className="text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900"
+            className="text-primary-600 dark:text-primary-400 hover:bg-yellow-200 dark:hover:bg-yellow-900"
           >
             <Eye className="w-4 h-4" />
           </Button>
@@ -152,7 +170,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
             size="sm"
             onClick={() => handleApproveApto(apto)}
             aria-label={`Aprobar apto físico de ${apto.clienteNombre}`}
-            className="text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900"
+            className="text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900"
           >
             <Check className="w-4 h-4" />
           </Button>
@@ -161,7 +179,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
             size="sm"
             onClick={() => handleRejectApto(apto)}
             aria-label={`Rechazar apto físico de ${apto.clienteNombre}`}
-            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900"
+            className="text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -171,24 +189,54 @@ export const AdminAptosFisicosPage: React.FC = () => {
   ];
 
   return (
-    <MainLayout title="Aptos Físicos Pendientes">
-      <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-            <p className="ml-2 text-gray-700 dark:text-gray-300">Cargando aptos físicos...</p>
+    <MainLayout title="Aptos Físicos">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <FilterDropdown
+              filters={[{
+                key: 'estado',
+                label: 'Estado',
+                options: [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'Pendiente', label: 'Pendiente' },
+                  { value: 'Aprobado', label: 'Aprobado' },
+                  { value: 'Rechazado', label: 'Rechazado' },
+                ],
+              }]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ estado: 'all' })}
+              onOpenChange={setFilterOpen}
+            />
+            <div className={filterOpen ? 'invisible' : ''}>
+              <Input
+                placeholder="Buscar por cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125"
+              />
+            </div>
           </div>
-        ) : error ? (
-          <div className="text-center text-red-500 dark:text-red-400 h-64 flex items-center justify-center">
-            <p>{error}</p>
-          </div>
-        ) : aptosPendientes.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 h-64 flex items-center justify-center">
-            <p>No hay aptos físicos pendientes de revisión.</p>
-          </div>
-        ) : (
-          <Table columns={columns} data={aptosPendientes} keyExtractor={(apto) => apto.id} />
-        )}
+        </div>
+        <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+              <p className="ml-2 text-gray-700 dark:text-gray-300">Cargando aptos físicos...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-500 dark:text-red-400 h-64 flex items-center justify-center">
+              <p>{error}</p>
+            </div>
+          ) : filteredAptos.length === 0 ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 h-64 flex items-center justify-center">
+              <p>No hay aptos físicos cargados.</p>
+            </div>
+          ) : (
+            <Table columns={columns} data={filteredAptos} keyExtractor={(apto) => apto.id} />
+          )}
+        </div>
       </div>
 
       {/* Modal para ver apto físico */}
