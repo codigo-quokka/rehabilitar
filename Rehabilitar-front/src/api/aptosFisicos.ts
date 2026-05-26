@@ -16,6 +16,11 @@ export const aptosFisicosApi = {
     return response.data;
   },
 
+  getAll: async (): Promise<AptoFisico[]> => {
+    const response = await apiClient.get('/aptos-fisicos');
+    return response.data;
+  },
+
   getPendientes: async (): Promise<AptoFisico[]> => {
     const response = await apiClient.get('/aptos-fisicos/pendientes');
     return response.data;
