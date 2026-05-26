@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { Loader2, Download } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
@@ -17,6 +18,7 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { addNotification } = useNotifications();
   const fileUrlRef = useRef<string | null>(null);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
@@ -30,7 +32,7 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
       setLoading(true);
       setError(null);
       try {
-        const { blob } = await aptosFisicosApi.getArchivo(aptoFisico.id);
+        const { blob, contentType, nombreArchivo } = await aptosFisicosApi.getArchivo(aptoFisico.id);
         if (!cancelled) {
           const url = URL.createObjectURL(blob);
           setFileUrl(url);

@@ -56,16 +56,17 @@ public class AptoFisicoService : IAptoFisicoService
             archivoBytes = memoryStream.ToArray();
         }
 
-        // Verificar si ya hay un apto para reemplazar
-        var aptoExistente = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
+        // Verificar si ya hay un apto pendiente para reemplazar
+        var aptosExistentes = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
+        var pendiente = aptosExistentes.FirstOrDefault(a => a.Estado == EstadoAptoFisico.Pendiente);
 
-        if (aptoExistente != null)
+        if (pendiente != null)
         {
-            // Reemplazar el archivo del apto existente
-            aptoExistente.ReemplazarArchivo(nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
+            // Reemplazar el archivo del apto pendiente existente
+            pendiente.ReemplazarArchivo(nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
             cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
             await _unitOfWork.SaveChangesAsync();
-            return MapToResponse(aptoExistente);
+            return MapToResponse(pendiente);
         }
 
         // Si no hay pendiente, crear uno nuevo
@@ -121,11 +122,6 @@ public class AptoFisicoService : IAptoFisicoService
         }
 
         // Solo Admin, Recepción o el propio cliente pueden descargar el archivo
-        if (aptoFisico.Cliente is null)
-        {
-            return Error.Unexpected(code: "AptoFisico.ClientDataMissing", description: "No se pudo cargar la información del cliente asociado al apto físico.");
-        }
-
         if (rol != "Administrador" && rol != "Recepción" && aptoFisico.Cliente.UserId != usuarioId)
         {
             return Error.Forbidden(code: "AptoFisico.UnauthorizedAccess", description: "No tiene permiso para acceder a este archivo.");
@@ -140,21 +136,10 @@ public class AptoFisicoService : IAptoFisicoService
         return aptos.Select(MapToResponse).ToList();
     }
 
-    public async Task<ErrorOr<List<AptoFisicoResponse>>> GetAll(CancellationToken ct = default)
+    public async Task<ErrorOr<List<AptoFisicoResponse>>> GetMisAptosAsync(Guid clienteId)
     {
-        var aptos = await _aptoFisicoRepository.GetAllAsync(ct);
+        var aptos = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
         return aptos.Select(MapToResponse).ToList();
-    }
-
-    public async Task<ErrorOr<AptoFisicoResponse>> GetMiAptoAsync(Guid clienteId)
-    {
-        var apto = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
-        if (apto is null)
-        {
-            return Error.NotFound(code: "AptoFisico.AptoFisicoNotFound", description: "Apto físico no encontrado.");
-        }
-
-        return MapToResponse(apto);
     }
 
     private AptoFisicoResponse MapToResponse(AptoFisico aptoFisico)

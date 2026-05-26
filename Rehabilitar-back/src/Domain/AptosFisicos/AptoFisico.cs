@@ -67,14 +67,14 @@ public class AptoFisico
 
     public void ReemplazarArchivo(string nombreArchivo, string contentType, byte[] archivo, long tamaño)
     {
+        if (Estado != EstadoAptoFisico.Pendiente)
+        {
+            throw new InvalidOperationException("Solo se puede reemplazar el archivo de un apto físico pendiente.");
+        }
         NombreArchivo = nombreArchivo;
         ContentType = contentType;
         Archivo = archivo;
         Tamaño = tamaño;
         FechaSubida = DateTime.UtcNow;
-        Estado = EstadoAptoFisico.Pendiente;
-        FechaEvaluacion = null;
-        EvaluadoPor = null;
-        MotivoRechazo = null;
     }
 }

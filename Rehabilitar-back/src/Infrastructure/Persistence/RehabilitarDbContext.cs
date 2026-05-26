@@ -130,8 +130,8 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                   .IsRequired();
             
             entity.HasOne(a => a.Cliente)
-                  .WithOne(c => c.AptoFisico)
-                  .HasForeignKey<AptoFisico>(a => a.ClienteId)
+                  .WithMany()
+                  .HasForeignKey(a => a.ClienteId)
                   .OnDelete(DeleteBehavior.Cascade);
                   
             entity.HasOne(a => a.Evaluador)

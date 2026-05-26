@@ -123,8 +123,7 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClienteId")
-                        .IsUnique();
+                    b.HasIndex("ClienteId");
 
                     b.HasIndex("EvaluadoPor");
 
@@ -502,8 +501,8 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domain.AptosFisicos.AptoFisico", b =>
                 {
                     b.HasOne("Domain.Clientes.Cliente", "Cliente")
-                        .WithOne("AptoFisico")
-                        .HasForeignKey("Domain.AptosFisicos.AptoFisico", "ClienteId")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -668,11 +667,6 @@ namespace Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Domain.Actividades.Actividad", b =>
                 {
                     b.Navigation("Reservas");
-                });
-
-            modelBuilder.Entity("Domain.Clientes.Cliente", b =>
-                {
-                    b.Navigation("AptoFisico");
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
