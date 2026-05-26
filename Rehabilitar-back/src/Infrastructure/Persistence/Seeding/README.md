@@ -36,7 +36,7 @@ Usuarios que pueden realizar reservas y ver sus actividades.
 | Daenerys | Targaryen | `daenerys@targaryen.com` | `cliente` | 10111222 | 541120204040 | `Cliente Registrado` |
 | Marilina | Bertoldi | `marilina@bertoldi.com` | `cliente` | 22333444 |   | `Cliente Registrado` |
 | Ricardo | Mollo | `ricardo@mollo.com` | `cliente` | 33444555 | 541110102020 | `Cliente Registrado` |
-
+| José | Hernández | joseh@gmail.com | `cliente` | 10000000 |  | `Cliente Registrado` |
 ---
 
 ## 3. Profesores
