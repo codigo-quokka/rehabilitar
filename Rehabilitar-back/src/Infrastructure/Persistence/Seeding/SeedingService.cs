@@ -36,7 +36,59 @@ public class SeedingService : ISeedingService
         _actividadService = actividadService;
     }
 
-    public async Task SeedRolesAsync()
+    public async Task SeedAsync()
+    {
+        System.Console.WriteLine();
+        System.Console.WriteLine("---------- SEEDING ----------");
+        System.Console.WriteLine();
+        await SeedRolesAsync();
+        await SeedAdminAsync("admin@rehabilitar.com", "Admin", "Administrador");
+        await SeedReceptionAsync("recepcion@rehabilitar.com", "Recepcion", "Receptionist");
+        
+        await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566");
+        await SeedClienteAsync("Rocky", "Balboa", "rocky@balboa.com", "44555666", "542217778899");
+        await SeedClienteAsync("Mr", "Robot", "mr@robot.com", "55666777");
+        await SeedClienteAsync("Daenerys", "Targaryen", "daenerys@targaryen.com", "10111222", "541120204040");
+        await SeedClienteAsync("Marilina", "Bertoldi", "marilina@bertoldi.com", "22333444");
+        await SeedClienteAsync("Ricardo", "Mollo", "ricardo@mollo.com", "33444555", "541110102020");
+        await SeedClienteAsync("José", "Hernández", "joseh@gmail.com", "10000000", password: "Jose123!");
+
+        await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
+
+        await SeedSalaAsync("Sala A", 10);
+        await SeedSalaAsync("Sala B", 20);
+        await SeedSalaAsync("Sala C", 30);
+        await SeedSalaAsync("Sala D", 50);
+        await SeedSalaAsync("Sala E", 80);
+
+        var salaA = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A");
+        var salaB = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B");
+        var salaC = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C");
+        var salaD = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D");
+        var salaE = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E");
+        var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
+        var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
+        var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
+        var now = DateTime.Today.AddDays(1);
+        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
+        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
+        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
+        await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(6).AddHours(14), 25, salaD.Id, bruce.UserId);
+        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.EnCurso, now.AddHours(8), 12, salaE.Id, clark.UserId, now.AddHours(8).AddDays(30));
+        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
+        await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
+        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
+        // await SeedReservaAsync();
+
+        System.Console.WriteLine();
+        System.Console.WriteLine("---------- FIN SEEDING ----------");
+        System.Console.WriteLine();
+
+    }
+
+    private async Task SeedRolesAsync()
     {
         var roles = new[] { "Administrador", "Recepción", "Profesor", "Cliente Registrado" };
 
@@ -173,7 +225,7 @@ public class SeedingService : ISeedingService
         }
     }
 
-    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null, bool aprobarApto = true)
+    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null)
     {
         User? clientUser = await _userManager.FindByEmailAsync(clientEmail);
         if (clientUser != null)
