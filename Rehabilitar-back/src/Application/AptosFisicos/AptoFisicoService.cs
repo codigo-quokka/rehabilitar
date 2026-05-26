@@ -56,6 +56,7 @@ public class AptoFisicoService : IAptoFisicoService
             archivoBytes = memoryStream.ToArray();
         }
 
+        cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
         // Verificar si ya hay un apto pendiente para reemplazar
         var aptosExistentes = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
         var pendiente = aptosExistentes.FirstOrDefault(a => a.Estado == EstadoAptoFisico.Pendiente);
@@ -64,7 +65,6 @@ public class AptoFisicoService : IAptoFisicoService
         {
             // Reemplazar el archivo del apto pendiente existente
             pendiente.ReemplazarArchivo(nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
-            cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
             await _unitOfWork.SaveChangesAsync();
             return MapToResponse(pendiente);
         }
@@ -139,6 +139,12 @@ public class AptoFisicoService : IAptoFisicoService
     public async Task<ErrorOr<List<AptoFisicoResponse>>> GetMisAptosAsync(Guid clienteId)
     {
         var aptos = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
+        return aptos.Select(MapToResponse).ToList();
+    }
+
+    public async Task<ErrorOr<List<AptoFisicoResponse>>> GetAllAsync()
+    {
+        var aptos = await _aptoFisicoRepository.GetUltimoPorClienteAsync();
         return aptos.Select(MapToResponse).ToList();
     }
 
