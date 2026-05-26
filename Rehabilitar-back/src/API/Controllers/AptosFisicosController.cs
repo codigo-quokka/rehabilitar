@@ -41,7 +41,7 @@ public class AptosFisicosController : ApiControllerBase
         );
     }
 
-    [HttpGet("mis-aptos")]
+    [HttpGet("mi-apto")]
     [Authorize(Roles = "Cliente Registrado")]
     public async Task<IActionResult> GetMisAptos()
     {
@@ -51,7 +51,19 @@ public class AptosFisicosController : ApiControllerBase
             return Problem(new List<Error> { Error.Validation(code: "User.InvalidId", description: "ID de usuario inválido.") });
         }
 
-        var result = await _aptoFisicoService.GetMisAptosAsync(clienteId);
+        var result = await _aptoFisicoService.GetMiAptoAsync(clienteId);
+
+        return result.Match(
+            apto => Ok(apto),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Administrador, Recepción")]
+    public async Task<IActionResult> GetAll(CancellationToken ct)
+    {
+        var result = await _aptoFisicoService.GetAll(ct);
 
         return result.Match(
             aptos => Ok(aptos),
@@ -72,6 +84,7 @@ public class AptosFisicosController : ApiControllerBase
     }
 
     [HttpGet("{id}/archivo")]
+    [Authorize(Roles = "Cliente Registrado, Administrador, Recepción")]
     public async Task<IActionResult> GetArchivo(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -87,7 +100,6 @@ public class AptosFisicosController : ApiControllerBase
         return result.Match(
             dto =>
             {
-                Response.Headers.Append("X-Filename", dto.NombreArchivo);
                 return File(dto.Archivo, dto.ContentType, dto.NombreArchivo);
             },
             errores => Problem(errores)
