@@ -6,6 +6,8 @@ import { useAuth } from "../../../hooks/useAuth";
 import logo from "../../../assets/logo.png";
 import { authApi } from "../../../api";
 import { Notitoast } from "../../../components/Notitoast";
+import { useInputFilter } from "../../../hooks/useInputFilter";
+import { INPUT_PRESETS } from "../../../utils/inputPresets";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,6 +30,9 @@ export function LoginPage() {
     }
   }, [isAuthenticated]);
 
+  const emailFilter = useInputFilter(email, setEmail, INPUT_PRESETS.email);
+  const passwordFilter = useInputFilter(password, setPassword, INPUT_PRESETS.password());
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResendSuccess(false);
@@ -43,7 +48,7 @@ export function LoginPage() {
         setUnverifiedEmail(email);
         setToastType("error");
         setToastMessage(
-            "Debes confirmar tu correo para iniciar sesión. \nVerifica tu bandeja de entada.",
+            "Debes confirmar tu correo para iniciar sesión. \nVerifica tu bandeja de entada y tu bandeja de spam.",
         );
         setShowToast(true);
       } else if (err.response?.data?.error === "Usuario suspendido.") {
@@ -115,7 +120,7 @@ export function LoginPage() {
               {resendSuccess && (
                 <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm font-medium">
                   Correo de confirmación reenviado exitosamente. Por favor
-                  revisa tu bandeja de entrada.
+                  revisa tu bandeja de entrada y tu bandeja de spam.
                 </div>
               )}
 
@@ -124,6 +129,8 @@ export function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={emailFilter.handleKeyDown}
+                onPaste={emailFilter.handlePaste}
                 placeholder="tu@email.com"
                 required
               />
@@ -134,6 +141,8 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={passwordFilter.handleKeyDown}
+                  onPaste={passwordFilter.handlePaste}
                   placeholder="••••••••"
                   required
                   className="pr-16"
