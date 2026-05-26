@@ -36,17 +36,17 @@ export function PerfilPage() {
   const [toastMessage, setToastMessage] = useState('');
 
   // New states for AptoFisico
-  const [apto, setApto] = useState<AptoFisico | null>(null);
+  const [aptos, setAptos] = useState<AptoFisico[]>([]);
   const [aptosCargando, setAptosCargando] = useState(true);
   const [subiendo, setSubiendo] = useState(false);
   const [verArchivo, setVerArchivo] = useState(false);
 
-  const aptoActual = apto;
+  const aptoActual = aptos.length > 0 ? aptos[0] : null;
 
   useEffect(() => {
     if (user?.rol === 'Cliente Registrado') {
-      aptosFisicosApi.getMiApto()
-        .then(setApto)
+      aptosFisicosApi.getMisAptos()
+        .then(setAptos)
         .catch(() => {})
         .finally(() => setAptosCargando(false));
     } else {
@@ -285,7 +285,7 @@ export function PerfilPage() {
         <Modal isOpen={subiendo} onClose={() => setSubiendo(false)} title="Subir apto físico">
           <AptoFisicoUploader onSuccess={() => {
             setSubiendo(false);
-            aptosFisicosApi.getMiApto().then(setApto).catch(() => {}).finally(() => setAptosCargando(false));
+            aptosFisicosApi.getMisAptos().then(setAptos);
           }} />
         </Modal>
 
