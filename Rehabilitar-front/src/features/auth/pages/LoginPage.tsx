@@ -130,13 +130,9 @@ export function LoginPage() {
               )}
 
               {resendSuccess && (
-                <div className="p-4 bg-bg-surface dark:bg-gray-800/50 rounded-xl border border-border dark:border-gray-700">
-                  <p className="text-sm text-primary font-medium text-center">
-                    Correo de confirmación reenviado exitosamente.
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
-                    Revisa tu bandeja de entrada y tu bandeja de spam.
-                  </p>
+                <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm font-medium">
+                  Correo de confirmación reenviado exitosamente. Por favor
+                  revisa tu bandeja de entrada y tu bandeja de spam.
                 </div>
               )}
 
@@ -144,7 +140,7 @@ export function LoginPage() {
                 label="Email"
                 type=""
                 value={email}
-                onChange={(e) => setEmail(e.target.value.replace(INPUT_PRESETS.email.cleanPasteRegex, ''))}
+                onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={emailFilter.handleKeyDown}
                 onPaste={emailFilter.handlePaste}
                 placeholder="tu@email.com"
@@ -155,7 +151,7 @@ export function LoginPage() {
                   label="Contraseña"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value.replace(INPUT_PRESETS.password().cleanPasteRegex, ''))}
+                  onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={passwordFilter.handleKeyDown}
                   onPaste={passwordFilter.handlePaste}
                   placeholder="••••••••"

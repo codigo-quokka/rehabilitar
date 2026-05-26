@@ -60,16 +60,6 @@ export function RegisterPage() {
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
-  const fieldCleaners: Partial<Record<keyof typeof formData, RegExp>> = {
-    firstName: INPUT_PRESETS.name.cleanPasteRegex,
-    lastName: INPUT_PRESETS.name.cleanPasteRegex,
-    email: INPUT_PRESETS.email.cleanPasteRegex,
-    telefono: INPUT_PRESETS.digits(12).cleanPasteRegex,
-    dni: INPUT_PRESETS.digits(MAX_DNI_LENGTH).cleanPasteRegex,
-    password: INPUT_PRESETS.password(MAX_PASSWORD_LENGTH).cleanPasteRegex,
-    confirmPassword: INPUT_PRESETS.password(MAX_PASSWORD_LENGTH).cleanPasteRegex,
-  };
-
   const handleCloseToast = useCallback(() => setShowToast(false), []);
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
@@ -108,20 +98,7 @@ export function RegisterPage() {
 
   // Manejador estándar para cambios de texto regulares
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.name as keyof typeof formData;
-    const clean = fieldCleaners[name];
-    const value = clean ? e.target.value.replace(clean, '') : e.target.value;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    if (!raw) {
-      setFormData((prev) => ({ ...prev, fechaNacimiento: "" }));
-      return;
-    }
-    const clamped = raw < "1900-01-01" ? "1900-01-01" : raw > todayStr ? todayStr : raw;
-    setFormData((prev) => ({ ...prev, fechaNacimiento: clamped }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   // Helper para el onPaste del custom hook
@@ -179,13 +156,6 @@ export function RegisterPage() {
       return;
     }
 
-    if (passwordReqs.some((r) => !r.test(formData.password))) {
-      setToastType("error");
-      setToastMessage("La contraseña no cumple los requisitos de seguridad.");
-      setShowToast(true);
-      return;
-    }
-    /*
     if (formData.password.length < MIN_PASSWORD_LENGTH) {
       setToastType("error");
       setToastMessage(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
@@ -220,7 +190,7 @@ export function RegisterPage() {
 
     if (formData.dni.length < MIN_DNI_LENGTH) {
       setToastType("error");
-      setToastMessage("Ingrese un DNI válido");
+      setToastMessage(`El DNI debe tener al menos ${MIN_DNI_LENGTH} caracteres.`);
       setShowToast(true);
       return;
     }
@@ -322,131 +292,128 @@ export function RegisterPage() {
                   </Link>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="animate-in fade-in duration-300">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-2 gap-4">
-                        <Input
-                          label="Nombre"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          onKeyDown={firstNameFilter.handleKeyDown}
-                          onPaste={firstNameFilter.handlePaste}
-                          placeholder="Juan"
-                        />
-                        <Input
-                          label="Apellido"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          onKeyDown={lastNameFilter.handleKeyDown}
-                          onPaste={lastNameFilter.handlePaste}
-                          placeholder="Pérez"
-                        />
-                      </div>
+                <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Nombre"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      onKeyDown={firstNameFilter.handleKeyDown}
+                      onPaste={firstNameFilter.handlePaste}
+                      placeholder="Juan"
+                    />
+                    <Input
+                      label="Apellido"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      onKeyDown={lastNameFilter.handleKeyDown}
+                      onPaste={lastNameFilter.handlePaste}
+                      placeholder="Pérez"
+                    />
+                  </div>
 
+                  <Input
+                    label="Email"
+                    type="" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onKeyDown={emailFilter.handleKeyDown}
+                    onPaste={emailFilter.handlePaste}
+                    placeholder="tu@email.com"
+                  />
+
+                  <Input
+                    label="Teléfono (opcional)"
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleChange}
+                    onKeyDown={phoneFilter.handleKeyDown}
+                    onPaste={phoneFilter.handlePaste}
+                    placeholder="+54 221 123 4567"
+                    maxLength={12}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <Input
                         label="Email"
                         type="" 
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        onKeyDown={emailFilter.handleKeyDown}
-                        onPaste={emailFilter.handlePaste}
-                        placeholder="tu@email.com"
+                        onKeyDown={dniFilter.handleKeyDown}
+                        onPaste={dniFilter.handlePaste}
+                        placeholder="12345678"
+                        minLength={MIN_DNI_LENGTH}
+                        maxLength={MAX_DNI_LENGTH}
                       />
-
+                      <InformRequirements value={formData.dni} requirements={dniReqs} />
+                    </div>
+                    <div>
                       <Input
-                        label="Teléfono (opcional)"
-                        type="tel"
-                        name="telefono"
-                        value={formData.telefono}
+                        label="Fecha de nacimiento"
+                        type="date"
+                        name="fechaNacimiento"
+                        value={formData.fechaNacimiento}
                         onChange={handleChange}
-                        onKeyDown={phoneFilter.handleKeyDown}
-                        onPaste={phoneFilter.handlePaste}
-                        placeholder="+54 221 123 4567"
-                        maxLength={12}
+                        min="1900-01-01"
+                        max={todayStr}
                       />
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Input
-                            label="DNI"
-                            type="text"
-                            name="dni"
-                            value={formData.dni}
-                            onChange={handleChange}
-                            onKeyDown={dniFilter.handleKeyDown}
-                            onPaste={dniFilter.handlePaste}
-                            placeholder="12345678"
-                            maxLength={MAX_DNI_LENGTH}
-                          />
-                          <InformRequirements value={formData.dni} requirements={dniReqs} />
-                        </div>
-                        <div>
-                          <Input
-                            label="Fecha de nacimiento"
-                            type="date"
-                            name="fechaNacimiento"
-                            value={formData.fechaNacimiento}
-                            onChange={handleFechaChange}
-                          />
-                          <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
-                        </div>
-                      </div>
+                      <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
                     </div>
+                  </div>
 
-                    <div className="space-y-5">
-                      <div className="relative">
-                        <Input
-                          label="Contraseña"
-                          type={showPassword ? "text" : "password"}
-                          name="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          onKeyDown={passwordFilter.handleKeyDown}
-                          onPaste={passwordFilter.handlePaste}
-                          placeholder="••••••••"
-                          minLength={MIN_PASSWORD_LENGTH}
-                          maxLength={MAX_PASSWORD_LENGTH}
-                          className="pr-16"
-                        />
-                        <PrivacyEye show={showPassword} onToggle={() => setShowPassword((prev) => !prev)} />
-                      </div>
-                      <InformRequirements value={formData.password} requirements={passwordReqs} />
+                  <div className="relative">
+                    <Input
+                      label="Contraseña"
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onKeyDown={passwordFilter.handleKeyDown}
+                      onPaste={passwordFilter.handlePaste}
+                      placeholder="••••••••"
+                      minLength={MIN_PASSWORD_LENGTH}
+                      maxLength={MAX_PASSWORD_LENGTH}
+                      className="pr-16"
+                    />
+                    <PrivacyEye show={showPassword} onToggle={() => setShowPassword((prev) => !prev)} />
+                  </div>
+                  <InformRequirements value={formData.password} requirements={passwordReqs} />
 
-                      <div className="relative">
-                        <Input
-                          label="Confirmar contraseña"
-                          type={showConfirmPassword ? "text" : "password"}
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          onKeyDown={confirmPasswordFilter.handleKeyDown}
-                          onPaste={confirmPasswordFilter.handlePaste}
-                          placeholder="••••••••"
-                          minLength={MIN_PASSWORD_LENGTH}
-                          maxLength={MAX_PASSWORD_LENGTH}
-                          className="pr-16"
-                        />
-                        <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword((prev) => !prev)} />
-                      </div>
-                      <InformRequirements value={formData.confirmPassword} requirements={confirmPasswordReqs} />
+                  <div className="relative">
+                    <Input
+                      label="Confirmar contraseña"
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      onKeyDown={confirmPasswordFilter.handleKeyDown}
+                      onPaste={confirmPasswordFilter.handlePaste}
+                      placeholder="••••••••"
+                      minLength={MIN_PASSWORD_LENGTH}
+                      maxLength={MAX_PASSWORD_LENGTH}
+                      className="pr-16"
+                    />
+                    <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword((prev) => !prev)} />
+                  </div>
+                  <InformRequirements value={formData.confirmPassword} requirements={confirmPasswordReqs} />
 
-                      <Button type="submit" className="w-full py-3 text-base" loading={loading} disabled={loading}>
-                        Crear cuenta
-                      </Button>
-
-                      <div className="pt-6 border-t border-border text-center">
-                        <p>
-                          <span className="text-gray-600 dark:text-gray-400">¿Ya tienes cuenta? </span>
-                          <span onClick={() => (window.location.href = '/login')}  className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer">
-                            Iniciar sesión
-                          </span>
-                        </p>
-                      </div>
-                    </div>
+                  <Button type="submit" className="w-full py-3 text-base" loading={loading} disabled={loading}>
+                    Crear cuenta
+                  </Button>
+                  
+                  <div className="mt-8 pt-6 border-t border-border text-center">
+                    <p>
+                      <span className="text-gray-500">¿Ya tienes cuenta? </span>
+                      <Link to="/login" className="inline text-black hover:underline font-medium cursor-pointer">
+                        Iniciar sesión
+                      </Link>
+                    </p>
                   </div>
                 </form>
               )}
