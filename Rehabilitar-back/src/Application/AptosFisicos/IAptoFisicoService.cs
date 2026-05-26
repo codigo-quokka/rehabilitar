@@ -8,6 +8,5 @@ public interface IAptoFisicoService
     Task<ErrorOr<Success>> EvaluarAsync(Guid aptoFisicoId, Guid evaluadoPor, bool aprobado, string? motivoRechazo);
     Task<ErrorOr<AptoFisicoArchivoDto>> GetArchivoAsync(Guid aptoFisicoId, Guid usuarioId, string rol);
     Task<ErrorOr<List<AptoFisicoResponse>>> GetPendientesAsync();
-    Task<ErrorOr<AptoFisicoResponse>> GetMiAptoAsync(Guid clienteId);
-    Task<ErrorOr<List<AptoFisicoResponse>>> GetAll(CancellationToken ct = default);
+    Task<ErrorOr<List<AptoFisicoResponse>>> GetMisAptosAsync(Guid clienteId);
 }

@@ -1,5 +1,4 @@
 using Domain.Exceptions;
-using Domain.AptosFisicos;
 
 namespace Domain.Clientes;
 
@@ -17,7 +16,6 @@ public class Cliente
     public decimal DescuentoProximaReserva { get; private set; }
     public SaldoAFavor SaldoAFavor { get; private set; }
     public bool AptoFisicoAprobado { get; private set;}
-    public virtual AptoFisico? AptoFisico { get; private set; }
 
     #nullable disable
     private Cliente() { }
