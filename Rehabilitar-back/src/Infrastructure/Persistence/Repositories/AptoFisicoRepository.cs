@@ -29,13 +29,13 @@ public class AptoFisicoRepository : RepositoryBase<AptoFisico>, IAptoFisicoRepos
             .ToListAsync(ct);
     }
 
-    public async Task<List<AptoFisico>> GetByClienteIdAsync(Guid clienteId, CancellationToken ct = default)
+    public async Task<AptoFisico?> GetByClienteIdAsync(Guid clienteId, CancellationToken ct = default)
     {
         return await _context.AptosFisicos
             .Where(a => a.ClienteId == clienteId)
             .Include(a => a.Cliente)
                 .ThenInclude(c => c.User)
-            .OrderByDescending(a => a.FechaSubida)
-            .ToListAsync(ct);
+            .Include(a => a.Evaluador)
+            .FirstOrDefaultAsync(ct);
     }
 }
