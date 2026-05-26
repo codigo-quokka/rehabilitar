@@ -9,4 +9,5 @@ public interface IAptoFisicoService
     Task<ErrorOr<AptoFisicoArchivoDto>> GetArchivoAsync(Guid aptoFisicoId, Guid usuarioId, string rol);
     Task<ErrorOr<List<AptoFisicoResponse>>> GetPendientesAsync();
     Task<ErrorOr<List<AptoFisicoResponse>>> GetMisAptosAsync(Guid clienteId);
+    Task<ErrorOr<List<AptoFisicoResponse>>> GetAllAsync();
 }
