@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
-import { usuariosApi, reservasApi, actividadesApi, profesorApi } from '../../../api';
-import { User, Role, Reserva, Actividad } from '../../../types';
+import { usuariosApi, reservasApi, actividadesApi, profesorApi} from '../../../api';
+import {aptosFisicosApi} from '../../../api/aptosFisicos';
+import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
@@ -14,6 +15,7 @@ export function UsuariosPage() {
   const { user: currentUser, hasRole } = useAuth();
   const isReception = hasRole(['Recepción']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [aptosFisicos, setAptosFisicos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -93,6 +95,12 @@ export function UsuariosPage() {
     try {
       const data = await usuariosApi.getAll();
       setUsuarios(data);
+      try{
+        const aptosData = await aptosFisicosApi.getAll();
+        setAptosFisicos(aptosData);
+      }
+      catch(err){}
+
     } catch (err) {
     } finally {
       setLoading(false);

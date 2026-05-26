@@ -4,7 +4,7 @@ import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { Table, Badge, Button, Modal, Input } from '../../../components/ui';
-import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { Loader2, Eye, Check, X, FileText } from 'lucide-react';
 import { AptoFisicoViewer } from '../components/AptoFisicoViewer';
 
@@ -172,7 +172,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
 
   return (
     <MainLayout title="Aptos Físicos Pendientes">
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
@@ -194,12 +194,12 @@ export const AdminAptosFisicosPage: React.FC = () => {
       {/* Modal para ver apto físico */}
       <Modal isOpen={isViewerOpen} onClose={() => setIsViewerOpen(false)} title="Visualizar Apto Físico" size="lg">
         {selectedApto && (
-          <AptoFisicoViewer aptoFisico={selectedApto} onClose={() => setIsViewerOpen(false)} />
+          <AptoFisicoViewer aptoFisico={selectedApto} />
         )}
       </Modal>
 
       {/* Modal de confirmación para aprobar */}
-      <ConfirmActionModal
+      <ConfirmActionModalVerde
         isOpen={isApproveConfirmOpen}
         onCancel={() => setIsApproveConfirmOpen(false)}
         onConfirm={confirmApproveApto}
@@ -210,7 +210,7 @@ export const AdminAptosFisicosPage: React.FC = () => {
 
       {/* Modal para rechazar apto físico */}
       <Modal isOpen={isRejectModalOpen} onClose={() => setIsRejectModalOpen(false)} title="Rechazar apto físico">
-        <div className="p-4 space-y-4 bg-white dark:bg-gray-800">
+        <div className="p-4 space-y-4 bg-white dark:bg-gray-900">
           <p className="text-gray-700 dark:text-gray-300">
             Ingresa el motivo por el cual se rechaza el apto físico de{' '}
             <span className="font-semibold">{aptoToReject?.clienteNombre}</span>:
