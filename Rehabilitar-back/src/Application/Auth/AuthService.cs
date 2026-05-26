@@ -38,6 +38,13 @@ public class AuthService : IAuthService
         await _uow.BeginTransactionAsync();
 
         try {
+
+            if (await _clienteRepo.DniExistsAsync(request.Dni))
+            {
+                await _uow.RollbackTransactionAsync();
+                return Error.Conflict("Dni.AlreadyExists", "El DNI proporcionado ya está registrado.");
+            }
+
             var user = User.Create(
                 request.FirstName,
                 request.LastName,
@@ -75,6 +82,7 @@ public class AuthService : IAuthService
         catch (Exception)
         {
             await _uow.RollbackTransactionAsync();
+            // Console.WriteLine($"Error en RegisterAsync: {ex.Message}"); // debug
             return Error.Failure("Auth.UnexpectedError", "Ocurrió un error inesperado durante el registro.");
         }
     }
