@@ -229,6 +229,18 @@ export function UsuariosPage() {
       ),
     },
     {
+      key: 'aptitudFisica',
+      header: 'Apto Físico',
+      render: (u: User) => {
+        if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        return (
+          <Badge variant={u.aptitudFisica ? 'success' : 'warning'}>
+            {u.aptitudFisica ? 'Aprobado' : 'Pendiente'}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'acciones',
       header: 'Acciones',
       headerClass: 'text-center',
