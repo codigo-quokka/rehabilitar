@@ -28,20 +28,6 @@ export function Header({ title }: HeaderProps) {
       .catch(() => {});
   }, [user?.id]);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    const refreshCoins = () => {
-      usuariosApi
-        .getById(user.id)
-        .then((data) => {
-          setCoins(data.rehabiliCoins ?? 0);
-        })
-        .catch(() => {});
-    };
-    window.addEventListener('rehabicoins:refresh', refreshCoins);
-    return () => window.removeEventListener('rehabicoins:refresh', refreshCoins);
-  }, [user?.id]);
-
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
   };
@@ -81,6 +67,19 @@ export function Header({ title }: HeaderProps) {
           )}
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-black text-gray-500 dark:text-gray-400">
+            <img
+              src={coinIcon}
+              alt=""
+              className="h-5 w-auto"
+              aria-hidden="true"
+            />
+            <span className=" relative bottom-0.5 mx-1.5  text-gray-300 dark:text-gray-600">
+              |
+            </span>
+            <span className="text-sm font-medium">{coins}</span>
+          </div>
+          <NotificationTray />
           <button
             type="button"
             onClick={toggleTheme}
