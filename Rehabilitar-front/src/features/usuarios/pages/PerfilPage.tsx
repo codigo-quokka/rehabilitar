@@ -621,13 +621,10 @@ export function PerfilPage() {
         </Modal>
 
         {/* Modal de visualización */}
-        <Modal
-          isOpen={verArchivo}
-          onClose={() => setVerArchivo(false)}
-          title="Apto físico"
-          size="l"
-        >
-          {aptoActual && <AptoFisicoViewer aptoFisico={aptoActual} />}
+        <Modal isOpen={verArchivo} onClose={() => setVerArchivo(false)} title="Apto físico" size="lg">
+          {aptoActual && (
+            <AptoFisicoViewer aptoFisico={aptoActual} />
+          )}
         </Modal>
 
         <ConfirmActionModal

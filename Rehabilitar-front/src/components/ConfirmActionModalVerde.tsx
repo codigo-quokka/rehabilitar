@@ -18,7 +18,7 @@ export function ConfirmActionModalVerde({ title, body, confirmLabel, onConfirm, 
           <Button variant="ghost" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={onConfirm}>
+          <Button variant="verde" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

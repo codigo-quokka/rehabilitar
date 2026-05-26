@@ -51,7 +51,7 @@ const menuItems: MenuItem[] = [
     path: '/aptos-fisicos',
     label: 'Aptos Físicos',
     icon: <FileCheck className="w-5 h-5" />,
-    roles: ['Administrador'],
+    roles: ['Administrador', 'Recepción'],
   },
   {
     path: '/salas',
