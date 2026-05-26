@@ -1,15 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
-import { MainLayout } from '../../../components/layout';
-import { Card, Table, Badge, Button, Modal, Input, FilterDropdown } from '../../../components/ui';
+import React, { useEffect, useState, useMemo } from 'react';
+import { MainLayout } from '../../../components/layout/MainLayout';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
-import { Table, Badge, Button, Modal, Input } from '../../../components/ui';
+import { Table, Badge, Button, Modal, Input, FilterDropdown } from '../../../components/ui';
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { Loader2, Eye, Check, X, FileText } from 'lucide-react';
 import { AptoFisicoViewer } from '../components/AptoFisicoViewer';
 
-export function AdminAptosFisicosPage() {
+export const AdminAptosFisicosPage: React.FC = () => {
   const [aptos, setAptos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,44 +49,15 @@ export function AdminAptosFisicosPage() {
     });
   }, [aptos, filters, searchTerm]);
 
-  const hasActiveFilters = useMemo(() => {
-    return (
-      Object.values(filters).some(v => v !== 'all')
-    );
-  }, [filters]);
-
-  const hasActiveSearchFilter = useMemo(() => {
-    return (
-      searchTerm !== ''
-    );
-  }, [searchTerm]);
-
-  const getEmptyStateMessage = () => {
-    if (hasActiveSearchFilter && hasActiveFilters) {
-      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveSearchFilter) {
-      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveFilters) {
-      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
-    }
-    return 'No hay aptos físicos registrados.'
-  }
-
-  const cleanFilters = () => {
-    setFilters({
-      estado: 'all',
-    });
-    setSearchTerm('');
-  }
 
   const fetchAptos = async () => {
     setLoading(true);
     try {
       const data = await aptosFisicosApi.getAll();
       setAptos(data);
-    } catch {
+    } catch (err) {
+      console.error('Error al obtener aptos físicos:', err);
+      setError('Error al cargar los aptos físicos.');
       showToastMessage('Error al cargar aptos físicos.', 'error');
     } finally {
       setLoading(false);
@@ -217,40 +187,78 @@ export function AdminAptosFisicosPage() {
           >
             <Eye className="w-4 h-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleApproveApto(apto)}
+            aria-label={`Aprobar apto físico de ${apto.clienteNombre}`}
+            className="text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900"
+          >
+            <Check className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleRejectApto(apto)}
+            aria-label={`Rechazar apto físico de ${apto.clienteNombre}`}
+            className="text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       ),
     },
   ];
 
   return (
-    <MainLayout title="Aptos Físicos Pendientes">
-      <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
-        {loading ? (
-          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        ) : filteredAptos.length === 0 ? (
-          <Card>
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {getEmptyStateMessage()}
-            </p>
-            {(hasActiveFilters || hasActiveSearchFilter) && (
-              <div className="flex justify-center mt-4">
-                <Button
-                  variant="ghost"
-                  className="px-4 py-2 justify-center whitespace-nowrap h-10 hover:bg-primary/20 dark:hover:bg-gray-700 transition-colors"
-                  onClick={() => {
-                  cleanFilters();
-                }}
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
-            )}
-          </Card>
-        ) : (
-          <Card padding="none">
+    <MainLayout title="Aptos Físicos">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <FilterDropdown
+              filters={[{
+                key: 'estado',
+                label: 'Estado',
+                options: [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'Pendiente', label: 'Pendiente' },
+                  { value: 'Aprobado', label: 'Aprobado' },
+                  { value: 'Rechazado', label: 'Rechazado' },
+                ],
+              }]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ estado: 'all' })}
+              onOpenChange={setFilterOpen}
+            />
+            <div className={filterOpen ? 'invisible' : ''}>
+              <Input
+                placeholder="Buscar por cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-w-125"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+              <p className="ml-2 text-gray-700 dark:text-gray-300">Cargando aptos físicos...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-500 dark:text-red-400 h-64 flex items-center justify-center">
+              <p>{error}</p>
+            </div>
+          ) : filteredAptos.length === 0 ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 h-64 flex items-center justify-center">
+              <p>No hay aptos físicos cargados.</p>
+            </div>
+          ) : (
             <Table columns={columns} data={filteredAptos} keyExtractor={(apto) => apto.id} />
-          </Card>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Modal para ver apto físico */}

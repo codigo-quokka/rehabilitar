@@ -47,11 +47,6 @@ export function UsuariosPage() {
   const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
   const [clasesModalLoading, setClasesModalLoading] = useState(false);
 
-  const [pagoModal, setPagoModal] = useState<Reserva | null>(null);
-  const [montoPago, setMontoPago] = useState('');
-  const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [procesandoPago, setProcesandoPago] = useState(false);
-
   const aptosPorCliente = useMemo(() => {
     const map: Record<string, AptoFisico> = {};
     aptosFisicos.forEach(apto => {
@@ -90,8 +85,10 @@ export function UsuariosPage() {
       if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
       if (filters.estado === 'active' && !u.activo) return false;
       if (filters.estado === 'suspended' && u.activo) return false;
-      if (filters.aptoFisico === 'aprobado' && !u.aptitudFisica) return false;
-      if (filters.aptoFisico === 'pendiente' && u.aptitudFisica) return false;
+      if (filters.aptoFisico === 'aprobado' && aptosPorCliente[u.id]?.estado !== 'Aprobado') return false;
+      if (filters.aptoFisico === 'pendiente' && aptosPorCliente[u.id]?.estado !== 'Pendiente') return false;
+      if (filters.aptoFisico === 'rechazado' && aptosPorCliente[u.id]?.estado !== 'Rechazado') return false;
+      if (filters.aptoFisico === 'sin_cargar' && !!aptosPorCliente[u.id]) return false;
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
@@ -321,9 +318,11 @@ export function UsuariosPage() {
       header: 'Apto Físico',
       render: (u: User) => {
         if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        const apto = aptosPorCliente[u.id];
+        if (!apto) return <Badge variant="warning">Sin cargar</Badge>;
         return (
-          <Badge variant={u.aptitudFisica ? 'success' : 'warning'}>
-            {u.aptitudFisica ? 'Aprobado' : 'Pendiente'}
+          <Badge variant={apto.estado === 'Aprobado' ? 'success' : apto.estado === 'Rechazado' ? 'danger' : 'warning'}>
+            {apto.estado === 'Aprobado' ? 'Aprobado' : apto.estado === 'Rechazado' ? 'Rechazado' : 'Pendiente'}
           </Badge>
         );
       },
@@ -399,13 +398,15 @@ export function UsuariosPage() {
                     { value: 'TrenInferior', label: 'Tren Inferior' },
                   ],
                 }] : []),
-                ...(filters.rol === 'Cliente Registrado' ? [{
+                 ...(filters.rol === 'Cliente Registrado' ? [{
                   key: 'aptoFisico',
                   label: 'Apto Físico',
                   options: [
                     { value: 'all', label: 'Todos' },
                     { value: 'aprobado', label: 'Aprobado' },
                     { value: 'pendiente', label: 'Pendiente' },
+                    { value: 'rechazado', label: 'Rechazado' },
+                    { value: 'sin_cargar', label: 'Sin cargar' },
                   ],
                 }] : [])] : []),
                 {
