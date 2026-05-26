@@ -26,6 +26,7 @@ export function UsuariosPage() {
     rol: 'all',
     estado: 'all',
     especialidad: 'all',
+    aptoFisico: 'all',
   });
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -57,19 +58,35 @@ export function UsuariosPage() {
 
   };
 
-  const filteredUsuarios = usuarios.filter(u => {
-    if (isReception && u.rol !== 'Cliente Registrado') return false;
-    if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
-    if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
-    if (filters.estado === 'active' && !u.activo) return false;
-    if (filters.estado === 'suspended' && u.activo) return false;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-      if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
-    }
-    return true;
-  }).filter(u => u.id !== currentUser?.id);
+  const ordenRoles: Record<string, number> = {
+    Administrador: 0,
+    Recepción: 1,
+    Profesor: 2,
+    'Cliente Registrado': 3,
+  };
+
+  const filteredUsuarios = usuarios
+    .filter(u => {
+      if (isReception && u.rol !== 'Cliente Registrado') return false;
+      if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
+      if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
+      if (filters.estado === 'active' && !u.activo) return false;
+      if (filters.estado === 'suspended' && u.activo) return false;
+      if (filters.aptoFisico === 'aprobado' && !u.aptitudFisica) return false;
+      if (filters.aptoFisico === 'pendiente' && u.aptitudFisica) return false;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
+        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
+      }
+      return true;
+    })
+    .filter(u => u.id !== currentUser?.id)
+    .sort((a, b) => {
+      const rolDiff = (ordenRoles[a.rol] ?? 99) - (ordenRoles[b.rol] ?? 99);
+      if (rolDiff !== 0) return rolDiff;
+      return `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`);
+    });
 
   const fetchData = async () => {
     setLoading(true);
@@ -229,6 +246,18 @@ export function UsuariosPage() {
       ),
     },
     {
+      key: 'aptitudFisica',
+      header: 'Apto Físico',
+      render: (u: User) => {
+        if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        return (
+          <Badge variant={u.aptitudFisica ? 'success' : 'warning'}>
+            {u.aptitudFisica ? 'Aprobado' : 'Pendiente'}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'acciones',
       header: 'Acciones',
       headerClass: 'text-center',
@@ -293,6 +322,15 @@ export function UsuariosPage() {
                     { value: 'TrenMedio', label: 'Tren Medio' },
                     { value: 'TrenInferior', label: 'Tren Inferior' },
                   ],
+                }] : []),
+                ...(filters.rol === 'Cliente Registrado' ? [{
+                  key: 'aptoFisico',
+                  label: 'Apto Físico',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'aprobado', label: 'Aprobado' },
+                    { value: 'pendiente', label: 'Pendiente' },
+                  ],
                 }] : [])] : []),
                 {
                   key: 'estado',
@@ -306,7 +344,7 @@ export function UsuariosPage() {
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all' })}
+              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
               onOpenChange={setFilterOpen}
             />
             <div className={filterOpen ? 'invisible' : ''}>
