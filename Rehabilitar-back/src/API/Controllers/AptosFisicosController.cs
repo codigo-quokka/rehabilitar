@@ -71,6 +71,17 @@ public class AptosFisicosController : ApiControllerBase
         );
     }
 
+    [HttpGet]
+    [Authorize(Roles = "Administrador, Recepción")]
+    public async Task<IActionResult> GetAll()
+    {
+        var result = await _aptoFisicoService.GetAllAsync();
+        return result.Match(
+            aptos => Ok(aptos),
+            errores => Problem(errores)
+        );
+    }
+
     [HttpGet("{id}/archivo")]
     public async Task<IActionResult> GetArchivo(Guid id)
     {

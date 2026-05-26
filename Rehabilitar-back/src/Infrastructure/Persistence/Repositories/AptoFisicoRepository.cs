@@ -38,4 +38,17 @@ public class AptoFisicoRepository : RepositoryBase<AptoFisico>, IAptoFisicoRepos
             .OrderByDescending(a => a.FechaSubida)
             .ToListAsync(ct);
     }
+
+    public async Task<List<AptoFisico>> GetUltimoPorClienteAsync(CancellationToken ct = default)
+    {
+        return await _context.AptosFisicos
+            .Include(a => a.Cliente)
+                .ThenInclude(c => c.User)
+            .Include(a => a.Evaluador)
+            .Where(a => !_context.AptosFisicos
+                .Any(a2 => a2.ClienteId == a.ClienteId && a2.FechaSubida > a.FechaSubida))
+            .OrderBy(a => a.Cliente.User.LastName)
+                .ThenBy(a => a.Cliente.User.FirstName)
+            .ToListAsync(ct);
+    }
 }
