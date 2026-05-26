@@ -62,7 +62,7 @@ public class UsuarioService : IUsuarioService
         return await MapToResponse(user);
     }
 
-    public async Task<UsuarioResponse> CreateAsync(CrearUsuarioRequest request)
+    public async Task<ErrorOr<UsuarioResponse>> CreateAsync(CrearUsuarioRequest request)
     {
         var user = User.Create(request.Nombre, request.Apellido, request.Email);
 
@@ -71,8 +71,7 @@ public class UsuarioService : IUsuarioService
 
         if (!result.Succeeded)
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new Exception($"Error al crear usuario: {errors}");
+            return Error.Validation("Usuario.CreacionFallida", string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
         if (!await _roleManager.RoleExistsAsync(request.Rol))
@@ -105,11 +104,11 @@ public class UsuarioService : IUsuarioService
         return await MapToResponse(user);
     }
 
-    public async Task<UsuarioResponse> UpdateAsync(Guid id, EditarUsuarioRequest request)
+    public async Task<ErrorOr<UsuarioResponse>> UpdateAsync(Guid id, EditarUsuarioRequest request)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            throw new KeyNotFoundException("Usuario no encontrado.");
+            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
 
         user.UpdateInfo(
             request.Nombre ?? user.FirstName,
@@ -120,8 +119,7 @@ public class UsuarioService : IUsuarioService
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
-            var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
-            throw new Exception($"Error al actualizar usuario: {errors}");
+            return Error.Validation("Usuario.ActualizacionFallida", string.Join(", ", updateResult.Errors.Select(e => e.Description)));
         }
 
         if (!string.IsNullOrEmpty(request.Rol))
@@ -159,38 +157,43 @@ public class UsuarioService : IUsuarioService
         return await MapToResponse(user);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task<ErrorOr<Success>> DeleteAsync(Guid id)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            throw new KeyNotFoundException("Usuario no encontrado.");
+            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new Exception($"Error al eliminar usuario: {errors}");
+            return Error.Validation("Usuario.EliminacionFallida", string.Join(", ", result.Errors.Select(e => e.Description)));
         }
+        
+        return Result.Success;
     }
 
-    public async Task SuspenderAsync(Guid id)
+    public async Task<ErrorOr<Success>> SuspenderAsync(Guid id)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            throw new KeyNotFoundException("Usuario no encontrado.");
+            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
 
         await _userManager.SetLockoutEnabledAsync(user, true);
         await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+        
+        return Result.Success;
     }
 
-    public async Task ReactivarAsync(Guid id)
+    public async Task<ErrorOr<Success>> ReactivarAsync(Guid id)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            throw new KeyNotFoundException("Usuario no encontrado.");
+            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
 
         await _userManager.SetLockoutEndDateAsync(user, null);
         await _userManager.SetLockoutEnabledAsync(user, false);
+        
+        return Result.Success;
     }
 
     private async Task<UsuarioResponse> MapToResponse(User user)
@@ -216,8 +219,8 @@ public class UsuarioService : IUsuarioService
             Telefono = cliente?.Telefono,
             FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
             Documento = cliente?.Dni.Valor,
-            AptitudFisica = null,
-            FechaAptitud = null,
+            AptitudFisica = cliente?.AptoFisicoAprobado ?? null,
+            SaldoAFavor = cliente?.SaldoAFavor ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
         };
     }

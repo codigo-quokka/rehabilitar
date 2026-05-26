@@ -138,6 +138,12 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<bool>("AptoFisicoAprobado")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("CancelacionesConsecutivas")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DescuentoProximaReserva")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Dni")
                         .IsRequired()
                         .HasMaxLength(8)
@@ -146,6 +152,9 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("InasistenciasConsecutivas")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("RehabiliCoins")
                         .HasColumnType("INTEGER");
@@ -156,6 +165,35 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("Clientes", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SerieId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.ToTable("SuscripcionesAbonado", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
@@ -180,6 +218,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ActividadId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Asistencia")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("ClienteId")
                         .HasColumnType("TEXT");
 
@@ -187,6 +228,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeDescuentoAplicado")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TipoCliente")
@@ -494,6 +538,15 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
+                {
+                    b.HasOne("Domain.Clientes.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
                 {
                     b.HasOne("Domain.User", "User")
@@ -522,6 +575,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.OwnsOne("Domain.Reservas.DetallePago", "DetallePago", b1 =>
                         {
                             b1.Property<Guid>("ReservaId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<decimal>("MontoDescuento")
                                 .HasColumnType("TEXT");
 
                             b1.Property<decimal>("MontoPagado")

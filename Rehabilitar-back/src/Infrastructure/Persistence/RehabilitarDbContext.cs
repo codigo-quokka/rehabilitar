@@ -19,6 +19,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Sala> Salas { get; set; }
     public DbSet<Actividad> Actividades { get; set; }
     public DbSet<AptoFisico> AptosFisicos { get; set; }
+    public DbSet<SuscripcionAbonado> SuscripcionesAbonado { get; set; }
 
     public RehabilitarDbContext(DbContextOptions<RehabilitarDbContext> options) : base(options) { }
 
@@ -134,6 +135,19 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                   .WithMany()
                   .HasForeignKey(a => a.EvaluadoPor)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<SuscripcionAbonado>(entity =>
+        {
+            entity.ToTable("SuscripcionesAbonado");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Estado)
+                  .HasConversion<string>()
+                  .IsRequired();
+            entity.HasOne<Cliente>()
+                  .WithMany()
+                  .HasForeignKey(s => s.ClienteId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -9,7 +9,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
 
     public ActividadRepository(RehabilitarDbContext context) : base(context) { }
 
-    public async Task<bool> ExisteActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime nuevaFechaYHora, Guid? actividadId,CancellationToken ct = default)
+    public async Task<bool> ExisteActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime nuevaFechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default)
     { 
        DateTime FinEstimado = nuevaFechaYHora.AddHours(1); // Asumiendo que cada actividad dura 1 hora
         return await _context.Actividades
@@ -21,7 +21,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                  ct); // chequear lógica
     }
 
-    public async Task<bool> ExisteActividadSuperpuestaEnSalaAsync(Guid salaId, DateTime nuevaFechaYHora, Guid? actividadId, CancellationToken ct = default)
+    public async Task<bool> ExisteActividadSuperpuestaEnSalaAsync(Guid salaId, DateTime nuevaFechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default)
     {
         DateTime FinEstimado = nuevaFechaYHora.AddHours(1); // Asumiendo que cada actividad dura 1 hora
         return await _context.Actividades
@@ -50,7 +50,7 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
             query = query.Where(a => a.ProfesorId == profesorId.Value);
 
         List<Actividad> actividades = await query.ToListAsync();
-        return actividades;
+        return actividades.OrderBy(a => a.FechaYHora).ToList();
     }
 
     public async Task<ICollection<Actividad>> ListarPorSerieIdAsync(Guid serieId, CancellationToken ct = default)
@@ -72,16 +72,16 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                              .ThenInclude(p => p.User)
                              .ToListAsync(ct);
     }
-    public async Task<Actividad> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
+    public async Task<Actividad?> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
     {
-        var actividad = await _context.Actividades
+        return await _context.Actividades
                                       .Include(a => a.Sala)
                                       .Include(a => a.Profesor)
                                       .ThenInclude(p => p.User)
                                       .Include(a => a.Reservas)
+                                          .ThenInclude(r => r.Cliente)
+                                          .ThenInclude(c => c.User)
                                       .FirstOrDefaultAsync(a => a.Id == actividadId, ct);
-        if (actividad == null) throw new KeyNotFoundException("Actividad no encontrada.");
-        return actividad;
     }
 
     // public async Task<Actividad?> EditarActividadAsync(Guid actividadId, EditarActividadRequest request)
