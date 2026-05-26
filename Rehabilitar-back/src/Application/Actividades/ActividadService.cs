@@ -2,6 +2,7 @@ using Domain.Actividades;
 using Domain.Reservas;
 using Domain.Profesores;
 using Domain.Salas;
+using Domain.Clientes;
 using Application.Common.Interfaces;
 using ErrorOr;
 using Application.Actividades.DTOs;
@@ -36,7 +37,7 @@ public class ActividadService : IActividadService
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividad(CrearActividadRequest request, CancellationToken ct = default)
     {   
-        var validacion = await ValidarActividad(null, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
+        var validacion = await ValidarActividad(null, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, request.SerieId ?? Guid.Empty, ct);
         
         if (validacion.IsError)
             return validacion.Errors;
@@ -65,6 +66,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.ProfesorId,
             request.ActividadBase.Tipo,
             request.ActividadBase.Estado,
+            serieId,
             ct);
 
         if (validacionLote.IsError)
@@ -108,6 +110,7 @@ public class ActividadService : IActividadService
             request.ActividadBase.ProfesorId,
             request.ActividadBase.Tipo,
             request.ActividadBase.Estado,
+            request.SerieId,
             ct);
 
         if (validacionLote.IsError) return validacionLote.Errors;
@@ -142,7 +145,7 @@ public class ActividadService : IActividadService
 
         if (actividad == null) return Error.NotFound("Actividad no encontrada");   
 
-        var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, ct);
+        var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, request.SerieId ?? Guid.Empty, ct);
         
         if (validacion.IsError)
             return validacion.Errors;
@@ -207,7 +210,7 @@ public class ActividadService : IActividadService
         if (profesor.Especialidad != actividad.Tipo)
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
-        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, ct))
+        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
             return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
@@ -231,6 +234,55 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad, ct);
     }
 
+    public async Task<ErrorOr<Success>> IniciarActividadAsync(Guid id, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        actividad.IniciarClase();
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> FinalizarActividadAsync(Guid id, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        var clienteIds = actividad.Reservas
+            .Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa && r.Asistencia == EstadoAsistencia.Pendiente)
+            .Select(r => r.ClienteId)
+            .ToList();
+
+        var clientes = new List<Cliente>();
+        foreach (var clienteId in clienteIds)
+        {
+            var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+            if (cliente != null) clientes.Add(cliente);
+        }
+
+        actividad.FinalizarClase(clientes);
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> RegistrarAsistenciaPorDniAsync(Guid actividadId, string dni, CancellationToken ct = default)
+    {
+        var cliente = await _clienteRepo.GetByDniAsync(dni, ct);
+        if (cliente == null) return Error.NotFound("Cliente no encontrado");
+
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
+        if (reserva == null) return Error.NotFound("Reserva no encontrada");
+
+        reserva.MarcarAsistencia();
+        cliente.ResetearInasistencias();
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success;
+    }
+
     public async Task<ErrorOr<ActividadResponse>> ObtenerActividadPorId(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
@@ -241,17 +293,8 @@ public class ActividadService : IActividadService
     
     private async Task<ErrorOr<ActividadResponse>> MapToDto(Actividad actividad, CancellationToken ct = default)
     {
-        string nombreSala = await _salaRepo.GetByIdAsync(actividad.SalaId, ct) is Sala sala ? sala.Nombre : "Sala no encontrada";
-        string? nombreProfesor = null;
-        if (actividad.ProfesorId.HasValue)
-        {
-            var profesor = await _profesorRepo.GetByIdAsync(actividad.ProfesorId.Value, ct);
-
-            if (profesor == null)
-                return Error.NotFound("Profesor.NotFound", "Profesor no encontrado.");
-
-            nombreProfesor = profesor.User.FirstName + " " + profesor.User.LastName;
-        }
+        string nombreSala = actividad.Sala?.Nombre ?? string.Empty;
+        string? nombreProfesor = actividad.Profesor?.User?.FirstName != null ? $"{actividad.Profesor.User.FirstName} {actividad.Profesor.User.LastName}" : string.Empty;
 
         return new ActividadResponse(
             actividad.Id,
@@ -265,13 +308,14 @@ public class ActividadService : IActividadService
             actividad.CupoDisponible,
             actividad.SalaId,
             nombreSala,
-            actividad.ProfesorId ?? Guid.Empty, // Si no tiene profesor asignado, se devuelve un Guid vacío
+            actividad.ProfesorId,
             nombreProfesor,
-            actividad.SerieId ?? Guid.Empty
+            actividad.SerieId,
+            actividad.ProbabilidadListaEspera
         );
     }
 
-    private async Task<ErrorOr<Success>> ValidarActividad(Guid? id, int cupoMaximo, Guid salaId, DateTime fechaYHora, Guid? profesorId, TipoEspecialidad tipo, EstadoActividad estado, CancellationToken ct = default)
+    private async Task<ErrorOr<Success>> ValidarActividad(Guid? id, int cupoMaximo, Guid salaId, DateTime fechaYHora, Guid? profesorId, TipoEspecialidad tipo, EstadoActividad estado, Guid serieId, CancellationToken ct = default)
     {
         if (estado == EstadoActividad.Finalizada)
             return Error.Validation("No se puede crear o editar una actividad en estado finalizada.");
@@ -286,7 +330,7 @@ public class ActividadService : IActividadService
         if (cupoMaximo > sala.Capacidad) 
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
-        if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, ct))
+        if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
             return Error.Conflict($"La sala no está disponible el {fechaYHora.Date} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
@@ -300,7 +344,7 @@ public class ActividadService : IActividadService
             if (profesor.Especialidad != tipo) 
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
-            if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, ct))
+            if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
                 return Error.Conflict("El profesor no está disponible en la fecha y hora seleccionada");
         }
 
@@ -326,11 +370,12 @@ public class ActividadService : IActividadService
         Guid? profesorId,
         TipoEspecialidad tipo,
         EstadoActividad estado,
+        Guid serieId,
         CancellationToken ct)
     {
         foreach (var item in items)
         {
-            var validacion = await ValidarActividad(item.ActividadId, cupo, salaId, item.Fecha, profesorId, tipo, estado, ct);
+            var validacion = await ValidarActividad(item.ActividadId, cupo, salaId, item.Fecha, profesorId, tipo, estado, serieId, ct);
             if (validacion.IsError)
                 return validacion.Errors;
         }

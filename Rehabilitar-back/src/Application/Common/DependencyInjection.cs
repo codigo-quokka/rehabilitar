@@ -4,7 +4,8 @@ using Application.Profesores;
 using Application.Reservas;
 using Application.Salas;
 using Application.Usuarios;
-using Application.Reservas;
+using Application.AptosFisicos;
+using Application.Suscripciones;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,10 +21,12 @@ public static class DependencyInjection
         services.AddScoped<IProfesorService, ProfesorService>();
         services.AddScoped<IReservaService, ReservaService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
-        services.AddScoped<IReservaService, ReservaService>();
+        services.AddScoped<IAptoFisicoService, AptoFisicoService>();
+        services.AddScoped<ISuscripcionService, SuscripcionService>();
 
         services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
 
         return services;
-    }
+
+}
 }

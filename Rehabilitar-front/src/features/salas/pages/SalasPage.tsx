@@ -10,14 +10,15 @@ import {
 } from "../../../components/ui";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { Notitoast } from "../../../components/Notitoast";
-import { salasApi } from "../../../api";
-import { Sala } from "../../../types";
+import { salasApi, actividadesApi } from "../../../api";
+import { Sala, Actividad } from "../../../types";
 import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
   const { hasRole } = useAuth();
   const isReception = hasRole(["Recepción"]);
   const [salas, setSalas] = useState<Sala[]>([]);
+  const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
@@ -31,11 +32,29 @@ export function SalasPage() {
   const [showToast, setShowToast] = useState(false);
 
 
+  const tieneActividadesPendientes = (salaId: string): boolean => {
+    return actividades.some(
+      (a) => a.salaId === salaId && a.estado !== 'Finalizada' && a.estado !== 'Cancelada'
+    );
+  };
+
   const HandleDeleteClick = (id: string) => {
+    if (tieneActividadesPendientes(id)) {
+      setToastType('error');
+      setToastMessage('No se puede eliminar una sala con actividades pendientes.');
+      setShowToast(true);
+      return;
+    }
     setShowDeleteConfirm(true);
     setSalaIdAEliminar(id);
   };
   const HandleDesactivarClick = (s: Sala) => {
+    if (s.activo && tieneActividadesPendientes(s.id)) {
+      setToastType('error');
+      setToastMessage('No se puede desactivar una sala con actividades pendientes.');
+      setShowToast(true);
+      return;
+    }
     setShowDesactivarConfirm(true);
     setSalaADesactivar(s);
   };
@@ -60,8 +79,12 @@ export function SalasPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await salasApi.getAll();
-      setSalas(data);
+      const [salasData, actividadesData] = await Promise.all([
+        salasApi.getAll(),
+        actividadesApi.getAll(),
+      ]);
+      setSalas(salasData);
+      setActividades(actividadesData);
     } catch (err) {
     } finally {
       setLoading(false);
@@ -174,6 +197,7 @@ export function SalasPage() {
       >
         <SalaForm
           sala={selectedSala}
+          tieneActividadesPendientes={selectedSala ? tieneActividadesPendientes(selectedSala.id) : false}
           onClose={() => {
             setShowModal(false);
             setSelectedSala(null);
@@ -214,11 +238,12 @@ export function SalasPage() {
 
 interface SalaFormProps {
   sala: Sala | null;
+  tieneActividadesPendientes: boolean;
   onClose: () => void;
   onNotify?: (type: 'success' | 'error', message: string) => void;
 }
 
-function SalaForm({ sala, onClose, onNotify }: SalaFormProps) {
+function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaFormProps) {
   const [formData, setFormData] = useState({
     nombre: sala?.nombre || "",
     capacidad: sala?.capacidad || 20,
@@ -231,6 +256,11 @@ function SalaForm({ sala, onClose, onNotify }: SalaFormProps) {
     setLoading(true);
     try {
       if (sala) {
+        if (formData.capacidad < sala.capacidad && tieneActividadesPendientes) {
+          onNotify?.('error', 'No se puede reducir la capacidad de una sala con actividades pendientes.');
+          setLoading(false);
+          return;
+        }
         await salasApi.update(sala.id, formData);
         onNotify?.('success', 'Sala actualizada exitosamente.');
       } else {

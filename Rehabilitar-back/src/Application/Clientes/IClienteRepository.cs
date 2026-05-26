@@ -5,5 +5,6 @@ namespace Application.Clientes;
 
 public interface IClienteRepository : IRepositoryBase<Cliente>
 {
-    
+    Task<Cliente?> GetByDniAsync(string dni, CancellationToken ct = default);
+    Task<bool> DniExistsAsync(string dni, CancellationToken ct = default);
 }

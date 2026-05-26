@@ -13,11 +13,14 @@ import { ActividadesPage } from "../features/actividades/pages/ActividadesPage";
 import { CalendarioPage } from "../features/actividades/pages/CalendarioPage";
 import { ReservasPage } from "../features/reservas/pages/ReservasPage";
 import { ConfirmarPagoPage } from "../features/reservas/pages/ConfirmarPagoPage";
+import { PaymentSuccess } from "../features/reservas/pages/PaymentSuccess";
+import { PaymentError } from "../features/reservas/pages/PaymentError";
 import { UsuariosPage } from "../features/usuarios/pages/UsuariosPage";
 import { SalasPage } from "../features/salas/pages/SalasPage";
 import { MetricasPage } from "../features/metricas/pages/MetricasPage";
 import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
 import { MisClasesPage } from "../features/profesor/pages/MisClasesPage";
+import { AdminAptosFisicosPage } from '../features/aptosFisicos/pages/AdminAptosFisicosPage';
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
@@ -86,6 +89,14 @@ export const routes = [
             path: "confirmar/:reservaId",
             element: <ConfirmarPagoPage />,
           },
+          {
+            path: "pago/exito",
+            element: <PaymentSuccess />,
+          },
+          {
+            path: "pago/error",
+            element: <PaymentError />,
+          },
         ],
       },
       {
@@ -129,6 +140,16 @@ export const routes = [
           {
             index: true,
             element: <MetricasPage />,
+          },
+        ],
+      },
+      {
+        path: '/aptos-fisicos',
+        element: <ProtectedRoute allowedRoles={['Administrador', 'Recepción']} />,
+        children: [
+          {
+            index: true,
+            element: <AdminAptosFisicosPage />,
           },
         ],
       },

@@ -45,7 +45,7 @@ export function EmailVerificationPage() {
         const data = error.response?.data;
 
         switch (data?.errorCode) {
-          case "EMAIL_ALREADY_VERIFIED":
+          case "Email.AlreadyVerified":
             setStatus("already_verified");
             break;
           default:

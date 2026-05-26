@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5129/api";
+  import.meta.env.VITE_API_URL || "/api";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -19,7 +19,14 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const renewedToken = response.headers["x-renewed-token"];
+    if (renewedToken) {
+      localStorage.setItem("token", renewedToken);
+      // Actualizamos también el estado de autenticación (esto lo manejará React indirectamente)
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401 && !error.config?.ignoreAuthInterceptor) {
       localStorage.removeItem("token");

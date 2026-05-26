@@ -18,7 +18,7 @@ export const reservasApi = {
   },
 
   cancelar: async (reservaId: string, actividadId: string) => {
-    const response = await apiClient.delete(`/reservas/${reservaId}`, { params: { actividadId } });
+    const response = await apiClient.put(`/reservas/${reservaId}/cancelar`, null, { params: { actividadId } });
     return response.data;
   },
 

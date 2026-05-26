@@ -11,6 +11,9 @@ public class Cliente
 
     public User User { get; private set; }
     public int RehabiliCoins {get; private set;}
+    public int CancelacionesConsecutivas { get; private set; }
+    public int InasistenciasConsecutivas { get; private set; }
+    public decimal DescuentoProximaReserva { get; private set; }
     public SaldoAFavor SaldoAFavor { get; private set; }
     public bool AptoFisicoAprobado { get; private set;}
 
@@ -59,16 +62,64 @@ public class Cliente
 
     public void Reembolsar(decimal monto)
     {
-        SaldoAFavor.AgregarSaldo(monto);
+        SaldoAFavor = SaldoAFavor.AgregarSaldo(monto);
     }
 
     public void RegistrarPago(decimal monto)
     {
-        SaldoAFavor.RestarSaldo(monto);
+        SaldoAFavor = SaldoAFavor.RestarSaldo(monto);
     }
     
     public void AprobarAptoFisico()
     {
         AptoFisicoAprobado = true;
+    }
+
+    public void RechazarAptoFisico()
+    {
+        AptoFisicoAprobado = false;
+    }
+
+    public void ResetearCancelaciones()
+    {
+        CancelacionesConsecutivas = 0;
+        DescuentoProximaReserva = 0m;
+    }
+
+    public void RegistrarCancelacion()
+    {
+        CancelacionesConsecutivas++;
+
+        if (CancelacionesConsecutivas == 1)
+        {
+            DescuentoProximaReserva = 0.30m;
+        }
+        else if (CancelacionesConsecutivas == 2)
+        {
+            DescuentoProximaReserva = 0.20m;
+        }
+        else
+        {
+            DescuentoProximaReserva = 0m;
+        }
+    }
+
+    public void RegistrarInasistencia()
+    {
+       InasistenciasConsecutivas++;
+       if (InasistenciasConsecutivas == 3)
+        {
+            SuspenderCuenta();
+        }
+    }
+
+    private void SuspenderCuenta()
+    {
+        User.Suspender();
+    }
+
+    public void ResetearInasistencias()
+    {
+        InasistenciasConsecutivas = 0;
     }
 }

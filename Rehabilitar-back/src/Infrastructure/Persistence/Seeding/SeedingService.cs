@@ -50,6 +50,7 @@ public class SeedingService : ISeedingService
         await SeedClienteAsync("Daenerys", "Targaryen", "daenerys@targaryen.com", "10111222", "541120204040");
         await SeedClienteAsync("Marilina", "Bertoldi", "marilina@bertoldi.com", "22333444");
         await SeedClienteAsync("Ricardo", "Mollo", "ricardo@mollo.com", "33444555", "541110102020");
+        await SeedClienteAsync("José", "Hernández", "joseh@gmail.com", "10000000", password: "Jose123!");
 
         await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
         await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
@@ -153,7 +154,7 @@ public class SeedingService : ISeedingService
         }
     }
 
-    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null)
+    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null)
     {
         User? clientUser = await _userManager.FindByEmailAsync(clientEmail);
         if (clientUser != null)
@@ -168,7 +169,7 @@ public class SeedingService : ISeedingService
                 email: clientEmail
             );
 
-            clientUser.PasswordHash = _passwordHasher.HashPassword(clientUser, "cliente");
+            clientUser.PasswordHash = _passwordHasher.HashPassword(clientUser, password ?? "cliente");
             var result = await _userManager.CreateAsync(clientUser);
 
             if (!result.Succeeded)
