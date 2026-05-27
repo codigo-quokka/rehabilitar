@@ -27,7 +27,7 @@ This repository contains a management system for a kinesiology center, divided i
   - **Never** use `prefers-color-scheme` CSS media queries for colors. 
   - Every component with a background, text, or border color **must** include a `dark:` equivalent in its class list.
   - Theme state is in `ThemeContext` and persisted to `localStorage` key `"rehabilitar-theme"`.
-- **Notifications**: Use the `useNotifications` hook (in `src/hooks/useNotifications.tsx`) for API feedback. It shares state between a toast component (`Notitoast`) and a header notification tray.
+- **Notifications**: Use the `useNotifications` hook (in `src/hooks/useNotifications.tsx`) for API feedback. All notifications must first appear as a `Notitoast`; only after the toast is dismissed (auto or manually) does it get added to the `NotificationTray`. This is handled centrally in `NotificationsProvider` via the `pendingToast` state and `dismissToast` function.
 - **Styling Constraints**: Do not use pure white (`#FFFFFF`); use `#FBFBFB` or the theme's background colors (`#EAF2F8`). Ensure WCAG 2.2 accessibility compliance (keyboard nav, ARIA, focus states).
 - **Routing/Auth**: Routes are protected via `ProtectedRoute` checking one of 4 roles (Administrador, Recepción, Profesor, Cliente Registrado). Token is stored in `localStorage` and automatically attached by Axios interceptors.
 
