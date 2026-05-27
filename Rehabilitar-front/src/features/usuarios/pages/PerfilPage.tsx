@@ -1,14 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Modal, Badge } from '../../../components/ui';
 import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
 import { authApi, usuariosApi } from '../../../api';
 import { Notitoast } from '../../../components/Notitoast';
+import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
+import { useInputFilter } from '../../../hooks/useInputFilter';
+import { INPUT_PRESETS } from '../../../utils/inputPresets';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
 import { AptoFisicoViewer } from '../../aptosFisicos/components/AptoFisicoViewer';
+
+const MAX_PASSWORD_LENGTH = 32;
+
+const passwordReqs: Requirement[] = [
+  { label: 'Mínimo 8 caracteres', test: (v) => v.length >= 8 },
+  { label: 'Al menos una mayúscula', test: (v) => /[A-Z]/.test(v) },
+  { label: 'Al menos una minúscula', test: (v) => /[a-z]/.test(v) },
+  { label: 'Al menos un número', test: (v) => /[0-9]/.test(v) },
+  {
+    label: 'Al menos un carácter especial',
+    test: (v) => /[^a-zA-Z0-9]/.test(v),
+  },
+];
 
 export function PerfilPage() {
   const { user, updateUser } = useAuth();
@@ -33,6 +49,34 @@ export function PerfilPage() {
     confirmNewPassword: '',
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const currentPasswordFilter = useInputFilter(
+    passwordData.currentPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, currentPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+  const newPasswordFilter = useInputFilter(
+    passwordData.newPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, newPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+  const confirmPasswordFilter = useInputFilter(
+    passwordData.confirmNewPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, confirmNewPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+
+  const confirmPasswordReqs = useMemo<Requirement[]>(
+    () => [
+      {
+        label: 'Las contraseñas coinciden',
+        test: (v) => v.length > 0 && v === passwordData.newPassword,
+      },
+    ],
+    [passwordData.newPassword]
+  );
+
+  const [showPasswordCard, setShowPasswordCard] = useState(false);
 
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -265,7 +309,24 @@ export function PerfilPage() {
         </Card>
 
         <Card className="mt-6">
-          <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Cambiar contraseña</h3>
+          <button
+            type="button"
+            onClick={() => setShowPasswordCard((prev) => !prev)}
+            className="w-full flex items-center justify-between text-left mb-4"
+            aria-expanded={showPasswordCard}
+            aria-controls="password-card-content"
+          >
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100">Cambiar contraseña</h3>
+            <svg
+              className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${showPasswordCard ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showPasswordCard && (
           <div className="space-y-4 max-w-md">
             <div className="relative">
               <Input
@@ -274,6 +335,8 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.currentPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                onKeyDown={currentPasswordFilter.handleKeyDown}
+                onPaste={currentPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showCurrentPassword} onToggle={() => setShowCurrentPassword(prev => !prev)} />
             </div>
@@ -284,9 +347,12 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                onKeyDown={newPasswordFilter.handleKeyDown}
+                onPaste={newPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
             </div>
+            <InformRequirements value={passwordData.newPassword} requirements={passwordReqs} />
             <div className="relative">
               <Input
                 label="Confirmar contraseña"
@@ -294,11 +360,15 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.confirmNewPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })}
+                onKeyDown={confirmPasswordFilter.handleKeyDown}
+                onPaste={confirmPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
             </div>
+            <InformRequirements value={passwordData.confirmNewPassword} requirements={confirmPasswordReqs} />
             <Button onClick={handleChangePassword} loading={passwordLoading}>Actualizar contraseña</Button>
           </div>
+          )}
         </Card>
 
         {/* Modal de subida */}
