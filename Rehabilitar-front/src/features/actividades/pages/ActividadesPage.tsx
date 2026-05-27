@@ -118,32 +118,15 @@ export function ActividadesPage() {
     setReservandoId(actividad.id);
     try {
       const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      if (reserva.probabilidadListaEspera) {
-        setToastType('error');
-        setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
-        setShowToast(true);
-        setTimeout(() => {
-          navigate(`/reservas/confirmar/${reserva.id}`, {
-            state: {
-              reservaId: reserva.id,
-              actividadId: reserva.actividadId,
-              montoTotal: reserva.montoTotal,
-              montoPagado: 0,
-              montoPendiente: reserva.montoPendiente,
-            },
-          });
-        }, 2000);
-      } else {
-        navigate(`/reservas/confirmar/${reserva.id}`, {
-          state: {
-            reservaId: reserva.id,
-            actividadId: reserva.actividadId,
-            montoTotal: reserva.montoTotal,
-            montoPagado: 0,
-            montoPendiente: reserva.montoPendiente,
-          },
-        });
-      }
+      navigate(`/reservas/confirmar/${reserva.id}`, {
+        state: {
+          reservaId: reserva.id,
+          actividadId: reserva.actividadId,
+          montoTotal: reserva.montoTotal,
+          montoPagado: 0,
+          montoPendiente: reserva.montoPendiente,
+        },
+      });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
