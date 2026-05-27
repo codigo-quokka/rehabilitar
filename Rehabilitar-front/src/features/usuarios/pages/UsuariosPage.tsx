@@ -349,7 +349,8 @@ export function UsuariosPage() {
           ) : (
             <span className="min-w-[90px] inline-block" />
           )}
-          {u.activo ? (
+          {!isReception && (
+           u.activo ? (
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
@@ -357,6 +358,7 @@ export function UsuariosPage() {
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
+          )
           )}
           {!isReception ? (
             <Button variant="rojo" size="sm" onClick={() => setUserToDelete(u)}>
