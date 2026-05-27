@@ -16,7 +16,6 @@ import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
   const { hasRole } = useAuth();
-  const isReception = hasRole(["Recepción"]);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,34 +128,38 @@ export function SalasPage() {
         </Badge>
       ),
     },
-    {
+    { 
       key: "acciones",
       header: "Acciones",
       headerClass: "text-right pr-32",
       width: "w-1/6",
       render: (s: Sala) => (
         <div className="flex gap-2">
-          <Button
-            variant="verde"
-            size="sm"
-            onClick={() => setSelectedSala(s)}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="naranja"
-            size="sm"
-            onClick={() => HandleDesactivarClick(s)}
-          >
-            {s.activo ? "Desactivar" : "Activar"}
-          </Button>
-          <Button
-            variant="rojo"
-            size="sm"
-            onClick={() => HandleDeleteClick(s.id)}
-          >
-            Eliminar
-          </Button>
+          {hasRole(['Administrador']) && (
+            <>
+              <Button
+                variant="verde"
+                size="sm"
+                onClick={() => setSelectedSala(s)}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="naranja"
+                size="sm"
+                onClick={() => HandleDesactivarClick(s)}
+              >
+                {s.activo ? "Desactivar" : "Activar"}
+              </Button>
+              <Button
+                variant="rojo"
+                size="sm"
+                onClick={() => HandleDeleteClick(s.id)}
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -166,7 +169,7 @@ export function SalasPage() {
     <MainLayout title="Salas">
       <div className="space-y-6">
         <div className="flex justify-end">
-          {!isReception && (
+          {hasRole(['Administrador']) && (
           <Button variant="primary" onClick={() => setShowModal(true)}>
             Nueva Sala
           </Button>
