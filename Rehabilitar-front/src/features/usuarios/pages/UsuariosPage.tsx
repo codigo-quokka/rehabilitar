@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
-import { usuariosApi, reservasApi, actividadesApi, profesorApi } from '../../../api';
-import { User, Role, Reserva, Actividad } from '../../../types';
+import { usuariosApi, reservasApi, actividadesApi, profesorApi} from '../../../api';
+import {aptosFisicosApi} from '../../../api/aptosFisicos';
+import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
@@ -14,6 +15,7 @@ export function UsuariosPage() {
   const { user: currentUser, hasRole } = useAuth();
   const isReception = hasRole(['Recepción']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [aptosFisicos, setAptosFisicos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -41,6 +43,14 @@ export function UsuariosPage() {
   const [clasesModalUser, setClasesModalUser] = useState<User | null>(null);
   const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
   const [clasesModalLoading, setClasesModalLoading] = useState(false);
+
+  const aptosPorCliente = useMemo(() => {
+    const map: Record<string, AptoFisico> = {};
+    aptosFisicos.forEach(apto => {
+      map[apto.clienteId] = apto;
+    });
+    return map;
+  }, [aptosFisicos]);
 
   const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
 
@@ -72,8 +82,10 @@ export function UsuariosPage() {
       if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
       if (filters.estado === 'active' && !u.activo) return false;
       if (filters.estado === 'suspended' && u.activo) return false;
-      if (filters.aptoFisico === 'aprobado' && !u.aptitudFisica) return false;
-      if (filters.aptoFisico === 'pendiente' && u.aptitudFisica) return false;
+      if (filters.aptoFisico === 'aprobado' && aptosPorCliente[u.id]?.estado !== 'Aprobado') return false;
+      if (filters.aptoFisico === 'pendiente' && aptosPorCliente[u.id]?.estado !== 'Pendiente') return false;
+      if (filters.aptoFisico === 'rechazado' && aptosPorCliente[u.id]?.estado !== 'Rechazado') return false;
+      if (filters.aptoFisico === 'sin_cargar' && !!aptosPorCliente[u.id]) return false;
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
@@ -93,6 +105,12 @@ export function UsuariosPage() {
     try {
       const data = await usuariosApi.getAll();
       setUsuarios(data);
+      try{
+        const aptosData = await aptosFisicosApi.getAll();
+        setAptosFisicos(aptosData);
+      }
+      catch(err){}
+
     } catch (err) {
     } finally {
       setLoading(false);
@@ -250,9 +268,11 @@ export function UsuariosPage() {
       header: 'Apto Físico',
       render: (u: User) => {
         if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        const apto = aptosPorCliente[u.id];
+        if (!apto) return <Badge variant="warning">Sin cargar</Badge>;
         return (
-          <Badge variant={u.aptitudFisica ? 'success' : 'warning'}>
-            {u.aptitudFisica ? 'Aprobado' : 'Pendiente'}
+          <Badge variant={apto.estado === 'Aprobado' ? 'success' : apto.estado === 'Rechazado' ? 'danger' : 'warning'}>
+            {apto.estado === 'Aprobado' ? 'Aprobado' : apto.estado === 'Rechazado' ? 'Rechazado' : 'Pendiente'}
           </Badge>
         );
       },
@@ -260,12 +280,25 @@ export function UsuariosPage() {
     {
       key: 'acciones',
       header: 'Acciones',
-      headerClass: 'text-center',
+      headerClass: 'text-right pr-32',
       render: (u: User) => (
         <div className="flex justify-end gap-2">
+          {/*
           <Button variant="verde" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
+          */}
+          {u.rol === 'Cliente Registrado' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+              Reservas
+            </Button>
+          ) : u.rol === 'Profesor' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+              Clases
+            </Button>
+          ) : (
+            <span className="min-w-[90px] inline-block" />
+          )}
           {u.activo ? (
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
@@ -282,17 +315,7 @@ export function UsuariosPage() {
           ) : (
             <span className="min-w-[70px] inline-block" />
           )}
-          {u.rol === 'Cliente Registrado' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
-              Reservas
-            </Button>
-          ) : u.rol === 'Profesor' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
-              Clases
-            </Button>
-          ) : (
-            <span className="min-w-[90px] inline-block" />
-          )}
+          
         </div>
       ),
     },
@@ -323,13 +346,15 @@ export function UsuariosPage() {
                     { value: 'TrenInferior', label: 'Tren Inferior' },
                   ],
                 }] : []),
-                ...(filters.rol === 'Cliente Registrado' ? [{
+                 ...(filters.rol === 'Cliente Registrado' ? [{
                   key: 'aptoFisico',
                   label: 'Apto Físico',
                   options: [
                     { value: 'all', label: 'Todos' },
                     { value: 'aprobado', label: 'Aprobado' },
                     { value: 'pendiente', label: 'Pendiente' },
+                    { value: 'rechazado', label: 'Rechazado' },
+                    { value: 'sin_cargar', label: 'Sin cargar' },
                   ],
                 }] : [])] : []),
                 {

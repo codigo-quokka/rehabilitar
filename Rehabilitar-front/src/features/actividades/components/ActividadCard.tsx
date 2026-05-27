@@ -87,7 +87,7 @@ export function ActividadCard({
       <div className="flex flex-col gap-2">
         {hasRole(["Cliente Registrado"]) && (
           <Button
-            variant={act.cupoDisponible <= 0 ? "outline" : "primary"}
+            variant={act.cupoDisponible <= 0 ? "outline" : "verde"}
             className="w-full"
             disabled={act.cupoDisponible <= 0}
             onClick={() => onReservar(act)}

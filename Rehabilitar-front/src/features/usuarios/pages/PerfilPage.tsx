@@ -27,7 +27,10 @@ const passwordReqs: Requirement[] = [
 ];
 
 export function PerfilPage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const stripNonLetters = (value: string) => value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+  const stripNonDigits = (value: string) => value.replace(/\D/g, '');
+
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     nombre: user?.nombre || '',
@@ -108,9 +111,13 @@ export function PerfilPage() {
     if (!user) return;
     setLoading(true);
     try {
-      await usuariosApi.update(user.id, formData);
+      const updated = await usuariosApi.update(user.id, formData);
+      updateUser({ ...user, ...formData });
+      showToastMessage('Perfil actualizado exitosamente.', 'success');
       setEditing(false);
     } catch (err) {
+      const msg = (err as any)?.response?.data?.error || 'Error al actualizar el perfil.';
+      showToastMessage(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -170,12 +177,20 @@ export function PerfilPage() {
                 <Input
                   label="Nombre"
                   value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, nombre: stripNonLetters(e.target.value) })}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
+                  }}
                 />
                 <Input
                   label="Apellido"
                   value={formData.apellido}
-                  onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, apellido: stripNonLetters(e.target.value) })}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
+                  }}
                 />
               </div>
               <Input
@@ -186,8 +201,13 @@ export function PerfilPage() {
               />
               <Input
                 label="Teléfono"
+                type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, telefono: stripNonDigits(e.target.value) })}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text');
+                  if (stripNonDigits(pasted) !== pasted) e.preventDefault();
+                }}
               />
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleSave} loading={loading}>Guardar</Button>
@@ -362,7 +382,7 @@ export function PerfilPage() {
         {/* Modal de visualización */}
         <Modal isOpen={verArchivo} onClose={() => setVerArchivo(false)} title="Apto físico" size="lg">
           {aptoActual && (
-            <AptoFisicoViewer aptoFisico={aptoActual} onClose={() => setVerArchivo(false)} />
+            <AptoFisicoViewer aptoFisico={aptoActual} />
           )}
         </Modal>
 

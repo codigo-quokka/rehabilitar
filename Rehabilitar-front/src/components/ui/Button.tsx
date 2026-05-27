@@ -24,14 +24,14 @@ export function Button({
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary";
 
   const variants = {
-    primary: "bg-primary text-white hover:bg-primary-dark border-1 border-gray-200 focus:ring-primary dark:bg-dark-green dark:hover:bg-darkest-green dark:border-1 dark:border-gray-200",
+    primary: "bg-primary text-white hover:bg-primary-dark border-1 focus:ring-primary dark:bg-dark-green dark:hover:bg-darkest-green dark:border-1 dark:border-gray-200",
     secondary: "bg-dark text-white hover:bg-secondary focus:ring-dark",
     outline:
-      "border-2 border-primary text-primary hover:bg-primary/70 hover:text-black focus:ring-primary",
+      "border-2 border-primary text-primary hover:bg-primary/70 hover:text-white focus:ring-primary",
     ghost: "border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100",
-    violeta:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-violet-200 hover:bg-violet-300 text-violet-600 dark:bg-violet-900 dark:hover:bg-violet-950",
+    violeta:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-violet-300 hover:bg-violet-400 text-violet-700 dark:bg-violet-900 dark:hover:bg-violet-950",
     verde:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-primary/50 hover:bg-primary/70 text-dark-green dark:hover:bg-darkest-green dark:bg-dark-green",
-    naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-600 hover:text-amber-800 dark:hover:text-gray-200 dark:bg-amber-600 dark:hover:bg-amber-700",
+    naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-600 hover:text-amber-800 dark:hover:text-gray-200 dark:bg-orange-500 dark:hover:bg-orange-600",
     rojo:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-red-200 hover:bg-red-300 text-red-800 dark:bg-red-800 dark:hover:bg-red-900",
     danger: "bg-red-400 text-white hover:bg-red-800 focus:ring-red-500 dark:bg-red-600",
   };
