@@ -1,17 +1,16 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { MainLayout } from '../../../components/layout/MainLayout';
+import { useEffect, useState, useMemo } from 'react';
+import { MainLayout } from '../../../components/layout';
+import { Card, Table, Badge, Button, Modal, Input, FilterDropdown } from '../../../components/ui';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
-import { Table, Badge, Button, Modal, Input, FilterDropdown } from '../../../components/ui';
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
-import { Loader2, Eye, Check, X, FileText } from 'lucide-react';
+import { Eye, Check, X, FileText } from 'lucide-react';
 import { AptoFisicoViewer } from '../components/AptoFisicoViewer';
 
-export const AdminAptosFisicosPage: React.FC = () => {
+export function AdminAptosFisicosPage() {
   const [aptos, setAptos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -53,13 +52,10 @@ export const AdminAptosFisicosPage: React.FC = () => {
 
   const fetchAptos = async () => {
     setLoading(true);
-    setError(null);
     try {
       const data = await aptosFisicosApi.getAll();
       setAptos(data);
-    } catch (err) {
-      console.error('Error al obtener aptos físicos:', err);
-      setError('Error al cargar los aptos físicos.');
+    } catch {
       showToastMessage('Error al cargar aptos físicos.', 'error');
     } finally {
       setLoading(false);
@@ -154,8 +150,9 @@ export const AdminAptosFisicosPage: React.FC = () => {
     {
       key: 'acciones',
       header: 'Acciones',
+      headerClass: 'text-right pr-32',
       render: (apto: AptoFisico) => (
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -219,24 +216,19 @@ export const AdminAptosFisicosPage: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-              <p className="ml-2 text-gray-700 dark:text-gray-300">Cargando aptos físicos...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center text-red-500 dark:text-red-400 h-64 flex items-center justify-center">
-              <p>{error}</p>
-            </div>
-          ) : filteredAptos.length === 0 ? (
-            <div className="text-center text-gray-500 dark:text-gray-400 h-64 flex items-center justify-center">
-              <p>No hay aptos físicos cargados.</p>
-            </div>
-          ) : (
+        {loading ? (
+          <p className="text-gray-500">Cargando...</p>
+        ) : filteredAptos.length === 0 ? (
+          <Card>
+            <p className="text-gray-500 text-center py-8">
+              No hay aptos físicos disponibles
+            </p>
+          </Card>
+        ) : (
+          <Card padding="none">
             <Table columns={columns} data={filteredAptos} keyExtractor={(apto) => apto.id} />
-          )}
-        </div>
+          </Card>
+        )}
       </div>
 
       {/* Modal para ver apto físico */}
