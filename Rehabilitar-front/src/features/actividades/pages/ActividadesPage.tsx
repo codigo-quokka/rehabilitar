@@ -332,6 +332,7 @@ export function ActividadesPage() {
           <div className={filterOpen ? 'invisible' : ''}>
             {hasRole(["Administrador"]) && (
               <Button
+                variant="primary"
                 className="px-6 py-3 justify-center whitespace-nowrap h-12"
                 onClick={() => setShowModal(true)}
               >
@@ -340,6 +341,7 @@ export function ActividadesPage() {
             )}
             {hasRole(["Profesor"]) && (
               <Button
+                variant="primary"
                 className="px-6 py-3 justify-center whitespace-nowrap h-12"
                 onClick={() => setShowModal(true)}
               >
