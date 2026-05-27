@@ -137,7 +137,7 @@ export function DashboardPage() {
               </div>
             )}
           </Card>
-
+          {hasRole(['Cliente Registrado']) && (
           <Card>
             <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas</h3>
             {loading ? (
@@ -175,6 +175,7 @@ export function DashboardPage() {
               </div>
             )}
           </Card>
+          )}
         </div>
       </div>
     </MainLayout>

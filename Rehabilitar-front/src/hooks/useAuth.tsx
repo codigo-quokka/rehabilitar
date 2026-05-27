@@ -14,6 +14,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   hasRole: (roles: Role[]) => boolean;
   isLoading: boolean;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -91,9 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(state.user.rol);
   };
 
+  const updateUser = (user: User) => {
+    setState(prev => ({ ...prev, user }));
+  };
+
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout, hasRole, isLoading }}
+      value={{ ...state, login, logout, hasRole, isLoading, updateUser }}
     >
       {children}
     </AuthContext.Provider>
