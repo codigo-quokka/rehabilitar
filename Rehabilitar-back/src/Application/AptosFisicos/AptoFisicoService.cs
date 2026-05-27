@@ -13,7 +13,7 @@ public class AptoFisicoService : IAptoFisicoService
     private readonly IEmailService _emailService;
 
     private static readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
-    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5 MB
 
     public AptoFisicoService(IAptoFisicoRepository aptoFisicoRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork, IEmailService emailService)
     {
@@ -56,7 +56,6 @@ public class AptoFisicoService : IAptoFisicoService
             archivoBytes = memoryStream.ToArray();
         }
 
-        cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
         // Verificar si ya hay un apto pendiente para reemplazar
         var aptosExistentes = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
         var pendiente = aptosExistentes.FirstOrDefault(a => a.Estado == EstadoAptoFisico.Pendiente);
@@ -72,8 +71,8 @@ public class AptoFisicoService : IAptoFisicoService
         // Si no hay pendiente, crear uno nuevo
         var aptoFisico = new AptoFisico(clienteId, nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
         _aptoFisicoRepository.Add(aptoFisico);
+        cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
         await _unitOfWork.SaveChangesAsync();
-
         return MapToResponse(aptoFisico);
     }
 
