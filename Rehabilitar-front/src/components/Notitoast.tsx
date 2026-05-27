@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 
 interface NotitoastProps {
-  type: "success" | "error";
+  type: "success" | "error" | "info";
   message: string;
   onClose?: () => void;
   duration?: number;
@@ -40,6 +40,13 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
     iconColor: "text-red-700 dark:text-red-300",
     text: "text-red-900 dark:text-red-100",
   },
+  info: {
+    bg: "bg-blue-200/30 dark:bg-blue-800/30 backdrop-blur-md",
+    border: "border border-blue-300/40 dark:border-blue-600/40",
+    iconBg: "bg-blue-300/30 dark:bg-blue-700/30",
+    iconColor: "text-blue-700 dark:text-blue-300",
+    text: "text-blue-900 dark:text-blue-100",
+  },
 };
 
   const style = styles[type];
@@ -61,9 +68,13 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
             
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             
-          ) : (
+          ) : type === "error" ? (
             
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            
+          ) : (
+            
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
             
           )}
         </div>

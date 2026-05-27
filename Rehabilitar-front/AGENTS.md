@@ -112,6 +112,7 @@ This project follows guidelines from these installed skills:
   - Props: `type`, `message`, `onClose`, `duration` (default 4000ms)
   - Auto-dismiss, animations, manual close button
 - Notifications shared between toast and tray
+- **Flow**: All notifications added via `addNotification` first appear as a `Notitoast`. Only after the toast is dismissed (auto or manually) does it get added to `NotificationTray`. This is handled centrally in `NotificationsProvider` via `pendingToast` state and `dismissToast` function.
 
 ## Dark mode conventions
 
