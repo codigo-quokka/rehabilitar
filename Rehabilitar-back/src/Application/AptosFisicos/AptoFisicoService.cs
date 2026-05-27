@@ -56,7 +56,6 @@ public class AptoFisicoService : IAptoFisicoService
             archivoBytes = memoryStream.ToArray();
         }
 
-        cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
         // Verificar si ya hay un apto pendiente para reemplazar
         var aptosExistentes = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
         var pendiente = aptosExistentes.FirstOrDefault(a => a.Estado == EstadoAptoFisico.Pendiente);
