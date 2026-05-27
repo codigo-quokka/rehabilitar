@@ -129,7 +129,7 @@ export function RecurrenteGroup({
   };
 
   const handleSubscribe = () => {
-      onError?.('Falta implementar subscripcion');
+      onError?.('Falta implementar suscripcion');
       return;
     }
 
@@ -297,7 +297,7 @@ export function RecurrenteGroup({
                   handleSubscribe();
                 }}
               >
-                Subscribirse
+                Suscribirse
               </Button>
             )}
             {hasRole(["Profesor"]) && unassignedCount > 0 && (
