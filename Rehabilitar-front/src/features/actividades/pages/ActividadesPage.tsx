@@ -628,7 +628,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
 
-  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
   const selectedSala = useMemo(() => salas.find(s => s.id === formData.salaId), [salas, formData.salaId]);
 
   const handleDelete = async () => {
@@ -660,6 +659,11 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       return;
     }
 
+    if (selectedSala && formData.cupoMaximo > selectedSala.capacidad) {
+      onError(`El cupo máximo no puede superar la capacidad de la sala (${selectedSala.capacidad})`);
+      return;
+    }
+
     const parsedDate = new Date(formData.fechaYHora);
     if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
       onError('La fecha y hora no pueden ser anteriores a las de hoy');
@@ -668,14 +672,14 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
 
     const dia = parsedDate.getDay();
     if (dia === 0) {
-      onError('No se pueden crear actividades los domingos. El horario permitido es de lunes a sábado de 8:00 a 19:00 ');
+      onError('No se pueden crear actividades los domingos. El horario permitido es de lunes a sábado de 8:00 a 19:00');
       return;
     }
 
     const hora = parsedDate.getHours();
     const minutos = parsedDate.getMinutes();
     if (hora < 8 || hora > 19 || (hora === 19 && minutos > 0)) {
-      onError('El horario permitido es de lunes a viernes de 8:00 a 19:00');
+      onError('El horario permitido es de lunes a sábado de 8:00 a 19:00');
       return;
     }
 

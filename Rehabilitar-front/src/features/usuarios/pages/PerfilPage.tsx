@@ -36,9 +36,8 @@ const passwordReqs: Requirement[] = [
 
 export function PerfilPage() {
   const { user, updateUser } = useAuth();
-  const stripNonLetters = (value: string) =>
-    value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, "");
-  const stripNonDigits = (value: string) => value.replace(/\D/g, "");
+  const stripNonLetters = (value: string) => value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+  const stripNonDigits = (value: string) => value.replace(/\D/g, '');
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -147,23 +146,13 @@ export function PerfilPage() {
     setShowSaveConfirm(false);
     setLoading(true);
     try {
-      await usuariosApi.update(user.id, {
-        ...formData,
-        nombre: trimmedNombre,
-        apellido: trimmedApellido,
-      });
-      updateUser({
-        ...user,
-        ...formData,
-        nombre: trimmedNombre,
-        apellido: trimmedApellido,
-      });
-      showToastMessage("Perfil actualizado exitosamente.", "success");
+      const updated = await usuariosApi.update(user.id, formData);
+      updateUser({ ...user, ...formData });
+      showToastMessage('Perfil actualizado exitosamente.', 'success');
       setEditing(false);
     } catch (err) {
-      const msg =
-        (err as any)?.response?.data?.error || "Error al actualizar el perfil.";
-      showToastMessage(msg, "error");
+      const msg = (err as any)?.response?.data?.error || 'Error al actualizar el perfil.';
+      showToastMessage(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -320,41 +309,37 @@ export function PerfilPage() {
                 <Input
                   label="Nombre"
                   value={formData.nombre}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      nombre: e.target.value,
-                    }))
-                  }
-                  onKeyDown={nombreFilter.handleKeyDown}
-                  onPaste={nombreFilter.handlePaste}
+                  onChange={(e) => setFormData({ ...formData, nombre: stripNonLetters(e.target.value) })}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
+                  }}
                 />
                 <Input
                   label="Apellido"
                   value={formData.apellido}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      apellido: e.target.value,
-                    }))
-                  }
-                  onKeyDown={apellidoFilter.handleKeyDown}
-                  onPaste={apellidoFilter.handlePaste}
+                  onChange={(e) => setFormData({ ...formData, apellido: stripNonLetters(e.target.value) })}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
+                  }}
                 />
               </div>
               <Input
-                label="Teléfono (opcional)"
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+              <Input
+                label="Teléfono"
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    telefono: e.target.value,
-                  }))
-                }
-                onKeyDown={phoneFilter.handleKeyDown}
-                onPaste={phoneFilter.handlePaste}
-                maxLength={12}
+                onChange={(e) => setFormData({ ...formData, telefono: stripNonDigits(e.target.value) })}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text');
+                  if (stripNonDigits(pasted) !== pasted) e.preventDefault();
+                }}
               />
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleSave} loading={loading}>
