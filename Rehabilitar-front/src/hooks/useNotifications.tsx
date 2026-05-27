@@ -6,7 +6,15 @@ import {
   useMemo,
   ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Notification } from "../types";
+import { Notitoast } from "../components/Notitoast";
+
+interface PendingToast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
 interface NotificationsContextType {
   notifications: Notification[];
@@ -20,7 +28,6 @@ const NotificationsContext = createContext<NotificationsContextType | null>(null
 
 function createInitialNotifications(): Notification[] {
   const now = new Date().toISOString();
-  const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
   return [
     {
       id: "1",
@@ -33,21 +40,46 @@ function createInitialNotifications(): Notification[] {
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(createInitialNotifications);
+  const [pendingToast, setPendingToast] = useState<PendingToast | null>(null);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
 
+  const dismissToast = useCallback(() => {
+    setPendingToast((current) => {
+      if (!current) return null;
+      const newNotification: Notification = {
+        id: current.id,
+        message: current.message,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: current.type,
+      };
+      setNotifications((prev) => [newNotification, ...prev]);
+      return null;
+    });
+  }, []);
+
   const addNotification = useCallback((message: string, type?: 'success' | 'error' | 'info') => {
-    const newNotification: Notification = {
-      id: crypto.randomUUID(),
-      message,
-      timestamp: new Date().toISOString(),
-      read: false,
-      type: type || 'info',
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
+    setPendingToast((current) => {
+      if (current) {
+        const dismissedNotification: Notification = {
+          id: current.id,
+          message: current.message,
+          timestamp: new Date().toISOString(),
+          read: false,
+          type: current.type,
+        };
+        setNotifications((prev) => [dismissedNotification, ...prev]);
+      }
+      return {
+        id: crypto.randomUUID(),
+        message,
+        type: type || 'info',
+      };
+    });
   }, []);
 
   const markAsRead = useCallback((id: string) => {
@@ -65,6 +97,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       value={{ notifications, unreadCount, addNotification, markAsRead, markAllAsRead }}
     >
       {children}
+      {pendingToast && createPortal(
+        <Notitoast
+          type={pendingToast.type}
+          message={pendingToast.message}
+          onClose={dismissToast}
+        />,
+        document.body
+      )}
     </NotificationsContext.Provider>
   );
 }

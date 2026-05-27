@@ -120,8 +120,16 @@ export function ActividadesPage() {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate("/reservas", { state: { _successMessage: '¡Reserva agregada!' } });
+      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      navigate(`/reservas/confirmar/${reserva.id}`, {
+        state: {
+          reservaId: reserva.id,
+          actividadId: reserva.actividadId,
+          montoTotal: reserva.montoTotal,
+          montoPagado: 0,
+          montoPendiente: reserva.montoPendiente,
+        },
+      });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
