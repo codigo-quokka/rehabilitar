@@ -280,12 +280,25 @@ export function UsuariosPage() {
     {
       key: 'acciones',
       header: 'Acciones',
-      headerClass: 'text-center',
+      headerClass: 'text-right pr-32',
       render: (u: User) => (
         <div className="flex justify-end gap-2">
+          {/*
           <Button variant="verde" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
+          */}
+          {u.rol === 'Cliente Registrado' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+              Reservas
+            </Button>
+          ) : u.rol === 'Profesor' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+              Clases
+            </Button>
+          ) : (
+            <span className="min-w-[90px] inline-block" />
+          )}
           {u.activo ? (
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
@@ -302,17 +315,7 @@ export function UsuariosPage() {
           ) : (
             <span className="min-w-[70px] inline-block" />
           )}
-          {u.rol === 'Cliente Registrado' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
-              Reservas
-            </Button>
-          ) : u.rol === 'Profesor' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
-              Clases
-            </Button>
-          ) : (
-            <span className="min-w-[90px] inline-block" />
-          )}
+          
         </div>
       ),
     },
