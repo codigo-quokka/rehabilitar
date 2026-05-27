@@ -339,33 +339,31 @@ export function UsuariosPage() {
           </Button>
           */}
           {u.rol === 'Cliente Registrado' ? (
-            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenReservas(u)}>
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
               Reservas
             </Button>
           ) : u.rol === 'Profesor' ? (
-            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenClases(u)}>
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
               Clases
             </Button>
           ) : (
-            <span className="min-w-22.5 inline-block" />
+            <span className="min-w-[90px] inline-block" />
           )}
-          {!isReception && (
-           u.activo ? (
-            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => setUserToSuspend(u)}>
+          {u.activo ? (
+            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => handleReactivar(u)}>
+            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
-          )
           )}
           {!isReception ? (
-            <Button variant="rojo" size="sm" onClick={() => handleDeleteClick(u)}>
+            <Button variant="rojo" size="sm" onClick={() => setUserToDelete(u)}>
               Eliminar
             </Button>
           ) : (
-            <span className="min-w-17.5 inline-block" />
+            <span className="min-w-[70px] inline-block" />
           )}
           
         </div>

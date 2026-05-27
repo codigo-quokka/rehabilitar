@@ -300,9 +300,9 @@ export function CalendarioPage() {
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
         ) : (
           <Card padding="none">
-            <div className="grid grid-cols-7 border-b border-border dark:border-gray-700">
+            <div className="grid grid-cols-7 border-b border-gray-300 dark:border-gray-700">
               {weekDays.map((day) => (
-                <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 dark:text-gray-600">
                   {day}
                 </div>
               ))}
@@ -317,8 +317,8 @@ export function CalendarioPage() {
                 return (
                   <div
                     key={index}
-                    className={`min-h-24 p-2 border-b border-r border-border dark:border-gray-700 ${
-                      day ? 'hover:bg-gray-100 dark:hover:bg-gray-800/50' : 'bg-gray-100 dark:bg-gray-800/30'
+                    className={`h-32 p-2 border-b-2 border-r-2  border-gray-300 dark:border-gray-800 overflow-hidden ${
+                      day ? 'hover:bg-primary/10 dark:hover:bg-gray-800/50' : 'bg-primary/20 dark:bg-gray-800/30'
                     }`}
                   >
                     {day && (
@@ -334,7 +334,7 @@ export function CalendarioPage() {
                             <button
                               key={act.id}
                               onClick={() => handleOpenActividad(act)}
-                              className="w-full text-left text-xs p-1 bg-primary/10 text-primary rounded truncate hover:bg-primary/20 transition-colors cursor-pointer"
+                              className="w-full text-left text-xs p-1 dark:bg-dark-green dark:hover:bg-darkest-green dark:text-gray-100 bg-primary/50 text-dark-green rounded truncate hover:bg-primary/70 transition-colors cursor-pointer"
                             >
                               {new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} {act.nombre}
                             </button>
@@ -346,7 +346,7 @@ export function CalendarioPage() {
                               role="button"
                               tabIndex={0}
                               aria-label={`Ver las ${dayActividades.length} actividades del día ${day}`}
-                              className="text-xs rounded-lg justify-center flex items-center text-gray-500 dark:text-gray-400 dark:bg-gray-800 hover:text-primary dark:hover:text-primary cursor-pointer transition-colors"
+                              className="text-xs rounded-lg justify-center bg-primary/20 hover:bg-primary/40 flex items-center text-gray-500 dark:text-gray-400 dark:bg-gray-800   dark:hover:bg-gray-700  cursor-pointer transition-colors"
                             >
                               +{dayActividades.length - 2} más - Ver todas
                             </div>
