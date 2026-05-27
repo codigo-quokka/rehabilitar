@@ -132,6 +132,7 @@ export function SalasPage() {
     {
       key: "acciones",
       header: "Acciones",
+      headerClass: "text-right pr-32",
       width: "w-1/6",
       render: (s: Sala) => (
         <div className="flex gap-2">
