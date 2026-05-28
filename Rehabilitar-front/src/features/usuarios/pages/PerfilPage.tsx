@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Modal, Badge } from '../../../components/ui';
 import { PrivacyEye } from '../../../components/PrivacyEye';
@@ -11,7 +11,7 @@ import { InformRequirements, type Requirement } from '../../../components/Inform
 import { useInputFilter } from '../../../hooks/useInputFilter';
 import { INPUT_PRESETS } from '../../../utils/inputPresets';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
-import { AptoFisico } from '../../../types';
+import { AptoFisico, ChangePasswordData } from '../../../types';
 import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
 import { AptoFisicoViewer } from '../../aptosFisicos/components/AptoFisicoViewer';
 
@@ -81,6 +81,8 @@ export function PerfilPage() {
   );
 
   const [showPasswordCard, setShowPasswordCard] = useState(false);
+  const [showConfirmPasswordModal, setShowConfirmPasswordModal] = useState(false);
+  const changePasswordDataRef = useRef<ChangePasswordData | null>(null);
 
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -93,6 +95,8 @@ export function PerfilPage() {
   const [verArchivo, setVerArchivo] = useState(false);
 
   const aptoActual = aptos.length > 0 ? aptos[0] : null;
+
+  const MIN_PASSWORD_LENGTH = 8;
 
   useEffect(() => {
     if (user?.rol === 'Cliente Registrado') {
@@ -163,29 +167,67 @@ export function PerfilPage() {
       showToastMessage('Todos los campos son obligatorios.', 'error');
       return;
     }
-    if (passwordData.newPassword.length < 8) {
-      showToastMessage('La nueva contraseña debe tener al menos 8 caracteres.', 'error');
-      return;
-    }
+    
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
       showToastMessage('La nueva contraseña y la confirmación no coinciden.', 'error');
       return;
     }
 
+    if (passwordData.newPassword.length < MIN_PASSWORD_LENGTH) {
+      setToastType("error");
+      setToastMessage(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+      setShowToast(true);
+      return;
+    }
+    if (!/[A-Z]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos una mayúscula.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[a-z]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos una minúscula.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[0-9]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos un número.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos un carácter especial.");
+      setShowToast(true);
+      return;
+    }
+
+    changePasswordDataRef.current = {
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+      confirmNewPassword: passwordData.confirmNewPassword,
+    };
+    setShowConfirmPasswordModal(true);
+  };
+
+  const confirmChangePassword = async () => {
+    if (!changePasswordDataRef.current) return;
+
+    setShowConfirmPasswordModal(false);
     setPasswordLoading(true);
+
     try {
-      const result = await authApi.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-        confirmNewPassword: passwordData.confirmNewPassword,
-      });
-      showToastMessage(result.message || 'Contraseña actualizada exitosamente.', 'success');
+      const result = await authApi.changePassword(changePasswordDataRef.current);
+      showToastMessage(result.message || 'Contraseña actualizada correctamente.', 'success');
       setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
     } catch (err: any) {
       const message = err?.response?.data?.title || err?.response?.data?.error || 'Error al actualizar la contraseña.';
       showToastMessage(message, 'error');
     } finally {
       setPasswordLoading(false);
+      changePasswordDataRef.current = null;
     }
   };
 
@@ -404,6 +446,18 @@ export function PerfilPage() {
           </div>
           )}
         </Card>
+
+        <ConfirmActionModalVerde
+          title="Cambiar contraseña"
+          body="¿Estás seguro de que deseas cambiar tu contraseña?"
+          confirmLabel="Confirmar"
+          onConfirm={confirmChangePassword}
+          onCancel={() => {
+            setShowConfirmPasswordModal(false);
+            changePasswordDataRef.current = null;
+          }}
+          isOpen={showConfirmPasswordModal}
+        />
 
         {/* Modal de subida */}
         <Modal isOpen={subiendo} onClose={() => setSubiendo(false)} title="Subir apto físico">
