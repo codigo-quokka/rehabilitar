@@ -117,11 +117,11 @@ export const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl tracking-tight font-extrabold text-[#2F6274] dark:text-gray-100 sm:text-5xl md:text-6xl">
-              <span className="block">Rehabilitación y</span>
-              <span className="block text-[#48B7A5] dark:text-[#6DD3A8]">entrenamiento personalizado</span>
+              <span className="block">Rehabilitación</span>
+              <span className="block text-[#48B7A5] dark:text-[#6DD3A8]">personalizada</span>
             </h1>
             <p className="mt-6 max-w-md mx-auto text-lg text-[#2f4858] dark:text-gray-300 sm:text-xl md:mt-8 md:max-w-3xl">
-              Mejorá tu calidad de vida con profesionales capacitados. Más de 16 años de experiencia acompañando a nuestros pacientes en su recuperación y bienestar.
+              Mejorá tu calidad de vida con profesionales capacitados. Llevamos más de 16 años acompañando a nuestros pacientes en su recuperación y bienestar.
             </p>
             <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center md:mt-10">
               <div className="rounded-md shadow">
@@ -149,10 +149,10 @@ export const LandingPage = () => {
                 Nuestra historia
               </h2>
               <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-                Fundado en 2010 por Laura y José, Licenciados en Kinesiología. RehabilitAR nació con el propósito de ofrecer un espacio dedicado al entrenamiento y la rehabilitación física de base kinesiológica.
+                Somos RehabilitAR, un centro de kinesiología fundado en 2010 con el objetivo de ofrecer un espacio personalizado para el entrenamiento y la rehabilitación kinesiológica. 
               </p>
               <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-                A lo largo de estos 16 años, hemos conformado un equipo de profesionales comprometidos con la salud de nuestros pacientes, ofreciendo atención personalizada y rutinas adaptadas a las necesidades específicas de cada individuo.
+                Contamos con un equipo plenamente calificado, que garantiza una rehabilitación eficiente y respetuosa con las necesidades de cada paciente.
               </p>
               <div className="mt-8 flex items-center gap-4 text-[#2C7E8B] dark:text-gray-200">
                 <ShieldCheck size={32} className="text-[#6DD3A8]" />
@@ -166,8 +166,8 @@ export const LandingPage = () => {
                      <Activity size={24} />
                    </div>
                    <div>
-                     <h3 className="text-lg font-medium text-[#2F6274] dark:text-gray-100">Enfoque integral</h3>
-                     <p className="mt-2 text-gray-600 dark:text-gray-400">Tratamientos diseñados considerando el cuerpo como un todo.</p>
+                     <h3 className="text-lg font-medium text-[#2F6274] dark:text-gray-100">Enfoque especializado</h3>
+                     <p className="mt-2 text-gray-600 dark:text-gray-400">Localización y tratamiento de problemas específicos en diferentes partes del cuerpo.</p>
                    </div>
                  </div>
                  <div className="flex gap-4">
@@ -175,8 +175,8 @@ export const LandingPage = () => {
                      <Activity size={24} />
                    </div>
                    <div>
-                     <h3 className="text-lg font-medium text-[#2F6274] dark:text-gray-100">Clases grupales reducidas</h3>
-                     <p className="mt-2 text-gray-600 dark:text-gray-400">Atención detallada y corrección postural constante por parte del profesor.</p>
+                     <h3 className="text-lg font-medium text-[#2F6274] dark:text-gray-100">Actividades grupales</h3>
+                     <p className="mt-2 text-gray-600 dark:text-gray-400">Ambiente de apoyo y motivación para lograr mejores resultados en la rehabilitación.</p>
                    </div>
                  </div>
                </div>
@@ -214,7 +214,7 @@ export const LandingPage = () => {
               <div className="w-14 h-14 bg-[#EAF2F8] dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 transition-colors duration-300">
                 <Activity className="text-[#309B9B] dark:text-[#6DD3A8]" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-[#2F6274] dark:text-gray-100 mb-3">Tren medio (Core)</h3>
+              <h3 className="text-xl font-bold text-[#2F6274] dark:text-gray-100 mb-3">Tren medio</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Trabajo centrado en la zona abdominal y lumbar. Fundamental para la estabilidad del cuerpo, equilibrio y prevención de dolores de espalda.
               </p>
@@ -237,12 +237,12 @@ export const LandingPage = () => {
             <div className="p-8 lg:w-2/3">
               <h3 className="text-2xl font-bold text-[#2F6274] dark:text-gray-100 mb-4">¿Por qué ser abonado?</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Accedé a beneficios exclusivos pagando una cuota mensual. Garantizá tu lugar en las clases recurrentes y organizá tu rutina con anticipación.
+                Accedé a beneficios exclusivos pagando una cuota mensual. Garantizá tu lugar en las actividades recurrentes y organizá tu rutina con anticipación.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />
-                  <span className="text-gray-700 dark:text-gray-300">Turnos fijos mínimos por semana.</span>
+                  <span className="text-gray-700 dark:text-gray-300">Turnos fijos por semana.</span>
                 </li>
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />
@@ -279,7 +279,7 @@ export const LandingPage = () => {
               <span className="font-bold text-xl">RehabilitAR</span>
             </div>
             <p className="text-gray-300 dark:text-gray-400">
-              Centro de entrenamiento y rehabilitación en base kinesiológica.
+              Centro de entrenamiento y rehabilitación.
             </p>
           </div>
           <div>
