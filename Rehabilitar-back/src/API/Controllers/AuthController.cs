@@ -111,6 +111,19 @@ public class AuthController : ApiControllerBase
 
     }
 
+    [AllowAnonymous]
+    [HttpPost("validate-reset-token")]
+    public async Task<IActionResult> ValidatePasswordResetToken([FromBody]ValidatePasswordResetTokenRequest request)
+    {
+        var result = await _authService.ValidatePasswordResetTokenAsync(request);
+
+        return result.Match(
+            _ => Ok(),
+            errors => Problem(errors)
+        );
+
+    }
+
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)

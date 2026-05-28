@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { EmailVerificationData, ResetPasswordData, LoginCredentials, RegisterData, User, ChangePasswordData } from '../types';
+import { EmailVerificationData, ResetPasswordData, LoginCredentials, RegisterData, User, ChangePasswordData, ValidatePasswordResetTokenData } from '../types';
 
 export const authApi = {
   login: async (credentials: LoginCredentials) => {
@@ -73,4 +73,13 @@ export const authApi = {
     const response = await apiClient.post('/auth/change-password', data);
     return response.data;
   },
+
+  validatePasswordResetToken: async (data: ValidatePasswordResetTokenData) => {
+    const response = await apiClient.post('/auth/validate-reset-token', {
+      userId: data.userId,
+      passwordResetToken: data.passwordResetToken
+    });
+    return response.data;
+  }
+
 };
