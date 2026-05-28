@@ -156,6 +156,13 @@ export function RegisterPage() {
       return;
     }
 
+    if (passwordReqs.some((r) => !r.test(formData.password))) {
+      setToastType("error");
+      setToastMessage("La contraseña no cumple los requisitos de seguridad.");
+      setShowToast(true);
+      return;
+    }
+    /*
     if (formData.password.length < MIN_PASSWORD_LENGTH) {
       setToastType("error");
       setToastMessage(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
@@ -193,7 +200,7 @@ export function RegisterPage() {
       setShowToast(true);
       return;
     }
-
+    */
     if (formData.fechaNacimiento) {
       const [y, m, d] = formData.fechaNacimiento.split("-").map(Number);
       const today = new Date();
