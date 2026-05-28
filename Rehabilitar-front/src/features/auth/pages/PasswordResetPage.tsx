@@ -151,7 +151,7 @@ export function PasswordResetPage() {
                   className="pr-16"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  // required
+                  required
                   // minLength={8}
                 />
                 <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
@@ -169,7 +169,7 @@ export function PasswordResetPage() {
                   className="pr-16"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  // required
+                  required
                   // minLength={8}
                 />
                 <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
