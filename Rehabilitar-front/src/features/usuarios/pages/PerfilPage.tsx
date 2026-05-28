@@ -140,6 +140,13 @@ export function PerfilPage() {
       return;
     }
 
+    if (passwordReqs.some((r) => !r.test(passwordData.newPassword))) {
+      setToastType("error");
+      setToastMessage("La contraseña no cumple los requisitos de seguridad.");
+      setShowToast(true);
+      return;
+    }
+    /*
     if (passwordData.newPassword.length < MIN_PASSWORD_LENGTH) {
       setToastType("error");
       setToastMessage(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
@@ -170,7 +177,7 @@ export function PerfilPage() {
       setShowToast(true);
       return;
     }
-
+    */
     changePasswordDataRef.current = {
       currentPassword: passwordData.currentPassword,
       newPassword: passwordData.newPassword,
