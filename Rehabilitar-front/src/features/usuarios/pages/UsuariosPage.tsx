@@ -47,6 +47,11 @@ export function UsuariosPage() {
   const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
   const [clasesModalLoading, setClasesModalLoading] = useState(false);
 
+  const [pagoModal, setPagoModal] = useState<Reserva | null>(null);
+  const [montoPago, setMontoPago] = useState('');
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [procesandoPago, setProcesandoPago] = useState(false);
+
   const aptosPorCliente = useMemo(() => {
     const map: Record<string, AptoFisico> = {};
     aptosFisicos.forEach(apto => {
@@ -809,14 +814,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nombre || !formData.apellido || !formData.email || !formData.dni || !formData.fechaNacimiento) {
-      onNotify?.('error', 'Por favor, completa todos los campos obligatorios.');
-      return;
-    }
-    if (formData.dni.length < MIN_DNI_LENGTH) {
-      onNotify?.('error', `Ingrese un DNI válido`);
-      return;
-    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
       return;
@@ -926,6 +923,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
               { value: 'TrenMedio', label: 'Tren Medio' },
               { value: 'TrenInferior', label: 'Tren Inferior' },
             ]}
+            required
           />
       )}
       <div className="flex justify-end gap-3 pt-4">
