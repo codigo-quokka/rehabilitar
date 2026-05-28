@@ -1,38 +1,16 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { MainLayout } from "../../../components/layout";
-import { Card, Button, Input, Modal, Badge } from "../../../components/ui";
-import { PrivacyEye } from "../../../components/PrivacyEye";
-import { useAuth } from "../../../hooks/useAuth";
-import { authApi, usuariosApi } from "../../../api";
-import { Notitoast } from "../../../components/Notitoast";
-
-import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
-
-import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
-import {
-  InformRequirements,
-  type Requirement,
-} from "../../../components/InformRequirements";
-import { useInputFilter } from "../../../hooks/useInputFilter";
-import { INPUT_PRESETS } from "../../../utils/inputPresets";
-
-import { aptosFisicosApi } from "../../../api/aptosFisicos";
-import { AptoFisico, ChangePasswordData } from "../../../types";
-import { AptoFisicoUploader } from "../../aptosFisicos/components/AptoFisicoUploader";
-import { AptoFisicoViewer } from "../../aptosFisicos/components/AptoFisicoViewer";
-
-const MAX_PASSWORD_LENGTH = 32;
-
-const passwordReqs: Requirement[] = [
-  { label: "Mínimo 8 caracteres", test: (v) => v.length >= 8 },
-  { label: "Al menos una mayúscula", test: (v) => /[A-Z]/.test(v) },
-  { label: "Al menos una minúscula", test: (v) => /[a-z]/.test(v) },
-  { label: "Al menos un número", test: (v) => /[0-9]/.test(v) },
-  {
-    label: "Al menos un carácter especial",
-    test: (v) => /[^a-zA-Z0-9]/.test(v),
-  },
-];
+import { useState, useEffect } from 'react';
+import { MainLayout } from '../../../components/layout';
+import { Card, Button, Input, Modal, Badge } from '../../../components/ui';
+import { PrivacyEye } from '../../../components/PrivacyEye';
+import { useAuth } from '../../../hooks/useAuth';
+import { authApi, usuariosApi } from '../../../api';
+import { Notitoast } from '../../../components/Notitoast';
+import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
+import { aptosFisicosApi } from '../../../api/aptosFisicos';
+import { AptoFisico } from '../../../types';
+import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
+import { AptoFisicoViewer } from '../../aptosFisicos/components/AptoFisicoViewer';
 
 export function PerfilPage() {
   const { user, updateUser } = useAuth();
@@ -60,52 +38,6 @@ export function PerfilPage() {
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const currentPasswordFilter = useInputFilter(
-    passwordData.currentPassword,
-    (v) => setPasswordData((prev) => ({ ...prev, currentPassword: v })),
-    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH),
-  );
-  const newPasswordFilter = useInputFilter(
-    passwordData.newPassword,
-    (v) => setPasswordData((prev) => ({ ...prev, newPassword: v })),
-    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH),
-  );
-  const confirmPasswordFilter = useInputFilter(
-    passwordData.confirmNewPassword,
-    (v) => setPasswordData((prev) => ({ ...prev, confirmNewPassword: v })),
-    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH),
-  );
-  const nombreFilter = useInputFilter(
-    formData.nombre,
-    (v) => setFormData((prev) => ({ ...prev, nombre: v })),
-    INPUT_PRESETS.name,
-  );
-  const apellidoFilter = useInputFilter(
-    formData.apellido,
-    (v) => setFormData((prev) => ({ ...prev, apellido: v })),
-    INPUT_PRESETS.name,
-  );
-  const phoneFilter = useInputFilter(
-    formData.telefono,
-    (v) => setFormData((prev) => ({ ...prev, telefono: v })),
-    INPUT_PRESETS.digits(12),
-  );
-
-  const confirmPasswordReqs = useMemo<Requirement[]>(
-    () => [
-      {
-        label: "Las contraseñas coinciden",
-        test: (v) => v.length > 0 && v === passwordData.newPassword,
-      },
-    ],
-    [passwordData.newPassword],
-  );
-
-  const [showPasswordCard, setShowPasswordCard] = useState(false);
-  const [showConfirmPasswordModal, setShowConfirmPasswordModal] =
-    useState(false);
-  const changePasswordDataRef = useRef<ChangePasswordData | null>(null);
-
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [toastMessage, setToastMessage] = useState("");
@@ -146,8 +78,8 @@ export function PerfilPage() {
     setShowSaveConfirm(false);
     setLoading(true);
     try {
-      const updated = await usuariosApi.update(user.id, formData);
-      updateUser({ ...user, ...formData });
+      await usuariosApi.update(user.id, { ...formData, nombre: trimmedNombre, apellido: trimmedApellido });
+      updateUser({ ...user, ...formData, nombre: trimmedNombre, apellido: trimmedApellido });
       showToastMessage('Perfil actualizado exitosamente.', 'success');
       setEditing(false);
     } catch (err) {
@@ -165,7 +97,36 @@ export function PerfilPage() {
     const trimmedApellido = formData.apellido.trim();
 
     if (!trimmedNombre || !trimmedApellido) {
-      showToastMessage("El nombre y apellido no pueden estar vacíos.", "error");
+      showToastMessage('El nombre y apellido no pueden estar vacíos.', 'error');
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleCancelEditing = () => {
+    setFormData({
+      nombre: user?.nombre || '',
+      apellido: user?.apellido || '',
+      telefono: user?.telefono || '',
+      email: user?.email || '',
+    });
+    setShowCancelConfirm(false);
+    setEditing(false);
+  };
+
+  const handleChangePassword = async () => {
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
+      showToastMessage('Todos los campos son obligatorios.', 'error');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      showToastMessage('La nueva contraseña debe tener al menos 8 caracteres.', 'error');
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      showToastMessage('La nueva contraseña y la confirmación no coinciden.', 'error');
       return;
     }
 
@@ -342,15 +303,8 @@ export function PerfilPage() {
                 }}
               />
               <div className="flex gap-3 pt-4">
-                <Button onClick={handleSave} loading={loading}>
-                  Guardar
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => setShowCancelConfirm(true)}
-                >
-                  Cancelar
-                </Button>
+                <Button onClick={handleSave} loading={loading}>Guardar</Button>
+                <Button variant="danger" onClick={() => setShowCancelConfirm(true)}>Cancelar</Button>
               </div>
             </div>
           ) : (
