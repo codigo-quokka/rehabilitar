@@ -830,7 +830,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                 options={[
                   { value: "", label: "Sin profesor" },
                   ...profesores
-                    .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+                    .filter((p) => p.especialidad === formData.tipo)
                     .map((p) => ({
                       value: p.id,
                       label: `${p.nombre} ${p.apellido}`,

@@ -44,6 +44,11 @@ export function UsuariosPage() {
   const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
   const [clasesModalLoading, setClasesModalLoading] = useState(false);
 
+  const [pagoModal, setPagoModal] = useState<Reserva | null>(null);
+  const [montoPago, setMontoPago] = useState('');
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [procesandoPago, setProcesandoPago] = useState(false);
+
   const aptosPorCliente = useMemo(() => {
     const map: Record<string, AptoFisico> = {};
     aptosFisicos.forEach(apto => {
@@ -216,6 +221,52 @@ export function UsuariosPage() {
       setClasesModalData([]);
     } finally {
       setClasesModalLoading(false);
+    }
+  };
+
+  const handleRegistrarPago = async () => {
+    if (!pagoModal) return;
+    const monto = parseFloat(montoPago);
+    if (!monto || monto <= 0) {
+      setToastType('error');
+      setToastMessage('Ingrese un monto válido');
+      setShowToast(true);
+      return;
+    }
+    if (monto > pagoModal.montoPendiente) {
+      setToastType('error');
+      setToastMessage('El monto no puede superar el saldo pendiente');
+      setShowToast(true);
+      return;
+    }
+    setProcesandoPago(true);
+    try {
+      await reservasApi.registrarPago(pagoModal.id, {
+        actividadId: pagoModal.actividadId,
+        metodoPago,
+        monto,
+      });
+      setPagoModal(null);
+      if (reservasModalUser) {
+        const [res, acts] = await Promise.all([
+          reservasApi.getAll({ usuarioId: reservasModalUser.id }),
+          actividadesApi.getAll(),
+        ]);
+        setReservasModalData(res);
+        const actsMap: Record<string, Actividad> = {};
+        acts.forEach((a) => { actsMap[a.id] = a; });
+        setReservasActividadesMap(actsMap);
+      }
+      setToastType('success');
+      setToastMessage('Pago registrado con éxito');
+      setShowToast(true);
+    } catch (err) {
+      const msg = (err as any)?.response?.data?.error || 'Error al registrar el pago';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setProcesandoPago(false);
     }
   };
 
@@ -500,6 +551,11 @@ export function UsuariosPage() {
                       )}
                       <div className="text-sm text-dark dark:text-gray-100 space-y-1 mt-auto">
                         <p>Pagado: <span className="font-semibold">${(res.montoTotal - res.montoPendiente).toFixed(2)}</span> / <span className="font-semibold">${res.montoTotal.toFixed(2)}</span></p>
+                        {!completado && (res.estadoDeReserva === 'PendienteDePago' || res.estadoDeReserva === 'Activa') && (
+                          <Button variant="primary" size="sm" className="w-full mt-2" onClick={() => { setPagoModal(res); setMontoPago(String(res.montoPendiente)); setMetodoPago('Efectivo'); }}>
+                            Cobrar
+                          </Button>
+                        )}
                       </div>
                     </Card>
                   );
@@ -508,6 +564,43 @@ export function UsuariosPage() {
             )}
           </div>
         </div>,
+        document.body
+      )}
+
+      {pagoModal && createPortal(
+        <Modal isOpen onClose={() => setPagoModal(null)} title="Registrar Pago" size="sm">
+          <div className="space-y-3 mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <p>Actividad: <span className="font-semibold text-dark dark:text-gray-100">{reservasActividadesMap[pagoModal.actividadId]?.nombre || '—'}</span></p>
+            <p>Total: <span className="font-semibold text-dark dark:text-gray-100">${pagoModal.montoTotal.toFixed(2)}</span></p>
+            <p>Pendiente: <span className="font-semibold text-primary">${pagoModal.montoPendiente.toFixed(2)}</span></p>
+          </div>
+          <div className="space-y-4">
+            <Input
+              label="Monto a cobrar"
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={pagoModal.montoPendiente}
+              value={montoPago}
+              onChange={(e) => setMontoPago(e.target.value)}
+              required
+            />
+            <Select
+              label="Método de pago"
+              value={metodoPago}
+              onChange={(e) => setMetodoPago(e.target.value)}
+              options={[
+                { value: 'Efectivo', label: 'Efectivo' },
+                { value: 'MercadoPago', label: 'Mercado Pago' },
+                { value: 'RehabiliCoins', label: 'RehabiliCoins' },
+              ]}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-6">
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setPagoModal(null)}>Cancelar</Button>
+            <Button variant="primary" loading={procesandoPago} onClick={handleRegistrarPago}>Registrar Pago</Button>
+          </div>
+        </Modal>,
         document.body
       )}
 
@@ -598,6 +691,10 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.rol === 'Profesor' && !formData.especialidad) {
+      onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
+      return;
+    }
     setLoading(true);
     try {
       if (user) {
@@ -651,17 +748,18 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
         options={roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))}
       />
       {formData.rol === 'Profesor' && (
-        <Select
-          label="Especialidad"
-          value={formData.especialidad}
-          onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
-          options={[
-            { value: 'TrenSuperior', label: 'Tren Superior' },
-            { value: 'TrenMedio', label: 'Tren Medio' },
-            { value: 'TrenInferior', label: 'Tren Inferior' },
-          ]}
-          required
-        />
+          <Select
+            label="Especialidad"
+            value={formData.especialidad}
+            onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+            options={[
+              { value: '', label: 'Seleccione una especialidad', disabled: true },
+              { value: 'TrenSuperior', label: 'Tren Superior' },
+              { value: 'TrenMedio', label: 'Tren Medio' },
+              { value: 'TrenInferior', label: 'Tren Inferior' },
+            ]}
+            required
+          />
       )}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>Cancelar</Button>
