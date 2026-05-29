@@ -11,6 +11,7 @@ interface AptoFisicoUploaderProps {
 export const AptoFisicoUploader: React.FC<AptoFisicoUploaderProps> = ({ onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado local para Notitoast
@@ -25,24 +26,30 @@ export const AptoFisicoUploader: React.FC<AptoFisicoUploaderProps> = ({ onSucces
     setShowToast(true);
   };
 
-  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_MB = 5;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
   const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return 'Tipo de archivo no permitido. Solo se aceptan JPG, PNG o PDF.';
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `El archivo excede el tamaño máximo de ${MAX_FILE_SIZE_MB}MB.`;
+    }
+    return null;
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        showToastMessage('Tipo de archivo no permitido. Solo se aceptan JPG, PNG o PDF.', 'error');
+      const error = validateFile(file);
+      if (error) {
+        showToastMessage(error, 'error');
         setSelectedFile(null);
-        return;
+      } else {
+        setSelectedFile(file);
       }
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        showToastMessage(`El archivo excede el tamaño máximo de ${MAX_FILE_SIZE_MB}MB.`, 'error');
-        setSelectedFile(null);
-        return;
-      }
-      setSelectedFile(file);
     } else {
       setSelectedFile(null);
     }
@@ -85,35 +92,65 @@ export const AptoFisicoUploader: React.FC<AptoFisicoUploaderProps> = ({ onSucces
 
   return (
     <div className="space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <label
-        htmlFor="file-upload"
-        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600"
+      <div
+        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer ${
+          isDragging
+            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400'
+            : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600'
+        }`}
+        role="button"
         tabIndex={0}
+        aria-label="Seleccionar archivo para subir apto físico"
+        onClick={() => fileInputRef.current?.click()}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             fileInputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={(e) => { if (e.currentTarget.contains(e.relatedTarget as Node)) return; setIsDragging(false); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) {
+            const error = validateFile(file);
+            if (error) {
+              showToastMessage(error, 'error');
+              setSelectedFile(null);
+            } else {
+              setSelectedFile(file);
+            }
           }
         }}
       >
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
           <Upload className="w-8 h-8 mb-3 text-gray-500 dark:text-gray-400" />
           <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-            <span className="font-semibold">Haz click para subir</span> o arrastra y suelta
+            {isDragging ? (
+              'Suelta el archivo aquí'
+            ) : (
+              <>
+                <span className="font-semibold">Haz click para subir</span> o arrastra y suelta
+              </>
+            )}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             JPG, PNG o PDF (Máx. {MAX_FILE_SIZE_MB}MB)
           </p>
         </div>
-        <input
-          id="file-upload"
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-          accept=".jpg,.jpeg,.png,.pdf"
-          ref={fileInputRef}
-          aria-label="Seleccionar archivo para subir apto físico"
-        />
-      </label>
+      </div>
+
+      {/* Hidden file input - moved outside the drop zone div */}
+      <input
+        id="file-upload"
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        accept=".jpg,.jpeg,.png,.pdf"
+        ref={fileInputRef}
+        aria-label="Seleccionar archivo para subir apto físico"
+      />
 
       {selectedFile && (
         <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700">

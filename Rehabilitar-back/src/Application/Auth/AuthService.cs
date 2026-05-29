@@ -185,6 +185,19 @@ public class AuthService : IAuthService
         return Result.Success;
     }
 
+    public async Task<ErrorOr<Success>> ValidatePasswordResetTokenAsync(ValidatePasswordResetTokenRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(request.UserId);
+        if (user == null)
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
+        var tokenValid = await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", request.PasswordResetToken);
+        if (!tokenValid)
+            return Error.Validation("Token.InvalidReset", "El token de restablecimiento de contraseña expiró o no es válido.");
+
+        return Result.Success;
+    }
+
     public async Task<ErrorOr<Success>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());

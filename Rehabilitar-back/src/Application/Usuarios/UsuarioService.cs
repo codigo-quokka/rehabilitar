@@ -220,6 +220,7 @@ public class UsuarioService : IUsuarioService
             FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
             Documento = cliente?.Dni.Valor,
             AptitudFisica = cliente?.AptoFisicoAprobado ?? null,
+            RehabiliCoins = cliente?.RehabiliCoins ?? null,
             SaldoAFavor = cliente?.SaldoAFavor ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
         };

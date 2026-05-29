@@ -57,7 +57,7 @@ export function LoginPage() {
         setShowToast(true);
       } else {
         setToastType("error");
-        setToastMessage("Email o contraseña incorrectos");
+        setToastMessage("Email o contraseña incorrectos.");
         setShowToast(true);
       }
     } finally {
@@ -75,7 +75,7 @@ export function LoginPage() {
     } catch (err: any) {
       setToastType("error");
       setToastMessage(
-        err.response?.data?.error || "Ocurrió un error al reenviar el correo.",
+        err.response?.data?.error || "Ocurrió un error al reenviar el correo de verificación.",
       );
       setShowToast(true);
     } finally {
