@@ -153,6 +153,29 @@ export function AdminAptosFisicosPage() {
       headerClass: 'text-right pr-32',
       render: (apto: AptoFisico) => (
         <div className="flex justify-end gap-2">
+          
+          {apto.estado === 'Pendiente' && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleApproveApto(apto)}
+                aria-label={`Aprobar apto físico de ${apto.clienteNombre}`}
+                className="text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900"
+              >
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRejectApto(apto)}
+                aria-label={`Rechazar apto físico de ${apto.clienteNombre}`}
+                className="text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -161,24 +184,6 @@ export function AdminAptosFisicosPage() {
             className="text-primary-600 dark:text-primary-400 hover:bg-yellow-200 dark:hover:bg-yellow-900"
           >
             <Eye className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleApproveApto(apto)}
-            aria-label={`Aprobar apto físico de ${apto.clienteNombre}`}
-            className="text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900"
-          >
-            <Check className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleRejectApto(apto)}
-            aria-label={`Rechazar apto físico de ${apto.clienteNombre}`}
-            className="text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900"
-          >
-            <X className="w-4 h-4" />
           </Button>
         </div>
       ),

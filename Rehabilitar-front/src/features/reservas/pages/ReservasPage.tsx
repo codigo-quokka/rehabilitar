@@ -352,7 +352,7 @@ export function ReservasPage() {
                     )}
                     {(reserva.estadoDeReserva === 'PendienteDePago' || reserva.estadoDeReserva === 'Activa' || reserva.estadoDeReserva === 'EnEspera') && (
                       <Button
-                        variant="rojo"
+                        variant="danger"
                         size="sm"
                         className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
                         loading={cancelandoId === reserva.id}

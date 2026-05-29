@@ -5,10 +5,15 @@ import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
 import { authApi, usuariosApi } from '../../../api';
 import { Notitoast } from '../../../components/Notitoast';
+
+import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
+
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
 import { useInputFilter } from '../../../hooks/useInputFilter';
 import { INPUT_PRESETS } from '../../../utils/inputPresets';
+
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico, ChangePasswordData } from '../../../types';
 import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
@@ -51,6 +56,8 @@ export function PerfilPage() {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const currentPasswordFilter = useInputFilter(
     passwordData.currentPassword,
     (v) => setPasswordData((prev) => ({ ...prev, currentPassword: v })),
@@ -112,12 +119,17 @@ export function PerfilPage() {
     setShowToast(true);
   };
 
-  const handleSave = async () => {
+  const handleConfirmSave = async () => {
     if (!user) return;
+
+    const trimmedNombre = formData.nombre.trim();
+    const trimmedApellido = formData.apellido.trim();
+
+    setShowSaveConfirm(false);
     setLoading(true);
     try {
-      const updated = await usuariosApi.update(user.id, formData);
-      updateUser({ ...user, ...formData });
+      await usuariosApi.update(user.id, { ...formData, nombre: trimmedNombre, apellido: trimmedApellido });
+      updateUser({ ...user, ...formData, nombre: trimmedNombre, apellido: trimmedApellido });
       showToastMessage('Perfil actualizado exitosamente.', 'success');
       setEditing(false);
     } catch (err) {
@@ -126,6 +138,31 @@ export function PerfilPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    if (!user) return;
+
+    const trimmedNombre = formData.nombre.trim();
+    const trimmedApellido = formData.apellido.trim();
+
+    if (!trimmedNombre || !trimmedApellido) {
+      showToastMessage('El nombre y apellido no pueden estar vacíos.', 'error');
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleCancelEditing = () => {
+    setFormData({
+      nombre: user?.nombre || '',
+      apellido: user?.apellido || '',
+      telefono: user?.telefono || '',
+      email: user?.email || '',
+    });
+    setShowCancelConfirm(false);
+    setEditing(false);
   };
 
   const handleChangePassword = async () => {
@@ -261,7 +298,7 @@ export function PerfilPage() {
               />
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleSave} loading={loading}>Guardar</Button>
-                <Button variant="ghost" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setEditing(false)}>Cancelar</Button>
+                <Button variant="danger" onClick={() => setShowCancelConfirm(true)}>Cancelar</Button>
               </div>
             </div>
           ) : (
@@ -447,6 +484,24 @@ export function PerfilPage() {
             <AptoFisicoViewer aptoFisico={aptoActual} />
           )}
         </Modal>
+
+        <ConfirmActionModal
+          isOpen={showCancelConfirm}
+          title="Descartar cambios"
+          body="¿Estás seguro de descartar los cambios realizados?"
+          confirmLabel="Descartar"
+          onConfirm={handleCancelEditing}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
+
+        <ConfirmActionModalVerde
+          isOpen={showSaveConfirm}
+          title="Guardar cambios"
+          body="¿Estás seguro de guardar los cambios realizados?"
+          confirmLabel="Guardar"
+          onConfirm={handleConfirmSave}
+          onCancel={() => setShowSaveConfirm(false)}
+        />
 
         {showToast && (
           <Notitoast
