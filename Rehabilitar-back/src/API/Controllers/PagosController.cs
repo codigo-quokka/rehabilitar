@@ -1,8 +1,12 @@
 using Application.Common.Interfaces;
+using Application.Pagos;
 using Application.Pagos.Requests;
 using Application.Reservas;
-using Application.Suscripciones;
+using Application.Actividades;
+using Application.Clientes;
 using Domain.Enums;
+using Domain.Pagos;
+using Domain.Reservas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -17,15 +21,23 @@ public class PagosController : ApiControllerBase
 {
     private readonly IMercadoPagoService _mercadoPagoService;
     private readonly IReservaService _reservaService;
-    private readonly ISuscripcionService _suscripcionService;
+    private readonly IIntencionPagoRepository _intencionPagoRepo;
+    private readonly IActividadRepository _actividadRepo;
+    private readonly IClienteRepository _clienteRepo;
+    private readonly IUnitOfWork _uow;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, ISuscripcionService suscripcionService, IConfiguration configuration)
+    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, 
+                           IIntencionPagoRepository intencionPagoRepo, IActividadRepository actividadRepo, 
+                           IClienteRepository clienteRepo, IUnitOfWork uow, IConfiguration configuration)
     {
         _mercadoPagoService = mercadoPagoService;
         _reservaService = reservaService;
-        _suscripcionService = suscripcionService;
+        _intencionPagoRepo = intencionPagoRepo;
+        _actividadRepo = actividadRepo;
+        _clienteRepo = clienteRepo;
+        _uow = uow;
         _configuration = configuration;
     }
 
@@ -47,10 +59,14 @@ public class PagosController : ApiControllerBase
         );
     }
 
-    [HttpPost("mercadopago/preferencia-suscripcion")]
-    public async Task<IActionResult> CrearPreferenciaSuscripcion([FromBody] CrearPreferenciaSuscripcionRequest request)
+    [HttpPost("preferencia-paquete/{intencionId}")]
+    public async Task<IActionResult> CrearPreferenciaPaquete(Guid intencionId)
     {
-        var result = await _mercadoPagoService.CreatePreferenceAsync($"SUSC_{request.ClienteId}_{request.SerieId}", 10000, "Suscripción Mensual");
+        var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+        if (intencion == null) return NotFound();
+
+        var result = await _mercadoPagoService.CreatePreferenceAsync($"INT_{intencionId}", intencion.MontoTotal, "Paquete de clases");
+        
         return result.Match(
             p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
             errors => Problem(errors)
@@ -133,20 +149,42 @@ public class PagosController : ApiControllerBase
                 errors => Task.FromResult(Problem(errors))
             );
         }
-        else if (externalReference.StartsWith("SUSC_"))
+        else if (externalReference.StartsWith("INT_"))
         {
-            var parts = externalReference.Substring(5).Split('_');
-            if (parts.Length != 2 || !Guid.TryParse(parts[0], out var clienteId) || !Guid.TryParse(parts[1], out var serieId))
+            var intencionIdString = externalReference.Substring(4);
+            if (!Guid.TryParse(intencionIdString, out var intencionId))
             {
-                return BadRequest("Invalid Suscripcion format");
+                return BadRequest("Invalid IntencionId format");
+            }
+
+            var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+            if (intencion == null) return NotFound("Intencion de pago no encontrada");
+
+            intencion.MarcarPagado(); // Need to add this method to IntencionPago
+
+            var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
+            if (cliente == null) return NotFound("Cliente no encontrado");
+
+            foreach (var actividadId in intencion.ActividadesIds)
+            {
+                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId);
+                if (actividad == null) continue;
+
+                actividad.IniciarReserva(cliente, TipoCliente.Abonado);
+                
+                // Find the newly created Reserva
+                var reserva = actividad.Reservas.FirstOrDefault(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago && r.DetallePago.MontoPagado == 0);
+                if (reserva != null)
+                {
+                    actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                }
+                
+                _actividadRepo.Update(actividad);
             }
             
-            var suscripcionResult = await _suscripcionService.SuscribirAsync(clienteId, serieId);
+            await _uow.SaveChangesAsync();
             
-            return suscripcionResult.Match(
-                _ => Ok(),
-                errors => Problem(errors)
-            );
+            return Ok();
         }
         
         return BadRequest("Unknown external reference format");
@@ -154,6 +192,5 @@ public class PagosController : ApiControllerBase
 }
 
 public record CrearPreferenciaRequest(Guid ReservaId);
-public record CrearPreferenciaSuscripcionRequest(Guid ClienteId, Guid SerieId);
 public record WebhookPayload(string Topic, string Action, string Type, WebhookData Data);
 public record WebhookData(string Id);

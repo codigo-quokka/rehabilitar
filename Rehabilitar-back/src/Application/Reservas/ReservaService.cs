@@ -1,13 +1,14 @@
+using Application.Pagos;
 using Application.Reservas.DTOs;
 using ErrorOr;
 using Application.Actividades;
 using Application.Clientes;
-using Application.Suscripciones;
 using Application.Common.Interfaces;
 using Domain.Reservas;
 using Domain.Actividades;
 using Domain.Exceptions;
 using Domain.Enums;
+using Domain.Pagos;
 using Application.Pagos.Requests;
 
 namespace Application.Reservas;
@@ -17,16 +18,16 @@ public class ReservaService : IReservaService
     private readonly IReservaRepository _reservaRepo;
     private readonly IActividadRepository _actividadRepo;
     private readonly IClienteRepository _clienteRepo;
-    private readonly ISuscripcionService _suscripcionService;
+    private readonly IIntencionPagoRepository _intencionPagoRepo;
     private readonly IUnitOfWork _uow;
 
     public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
-                        IClienteRepository clienteRepo, ISuscripcionService suscripcionService, IUnitOfWork uow)
+                        IClienteRepository clienteRepo, IIntencionPagoRepository intencionPagoRepo, IUnitOfWork uow)
     {
         _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
         _clienteRepo = clienteRepo;
-        _suscripcionService = suscripcionService;
+        _intencionPagoRepo = intencionPagoRepo;
         _uow = uow;
     }
 
@@ -47,8 +48,7 @@ public class ReservaService : IReservaService
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
-                var suscripcion = await _suscripcionService.ObtenerSuscripcionActivaAsync(request.ClienteId, actividad.SerieId ?? Guid.Empty);
-                var tipoCliente = suscripcion != null ? TipoCliente.Abonado : TipoCliente.noAbonado;
+                var tipoCliente = TipoCliente.noAbonado;
 
                 var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
                 if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
@@ -65,7 +65,7 @@ public class ReservaService : IReservaService
                 if (reservaCompleta == null)
                     return Error.NotFound("Reserva.NotFound", "Error al recuperar la reserva después de crearla.");
 
-                return MapToReservaResponse(reservaCompleta, actividad);
+                return await MapToReservaResponse(reservaCompleta, actividad, ct);
             }
             catch (ConcurrencyException ex)
             {
@@ -82,21 +82,24 @@ public class ReservaService : IReservaService
         return Error.NotFound("Error inesperado al procesar la reserva.");
     }
 
-    public async Task<ErrorOr<Success>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<Guid>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
     {
-        foreach (Actividad a in request.Actividades)
-        {
-            var suscripcion = await _suscripcionService.ObtenerSuscripcionActivaAsync(request.ClienteId, a.SerieId ?? Guid.Empty);
-            var tipoCliente = suscripcion != null ? TipoCliente.Abonado : TipoCliente.noAbonado;
+        if (request.ActividadesIds.Count < 4)
+            return Error.Validation("Debe seleccionar al menos 4 clases para el paquete.");
 
-            ReservarActividadRequest nuevaReserva = new ReservarActividadRequest(
-                a.Id, 
-                request.ClienteId,
-                tipoCliente
-            );
-            await ReservarActividadAsync(nuevaReserva, ct);
+        decimal montoTotal = 0;
+        foreach (var id in request.ActividadesIds)
+        {
+            var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+            if (actividad == null) return Error.NotFound("Actividad.NotFound", $"Actividad {id} no encontrada");
+            montoTotal += actividad.Precio;
         }
-        return Result.Success;
+
+        var intencion = IntencionPago.Create(request.ClienteId, request.ActividadesIds.ToList(), montoTotal);
+        await _intencionPagoRepo.AddAsync(intencion, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return intencion.Id;
     }
 
     public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(RegistrarPagoRequest request, Guid reservaId, CancellationToken ct = default)
@@ -179,7 +182,7 @@ public class ReservaService : IReservaService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(reserva.ActividadId, ct);
         if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
-        return MapToReservaResponse(reserva, actividad);
+        return await MapToReservaResponse(reserva, actividad, ct);
     }
 
     public async Task<ErrorOr<ReservaResponse>> PrepararPagoAsync(Guid id, CancellationToken ct = default)
@@ -204,7 +207,7 @@ public class ReservaService : IReservaService
             }
         }
 
-        return MapToReservaResponse(reserva, actividad);
+        return await MapToReservaResponse(reserva, actividad, ct);
     }
 
     public async Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default)
@@ -217,7 +220,7 @@ public class ReservaService : IReservaService
             var actividad = await _actividadRepo.ObtenerPorIdAsync(reserva.ActividadId, ct);
             if (actividad != null)
             {
-                response.Add(MapToReservaResponse(reserva, actividad));
+                response.Add(await MapToReservaResponse(reserva, actividad, ct));
             }
         }
         return response;
@@ -229,12 +232,17 @@ public class ReservaService : IReservaService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
         
-        return reservas.Select(r => MapToReservaResponse(r, actividad)).ToList();
+        var tasks = reservas.Select(r => MapToReservaResponse(r, actividad, ct));
+        return (await Task.WhenAll(tasks)).ToList();
     }
 
-    private static ReservaResponse MapToReservaResponse(Reserva reserva, Actividad actividad)
+    private async Task<ReservaResponse> MapToReservaResponse(Reserva reserva, Actividad actividad, CancellationToken ct = default)
     {
         string nombreCliente = reserva.Cliente.User.FirstName + " " + reserva.Cliente.User.LastName;
+        
+        int intencionesPendientes = await _intencionPagoRepo.ContarIntencionesPendientesRecientesAsync(actividad.Id, TimeSpan.FromMinutes(15));
+        bool probabilidad = actividad.CupoMaximo > 0 && (actividad.CupoOcupado + intencionesPendientes) >= actividad.CupoMaximo;
+
         return new ReservaResponse(
             reserva.Id,
             reserva.ClienteId,
@@ -247,7 +255,7 @@ public class ReservaService : IReservaService
             reserva.DetallePago.MontoPendiente,
             reserva.DetallePago.MontoDescuento,
             reserva.PorcentajeDescuentoAplicado,
-            actividad.ProbabilidadListaEspera
+            probabilidad
         );
     }
 
