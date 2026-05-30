@@ -11,9 +11,6 @@ namespace Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "SuscripcionesAbonado");
-
             migrationBuilder.CreateTable(
                 name: "IntencionesPago",
                 columns: table => new
