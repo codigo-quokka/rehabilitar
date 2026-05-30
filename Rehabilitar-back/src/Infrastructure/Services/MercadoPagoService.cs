@@ -45,7 +45,16 @@ public class MercadoPagoService : IMercadoPagoService
                 // pending = $"{frontendUrl}/reservas/pago/pendiente"
             },
             auto_return = "approved",
-            notification_url = webhookUrl
+            // notification_url = webhookUrl
+
+            payment_methods = new
+            {
+                excluded_payment_types = new[]
+                {
+                    new { id = "ticket" }, // Bloquea Rapipago, Pago Fácil, etc.
+                    new { id = "atm" }     // Bloquea pagos por cajero automático
+                }
+            }
         };
 
         var response = await _httpClient.PostAsJsonAsync("checkout/preferences", preference);
