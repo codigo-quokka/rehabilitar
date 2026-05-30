@@ -48,6 +48,7 @@ export interface Actividad {
   profesorId: string;
   profesorNombre: string | null;
   serieId: string;
+  precio: number;
 }
 
 export interface CreateActividadRequest {

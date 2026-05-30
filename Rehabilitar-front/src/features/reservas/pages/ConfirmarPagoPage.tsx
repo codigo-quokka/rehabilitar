@@ -5,7 +5,6 @@ import { Card, Button, Input, Select } from '../../../components/ui';
 import { reservasApi, actividadesApi, apiClient } from '../../../api';
 import { Actividad } from '../../../types';
 import { useNotifications } from '../../../hooks/useNotifications';
-import { MercadoFake } from '../../../components/MercadoFake';
 
 const metodoPagoOptions = [
   { value: 'MercadoPago', label: 'Mercado Pago' },
@@ -13,37 +12,42 @@ const metodoPagoOptions = [
 ];
 
 export function ConfirmarPagoPage() {
-  const { reservaId } = useParams<{ reservaId: string }>();
+  const { reservaId, intencionId } = useParams<{ reservaId?: string, intencionId?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
 
   const state = location.state as {
-    reservaId: string;
-    actividadId: string;
+    reservaId?: string;
+    actividadId?: string;
     montoTotal: number;
-    montoPagado: number;
+    montoPagado?: number;
     montoPendiente: number;
+    intencionId?: string;
+    actividades?: Actividad[];
   } | null;
 
+  const isIntent = !!intencionId;
+  const isPackage = isIntent && (state?.actividades?.length ?? 0) > 1;
+
   const [actividad, setActividad] = useState<Actividad | null>(null);
-  const [monto, setMonto] = useState<number>(state?.montoPendiente ?? 0);
+  const [monto, setMonto] = useState<number>(state?.montoPendiente ?? state?.montoTotal ?? 0);
   const [metodoPago, setMetodoPago] = useState('MercadoPago');
   const [loading, setLoading] = useState(false);
 
   const { addNotification } = useNotifications();
 
   useEffect(() => {
-    if (!state) return;
+    if (!state || isPackage) return;
     const fetchActividad = async () => {
       try {
-        const act = await actividadesApi.getById(state.actividadId);
+        const act = await actividadesApi.getById(state.actividadId!);
         setActividad(act);
       } catch {
         // Activity name not critical for payment flow
       }
     };
     fetchActividad();
-  }, [state]);
+  }, [state, isPackage]);
 
   if (!state) {
     return (
@@ -62,9 +66,11 @@ export function ConfirmarPagoPage() {
     );
   }
 
-  const { montoTotal, montoPagado, montoPendiente } = state;
+  const montoTotal = state.montoTotal ?? 0;
+  const montoPagado = state.montoPagado ?? 0;
+  const montoPendiente = state.montoPendiente ?? montoTotal;
   const depositoMinimo = montoTotal / 2;
-  const confirmaReserva = montoPagado < depositoMinimo && (montoPagado + monto) >= depositoMinimo;
+  const confirmaReserva = !isPackage && montoPagado < depositoMinimo && (montoPagado + monto) >= depositoMinimo;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -77,7 +83,7 @@ export function ConfirmarPagoPage() {
   };
 
   const esMercadoPago = metodoPago === 'MercadoPago';
-  const montoMinimoMP = montoTotal / 2;
+  const montoMinimoMP = isPackage ? montoTotal : montoTotal / 2;
 
   const efectuarPago = async (amount: number) => {
     setLoading(true);
@@ -119,7 +125,7 @@ export function ConfirmarPagoPage() {
 
     if (esMercadoPago) {
       if (monto < montoMinimoMP) {
-        addNotification('El monto mínimo para pagar con Mercado Pago es el 50% del valor de la actividad.', 'error');
+        addNotification(isPackage ? 'El monto debe ser el total del paquete.' : 'El monto mínimo para pagar con Mercado Pago es el 50% del valor de la actividad.', 'error');
         return;
       }
       if (monto > montoPendiente) {
@@ -129,7 +135,9 @@ export function ConfirmarPagoPage() {
 
       setLoading(true);
       try {
-        const response = await apiClient.post('/pagos/mercadopago/preferencia', { reservaId });
+        const url = isIntent ? '/pagos/mercadopago/preferencia-paquete/' + intencionId : '/pagos/mercadopago/preferencia';
+        const body = isIntent ? { monto } : { reservaId };
+        const response = await apiClient.post(url, body);
         window.location.href = response.data.initPoint;
       } catch (err) {
         addNotification('Error al iniciar el pago con Mercado Pago', 'error');
@@ -141,14 +149,37 @@ export function ConfirmarPagoPage() {
     efectuarPago(amountToPay);
   };
 
+  const hayListaEspera = isPackage && state.actividades?.some(a => a.probabilidadListaEspera === true);
+
   return (
     <MainLayout title="Confirmar pago">
       <div className="max-w-lg mx-auto space-y-6">
         <Card>
           <h2 className="text-xl font-semibold text-dark dark:text-gray-100 mb-4">Resumen de pago</h2>
 
+          {hayListaEspera && (
+            <div className="mb-4 p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800">
+              <p className="text-sm font-bold text-yellow-800 dark:text-yellow-300">
+                Atención: Hay alta demanda para algunas de estas clases. Si demoras en confirmar el pago, podrías quedar en lista de espera (con prioridad de Abonado).
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3 text-sm">
-            {actividad && (
+            {isIntent ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Actividad</span>
+                  <span className="font-medium text-dark dark:text-gray-100 text-right">{isPackage ? `Paquete de ${state?.actividades?.length} clases` : 'Reserva de clase'}</span>
+                </div>
+                {state.actividades?.map((act, i) => (
+                  <div key={i} className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>{act.nombre}</span>
+                    <span>{formatDate(act.fechaYHora)}</span>
+                  </div>
+                ))}
+              </>
+            ) : actividad && (
               <>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Actividad</span>
@@ -169,24 +200,28 @@ export function ConfirmarPagoPage() {
               <span className="text-gray-500 dark:text-gray-400">Total de la reserva</span>
               <span className="font-semibold text-dark dark:text-gray-100">${montoTotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Ya pagado</span>
-              <span className="font-medium text-dark dark:text-gray-100">${montoPagado.toFixed(2)}</span>
-            </div>
+            {!isPackage && (
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Ya pagado</span>
+                <span className="font-medium text-dark dark:text-gray-100">${montoPagado.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-base">
               <span className="text-dark dark:text-gray-100 font-semibold">Saldo pendiente</span>
               <span className="font-bold text-primary">${montoPendiente.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              {confirmaReserva
-                ? 'Este pago confirmará tu reserva y asegurará tu lugar.'
-                : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
-              }
-            </p>
-          </div>
+          {!isPackage && (
+            <div className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                {confirmaReserva
+                  ? 'Este pago confirmará tu reserva y asegurará tu lugar.'
+                  : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
+                }
+              </p>
+            </div>
+          )}
         </Card>
 
         <Card>
@@ -200,7 +235,7 @@ export function ConfirmarPagoPage() {
                   setMonto(montoMinimoMP);
                 }
               }}
-              options={metodoPagoOptions}
+              options={isIntent ? metodoPagoOptions.filter(o => o.value === 'MercadoPago') : metodoPagoOptions}
               required
             />
 
@@ -215,9 +250,10 @@ export function ConfirmarPagoPage() {
                   value={monto}
                   onChange={(e) => setMonto(parseFloat(e.target.value) || 0)}
                   required
+                  disabled={isPackage}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Monto mínimo: ${montoMinimoMP.toFixed(2)} — Monto máximo: ${montoPendiente.toFixed(2)}
+                  {isPackage ? 'Monto total del paquete' : `Monto mínimo: $${montoMinimoMP.toFixed(2)} — Monto máximo: $${montoPendiente.toFixed(2)}`}
                 </p>
               </>
             ) : (
@@ -252,18 +288,6 @@ export function ConfirmarPagoPage() {
           >
             {esMercadoPago ? 'Mercado Pago' : 'Realizar Pago'}
           </Button>
-          {/*
-          <Button
-            hidden={!esMercadoPago}
-            variant="primary"
-            className="flex-x"
-            loading={loading}
-            disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
-            // onClick={}
-          >
-            {'Ejecutar MercadoFake (no implementado)'}
-          </Button>
-          */}
         </div>
       </div>
     </MainLayout>

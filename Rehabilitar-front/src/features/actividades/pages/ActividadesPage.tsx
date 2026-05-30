@@ -117,15 +117,19 @@ export function ActividadesPage() {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate(`/reservas/confirmar/${reserva.id}`, {
+      const res = await reservasApi.create({
+        actividadId: actividad.id,
+        clienteId: user.id,
+        tipoCliente: 'noAbonado',
+      });
+      
+      // Navigate using the unified package flow!
+      navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
         state: {
-          reservaId: reserva.id,
-          actividadId: reserva.actividadId,
-          montoTotal: reserva.montoTotal,
-          montoPagado: 0,
-          montoPendiente: reserva.montoPendiente,
-        },
+          intencionId: res.intencionId,
+          actividades: [actividad],
+          montoTotal: actividad.precio
+        }
       });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
@@ -429,7 +433,7 @@ export function ActividadesPage() {
                 key={act.id}
                 actividad={act}
                 hasRole={hasRole}
-                onReservar={handleReservar}
+                onReservar={() => handleReservar(act)}
                 onModificar={(act) => {
                   setEditingActividad(act);
                   setShowModal(true);
