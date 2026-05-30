@@ -1,5 +1,9 @@
 export type Role = 'Administrador' | 'Recepción' | 'Profesor' | 'Cliente Registrado';
 
+export interface SaldoAFavor {
+  montoTotal: number;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -14,6 +18,8 @@ export interface User {
   activo: boolean;
   fechaAlta: string;
   especialidad?: string;
+  saldoAFavor?: SaldoAFavor;
+  rehabiliCoins?: number;
 }
 
 export interface AuthState {

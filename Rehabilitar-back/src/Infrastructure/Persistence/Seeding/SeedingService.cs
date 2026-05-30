@@ -6,6 +6,7 @@ using Application.Seeding;
 using Domain.Salas;
 using Microsoft.EntityFrameworkCore;
 using Domain.Actividades;
+using Domain.AptosFisicos;
 using Domain.Reservas;
 using Domain.Enums;
 using Application.Actividades;
@@ -65,10 +66,19 @@ public class SeedingService : ISeedingService
         await SeedClienteAsync("Marilina", "Bertoldi", "marilina@bertoldi.com", "22333444");
         await SeedClienteAsync("Ricardo", "Mollo", "ricardo@mollo.com", "33444555", "541110102020");
         await SeedClienteAsync("José", "Hernández", "joseh@gmail.com", "10000000", password: "Jose123!");
+        await SeedClienteAsync("Morgan", "Freeman", "morgan@freeman.com", "77888999", "542211112233");
+        await SeedClienteAsync("Ellen", "Ripley", "ellen@ripley.com", "88999000", "542213334455");
+        await SeedClienteAsync("Tony", "Stark", "tony@stark.com", "99000111", "542215556677");
+        await SeedClienteAsync("Sarah", "Connor", "sarah@connor.com", "11122333");
+        await SeedClienteAsync("Gandalf", "Gris", "gandalf@gris.com", "22233444", "542217778899");
+        await SeedClienteAsync("Leia", "Organa", "leia@organa.com", "33344555");
 
         await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
         await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
         await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", TipoEspecialidad.TrenInferior);
 
         var salaA = Sala.Create("Sala A", 10);
         var salaB = Sala.Create("Sala B", 20);
@@ -85,6 +95,9 @@ public class SeedingService : ISeedingService
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
+        var diana = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "diana@prince.com");
+        var steve = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "steve@rogers.com");
+        var natasha = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "natasha@romanoff.com");
         var now = DateTime.Today.AddDays(1);
         await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
         await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
@@ -94,7 +107,13 @@ public class SeedingService : ISeedingService
         await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
         await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
         await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
-        // await SeedReservaAsync();
+        await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
+        await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(5).AddHours(15), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(5).AddHours(15).AddDays(45));
+        await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
+        await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
+        await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
+        await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+        await SeedReservasAsync();
     }
 
     private async Task SeedAdminAsync(string adminEmail, string adminFirstName, string adminLastName)
@@ -150,7 +169,7 @@ public class SeedingService : ISeedingService
         }
     }
 
-    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null)
+    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null, bool aprobarApto = true)
     {
         User? clientUser = await _userManager.FindByEmailAsync(clientEmail);
         if (clientUser != null)
@@ -184,6 +203,8 @@ public class SeedingService : ISeedingService
                 dni: new Dni(clientDni),
                 telefono: clientTelefono
             );
+            if (aprobarApto)
+                client.AprobarAptoFisico();
             _dbContext.Clientes.Add(client);
             await _dbContext.SaveChangesAsync();
 
@@ -310,7 +331,146 @@ public class SeedingService : ISeedingService
         _dbContext.Reservas.Add(reserva);
         await _dbContext.SaveChangesAsync();
     }
-    
+
+    private async Task SeedReservasAsync()
+    {
+        Console.WriteLine("SeedReservasAsync: inicio");
+
+        var clientes = await _dbContext.Clientes.Include(c => c.User).ToListAsync();
+        Console.WriteLine($"SeedReservasAsync: {clientes.Count} clientes cargados");
+
+        var actividades = await _dbContext.Actividades.ToListAsync();
+        Console.WriteLine($"SeedReservasAsync: {actividades.Count} actividades cargadas");
+
+        // Crear AptoFisico aprobado para cada cliente que no tenga uno
+        var adminUser = await _userManager.FindByEmailAsync("admin@rehabilitar.com");
+        var existingAptos = await _dbContext.Set<AptoFisico>().Select(a => a.ClienteId).ToHashSetAsync();
+        foreach (var c in clientes)
+        {
+            c.AprobarAptoFisico();
+            if (!existingAptos.Contains(c.UserId))
+            {
+                var seedPdfPath = Path.Combine(AppContext.BaseDirectory, "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
+                if (!File.Exists(seedPdfPath))
+                    seedPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Infrastructure", "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
+                var pdfBytes = File.Exists(seedPdfPath) ? await File.ReadAllBytesAsync(seedPdfPath) : new byte[] { 0x25, 0x50, 0x44, 0x46 };
+                var apto = new AptoFisico(c.UserId, "Apto_Fisico_RehabilitAR.pdf", "application/pdf", pdfBytes, pdfBytes.Length);
+                apto.Aprobar(adminUser!.Id);
+                _dbContext.Set<AptoFisico>().Add(apto);
+                Console.WriteLine($"SeedReservasAsync: apto físico creado y aprobado para {c.User?.Email}");
+            }
+            else
+            {
+                Console.WriteLine($"SeedReservasAsync: apto físico ya existente para {c.User?.Email}");
+            }
+        }
+
+        Cliente Cliente(string email) => clientes.First(c => c.User!.Email == email);
+        Actividad Actividad(string nombre) => actividades.First(a => a.Nombre == nombre);
+
+        async Task CrearReserva(Cliente cliente, Actividad actividad, TipoCliente tipoCliente, EstadoDeReserva estado)
+        {
+            if (await _dbContext.Reservas.AnyAsync(r => r.ClienteId == cliente.UserId && r.ActividadId == actividad.Id))
+                return;
+
+            var montoTotal = 1000m;
+            var montoPagado = estado == EstadoDeReserva.Activa ? montoTotal : 0;
+            var detallePago = new DetallePago(montoTotal, montoPagado);
+            var reserva = Reserva.Create(cliente.UserId, actividad.Id, detallePago, estado, tipoCliente);
+            _dbContext.Reservas.Add(reserva);
+        }
+
+        // Pilates Rehabilitador (cupo 5) - LLENO
+        await CrearReserva(Cliente("paul@atreides.com"), Actividad("Pilates Rehabilitador"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("rocky@balboa.com"), Actividad("Pilates Rehabilitador"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("mr@robot.com"), Actividad("Pilates Rehabilitador"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("daenerys@targaryen.com"), Actividad("Pilates Rehabilitador"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("marilina@bertoldi.com"), Actividad("Pilates Rehabilitador"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+
+        // Reeducación Postural Global (cupo 4) - LLENO
+        await CrearReserva(Cliente("ricardo@mollo.com"), Actividad("Reeducación Postural Global"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("joseh@gmail.com"), Actividad("Reeducación Postural Global"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("morgan@freeman.com"), Actividad("Reeducación Postural Global"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("ellen@ripley.com"), Actividad("Reeducación Postural Global"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+
+        // Tonificación General (cupo 8) - LLENO
+        await CrearReserva(Cliente("tony@stark.com"), Actividad("Tonificación General"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("sarah@connor.com"), Actividad("Tonificación General"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("gandalf@gris.com"), Actividad("Tonificación General"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("leia@organa.com"), Actividad("Tonificación General"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("paul@atreides.com"), Actividad("Tonificación General"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("rocky@balboa.com"), Actividad("Tonificación General"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("mr@robot.com"), Actividad("Tonificación General"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("daenerys@targaryen.com"), Actividad("Tonificación General"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+
+        // Yoga Terapéutico (cupo 10) - parcial con cancelada
+        await CrearReserva(Cliente("marilina@bertoldi.com"), Actividad("Yoga Terapéutico"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("ricardo@mollo.com"), Actividad("Yoga Terapéutico"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("joseh@gmail.com"), Actividad("Yoga Terapéutico"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("morgan@freeman.com"), Actividad("Yoga Terapéutico"), TipoCliente.noAbonado, EstadoDeReserva.Cancelada);
+
+        // Rehabilitación de Rodilla (cupo 12) - parcial con pendiente
+        await CrearReserva(Cliente("ellen@ripley.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("tony@stark.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("sarah@connor.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("gandalf@gris.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("leia@organa.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("paul@atreides.com"), Actividad("Rehabilitación de Rodilla"), TipoCliente.Abonado, EstadoDeReserva.PendienteDePago);
+
+        // Aqua Terapia (cupo 15) - parcial con pendiente
+        await CrearReserva(Cliente("rocky@balboa.com"), Actividad("Aqua Terapia"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("mr@robot.com"), Actividad("Aqua Terapia"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("daenerys@targaryen.com"), Actividad("Aqua Terapia"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("marilina@bertoldi.com"), Actividad("Aqua Terapia"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("ricardo@mollo.com"), Actividad("Aqua Terapia"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("joseh@gmail.com"), Actividad("Aqua Terapia"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("morgan@freeman.com"), Actividad("Aqua Terapia"), TipoCliente.noAbonado, EstadoDeReserva.PendienteDePago);
+
+        // Kinesiología Deportiva (cupo 20) - parcial
+        await CrearReserva(Cliente("ellen@ripley.com"), Actividad("Kinesiología Deportiva"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("tony@stark.com"), Actividad("Kinesiología Deportiva"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("sarah@connor.com"), Actividad("Kinesiología Deportiva"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("gandalf@gris.com"), Actividad("Kinesiología Deportiva"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("leia@organa.com"), Actividad("Kinesiología Deportiva"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("paul@atreides.com"), Actividad("Kinesiología Deportiva"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("rocky@balboa.com"), Actividad("Kinesiología Deportiva"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("mr@robot.com"), Actividad("Kinesiología Deportiva"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+
+        // Boxeo Terapéutico (cupo 10) - solo pendientes
+        await CrearReserva(Cliente("daenerys@targaryen.com"), Actividad("Boxeo Terapéutico"), TipoCliente.noAbonado, EstadoDeReserva.PendienteDePago);
+        await CrearReserva(Cliente("marilina@bertoldi.com"), Actividad("Boxeo Terapéutico"), TipoCliente.Abonado, EstadoDeReserva.PendienteDePago);
+        await CrearReserva(Cliente("ricardo@mollo.com"), Actividad("Boxeo Terapéutico"), TipoCliente.noAbonado, EstadoDeReserva.PendienteDePago);
+
+        // Movilidad Articular (cupo 25) - parcial
+        await CrearReserva(Cliente("joseh@gmail.com"), Actividad("Movilidad Articular"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("morgan@freeman.com"), Actividad("Movilidad Articular"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("ellen@ripley.com"), Actividad("Movilidad Articular"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("tony@stark.com"), Actividad("Movilidad Articular"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("sarah@connor.com"), Actividad("Movilidad Articular"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("gandalf@gris.com"), Actividad("Movilidad Articular"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("leia@organa.com"), Actividad("Movilidad Articular"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("paul@atreides.com"), Actividad("Movilidad Articular"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("rocky@balboa.com"), Actividad("Movilidad Articular"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("mr@robot.com"), Actividad("Movilidad Articular"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+
+        // Ejercicios Core (cupo 20) - parcial
+        await CrearReserva(Cliente("leia@organa.com"), Actividad("Ejercicios Core"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("sarah@connor.com"), Actividad("Ejercicios Core"), TipoCliente.noAbonado, EstadoDeReserva.Activa);
+        await CrearReserva(Cliente("gandalf@gris.com"), Actividad("Ejercicios Core"), TipoCliente.Abonado, EstadoDeReserva.Activa);
+
+        // Fortalecimiento Lumbar (cupo 25) - solo pendientes
+        await CrearReserva(Cliente("tony@stark.com"), Actividad("Fortalecimiento Lumbar"), TipoCliente.Abonado, EstadoDeReserva.PendienteDePago);
+        await CrearReserva(Cliente("ellen@ripley.com"), Actividad("Fortalecimiento Lumbar"), TipoCliente.noAbonado, EstadoDeReserva.PendienteDePago);
+
+        Console.WriteLine("SeedReservasAsync: guardando cambios...");
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine("SeedReservasAsync: cambios guardados OK");
+
+        // Actualizar CupoOcupado según reservas activas
+        var filasAfectadas = await _dbContext.Database.ExecuteSqlRawAsync(
+            "UPDATE Actividades SET CupoOcupado = (SELECT COUNT(*) FROM Reservas WHERE Reservas.ActividadId = Actividades.Id AND Reservas.EstadoDeReserva = 1)");
+        Console.WriteLine($"SeedReservasAsync: CupoOcupado actualizado ({filasAfectadas} filas)");
+    }
 
     private async Task ExecuteWithTransactionAsync(Func<Task<bool>> action)
     {
