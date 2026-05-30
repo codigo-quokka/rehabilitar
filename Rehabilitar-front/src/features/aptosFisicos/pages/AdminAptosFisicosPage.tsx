@@ -49,6 +49,13 @@ export function AdminAptosFisicosPage() {
     });
   }, [aptos, filters, searchTerm]);
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, filters]);
+
 
   const fetchAptos = async () => {
     setLoading(true);
@@ -222,11 +229,11 @@ export function AdminAptosFisicosPage() {
           </div>
         </div>
         {loading ? (
-          <p className="text-gray-500">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
         ) : filteredAptos.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">
-              No hay aptos físicos disponibles
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              {hasActiveFilters ? 'No se encontraron coincidencias' : 'No hay aptos físicos registrados'}
             </p>
           </Card>
         ) : (

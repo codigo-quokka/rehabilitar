@@ -172,6 +172,14 @@ export function ActividadesPage() {
     return true;
   });
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      dateFilterApplied ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, dateFilterApplied, filters]);
+
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
   const { grupos, individuales } = useMemo(() => {
@@ -363,8 +371,12 @@ export function ActividadesPage() {
           <p className="text-gray-500">Cargando...</p>
         ) : filteredActividades.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">
-              No hay actividades disponibles
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              {hasActiveFilters
+                ? 'No se encontraron coincidencias'
+                : hasRole(['Cliente Registrado'])
+                  ? 'No hay actividades disponibles'
+                  : 'No hay actividades registradas'}
             </p>
           </Card>
         ) : (

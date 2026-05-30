@@ -177,11 +177,11 @@ export function SalasPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
         ) : salas.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">
-              No hay salas disponibles
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              No hay salas registradas
             </p>
           </Card>
         ) : (
