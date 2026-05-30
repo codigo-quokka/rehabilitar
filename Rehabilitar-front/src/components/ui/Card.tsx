@@ -4,6 +4,7 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  variant?: 'dash';
 }
 
 export function Card({ children, className = '', padding = 'md' }: CardProps) {
@@ -12,6 +13,10 @@ export function Card({ children, className = '', padding = 'md' }: CardProps) {
     sm: 'p-5',
     md: 'p-8',
     lg: 'p-10',
+  };
+
+  const variantStyles = {
+    dash: 'bg-gradient-to-br from-secondary to-dark text-white',
   };
 
   return (

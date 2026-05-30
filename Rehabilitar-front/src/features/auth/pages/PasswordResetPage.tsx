@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card, Input } from "../../../components/ui";
 import { useAuth } from "../../../hooks/useAuth";
@@ -6,6 +6,7 @@ import logo from "../../../assets/logo.png";
 import { authApi } from "../../../api";
 import { PrivacyEye } from "../../../components/PrivacyEye";
 import { InformRequirements, type Requirement } from "../../../components/InformRequirements";
+import { Notitoast } from "../../../components/Notitoast";
 
 type PageStatus = "idle" | "loading" | "success" | "error";
 
@@ -17,9 +18,14 @@ const passwordReqs: Requirement[] = [
   { label: "Al menos un carácter especial", test: (v) => /[^a-zA-Z0-9]/.test(v) },
 ];
 
+
 export function PasswordResetPage() {
+  const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toastMessage, setToastMessage] = useState("");
+  const handleCloseToast = useCallback(() => setShowToast(false), []);
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<PageStatus>("idle");
+  const [status, setStatus] = useState<PageStatus>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,7 +33,7 @@ export function PasswordResetPage() {
   const navigate = useNavigate();
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  
   const confirmPasswordReqs = useMemo<Requirement[]>(() => [
     {
       label: "Las contraseñas coinciden",
@@ -35,30 +41,53 @@ export function PasswordResetPage() {
     },
   ], [newPassword]);
 
+  const userId = searchParams.get("userId");
+  const passwordResetToken = searchParams.get("passwordResetToken");
+  
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/dashboard", { replace: true });
       return;
     }
     
-    const userId = searchParams.get("userId");
-    const passwordResetToken = searchParams.get("passwordResetToken");
-    
     if (!userId || !passwordResetToken) {
       setStatus("error");
-      setErrorMessage("Enlace de recuperación inválido.");
+      setErrorMessage("El enlace de recuperación es inválido o expiró.");
+      return;
     }
-  }, [isAuthenticated, searchParams, navigate]);
+
+    // Definimos e invocamos la función asíncrona DENTRO del useEffect
+    const verifyToken = async () => {
+      try {
+        await authApi.validatePasswordResetToken({
+          userId,
+          passwordResetToken
+        });
+        // Si tiene éxito, se queda en "idle" y muestra el formulario
+        setStatus("idle");
+      } catch (error: any) {
+        setStatus("error");
+        setErrorMessage("El enlace de recuperación es inválido o expiró.");
+      }
+    };
+
+    verifyToken();
+  }, [isAuthenticated, navigate, userId, passwordResetToken]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setErrorMessage("Las contraseñas no coinciden.");
+      setToastType("error");
+      setToastMessage("Las contraseñas no coinciden.");
+      setShowToast(true);
       return;
     }
 
     if (passwordReqs.some((r) => !r.test(newPassword))) {
-      setErrorMessage("La contraseña no cumple los requisitos de seguridad.");
+      setToastType("error");
+      setToastMessage("La contraseña no cumple los requisitos de seguridad.");
+      setShowToast(true);
       return;
     }
 
@@ -77,17 +106,22 @@ export function PasswordResetPage() {
       });
       setStatus("success");
     } catch (error: any) {
-      const data = error.response?.data;
-      if (data?.errorCode === "Password.SameAsOld") {
+      const responseData = error.response?.data;
+
+      if (responseData?.fieldErrors?.["Password.SameAsOld"]) {
         setStatus("idle");
-        setErrorMessage(data.error || "La nueva contraseña no puede ser idéntica a la actual.");
+        setToastType("error");
+        setToastMessage("La nueva contraseña no puede ser idéntica a la actual.");
+        setShowToast(true);
+      } else if (responseData?.error) {
+        setStatus("error");
+        setErrorMessage(responseData.error);
+      } else if (responseData?.detail) {
+        setStatus("error");
+        setErrorMessage(responseData.detail);
       } else {
         setStatus("error");
-        if (data?.detail) {
-          setErrorMessage(data.detail);
-        } else {
-          setErrorMessage("El enlace expiró o es incorrecto.");
-        }
+        setErrorMessage("El enlace expiró o es incorrecto.");
       }
     }
   };
@@ -110,7 +144,7 @@ export function PasswordResetPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  minLength={8}
+                  // minLength={8}
                 />
                 <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
               </div>
@@ -128,7 +162,7 @@ export function PasswordResetPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  minLength={8}
+                  // minLength={8}
                 />
                 <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
               </div>
@@ -148,7 +182,7 @@ export function PasswordResetPage() {
         return (
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="text-gray-600 dark:text-gray-400">Restableciendo contraseña...</p>
+            {/* <p className="text-gray-600 dark:text-gray-400">Restableciendo contraseña...</p> */}
           </div>
         );
       case "success":
@@ -211,10 +245,13 @@ export function PasswordResetPage() {
           </div>
         </Card>
 
-        <p className="text-center text-gray-400 text-sm mt-8">
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-8">
           © 2026 RehabilitAR
         </p>
       </div>
+      {showToast && (
+        <Notitoast type={toastType} message={toastMessage} onClose={handleCloseToast} />
+      )}
     </div>
   );
 }

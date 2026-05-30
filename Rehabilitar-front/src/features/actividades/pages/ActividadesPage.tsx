@@ -84,6 +84,19 @@ export function ActividadesPage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!showReservasModal) return;
+    document.body.style.overflow = 'hidden';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowReservasModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handler);
+    };
+  }, [showReservasModal]);
+
   const handleVerReservas = async (actividad: Actividad) => {
     setReservasActNombre(actividad.nombre);
     setReservasLoading(true);
@@ -107,8 +120,16 @@ export function ActividadesPage() {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate("/reservas", { state: { _successMessage: '¡Reserva agregada!' } });
+      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      navigate(`/reservas/confirmar/${reserva.id}`, {
+        state: {
+          reservaId: reserva.id,
+          actividadId: reserva.actividadId,
+          montoTotal: reserva.montoTotal,
+          montoPagado: 0,
+          montoPendiente: reserva.montoPendiente,
+        },
+      });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
@@ -151,6 +172,14 @@ export function ActividadesPage() {
     return true;
   });
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      dateFilterApplied ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, dateFilterApplied, filters]);
+
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
   const { grupos, individuales } = useMemo(() => {
@@ -166,7 +195,17 @@ export function ActividadesPage() {
         ind.push(act);
       }
     }
-    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+    const sortByDate = (a: Actividad, b: Actividad) =>
+      new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime();
+    ind.sort(sortByDate);
+    for (const [, acts] of gruposMap) {
+      acts.sort(sortByDate);
+    }
+    const sortedGrupos = Array.from(gruposMap.entries()).sort(
+      ([, actsA], [, actsB]) =>
+        new Date(actsA[0].fechaYHora).getTime() - new Date(actsB[0].fechaYHora).getTime()
+    );
+    return { grupos: sortedGrupos, individuales: ind };
   }, [filteredActividades]);
 
   return (
@@ -309,6 +348,7 @@ export function ActividadesPage() {
           <div className={filterOpen ? 'invisible' : ''}>
             {hasRole(["Administrador"]) && (
               <Button
+                variant="primary"
                 className="px-6 py-3 justify-center whitespace-nowrap h-12"
                 onClick={() => setShowModal(true)}
               >
@@ -317,6 +357,7 @@ export function ActividadesPage() {
             )}
             {hasRole(["Profesor"]) && (
               <Button
+                variant="primary"
                 className="px-6 py-3 justify-center whitespace-nowrap h-12"
                 onClick={() => setShowModal(true)}
               >
@@ -330,8 +371,12 @@ export function ActividadesPage() {
           <p className="text-gray-500">Cargando...</p>
         ) : filteredActividades.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">
-              No hay actividades disponibles
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              {hasActiveFilters
+                ? 'No se encontraron coincidencias'
+                : hasRole(['Cliente Registrado'])
+                  ? 'No hay actividades disponibles'
+                  : 'No hay actividades registradas'}
             </p>
           </Card>
         ) : (
@@ -432,7 +477,7 @@ export function ActividadesPage() {
       {showReservasModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center mb-6 relative">
               <button onClick={() => setShowReservasModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -500,7 +545,7 @@ export function ActividadesPage() {
   );
 }
 
-interface ActividadFormProps {
+export interface ActividadFormProps {
   onClose: () => void;
   salas: Sala[];
   profesores: User[];
@@ -509,7 +554,7 @@ interface ActividadFormProps {
   onSuccess: (message: string) => void;
 }
 
-function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
+export function ActividadForm({ onClose, salas, profesores, actividad, onError, onSuccess }: ActividadFormProps) {
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
@@ -544,6 +589,8 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
 
+  const selectedSala = useMemo(() => salas.find(s => s.id === formData.salaId), [salas, formData.salaId]);
+
   const handleDelete = async () => {
     if (!actividad) return;
     setLoading(true);
@@ -568,9 +615,27 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
       return;
     }
 
+    if (selectedSala && formData.cupoMaximo > selectedSala.capacidad) {
+      onError(`El cupo máximo no puede superar la capacidad de la sala (${selectedSala.capacidad})`);
+      return;
+    }
+
     const parsedDate = new Date(formData.fechaYHora);
     if (isNaN(parsedDate.getTime()) || parsedDate <= new Date()) {
       onError('La fecha y hora no pueden ser anteriores a las de hoy');
+      return;
+    }
+
+    const dia = parsedDate.getDay();
+    if (dia === 0) {
+      onError('No se pueden crear actividades los domingos. El horario permitido es de lunes a sábado de 8:00 a 19:00');
+      return;
+    }
+
+    const hora = parsedDate.getHours();
+    const minutos = parsedDate.getMinutes();
+    if (hora < 8 || hora > 19 || (hora === 19 && minutos > 0)) {
+      onError('El horario permitido es de lunes a sábado de 8:00 a 19:00');
       return;
     }
 
@@ -676,10 +741,16 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
             <Select
               label="Sala"
               value={formData.salaId}
-              onChange={(e) => setFormData({ ...formData, salaId: e.target.value })}
+              onChange={(e) => {
+                const nuevaSala = salas.find(s => s.id === e.target.value);
+                const cupoMaximo = nuevaSala && formData.cupoMaximo > nuevaSala.capacidad
+                  ? nuevaSala.capacidad
+                  : formData.cupoMaximo;
+                setFormData({ ...formData, salaId: e.target.value, cupoMaximo });
+              }}
               options={[
                 { value: "", label: "Seleccione una sala..." },
-                ...salas.map((s) => ({ value: s.id, label: s.nombre })),
+                ...salas.map((s) => ({ value: s.id, label: `${s.nombre} (Cap. ${s.capacidad})` })),
               ]}
               required
             />
@@ -727,9 +798,11 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
               />
             ) : (
               <Input
-                label="Cupo máximo"
+                label={`Cupo máximo${selectedSala ? ` (máx. ${selectedSala.capacidad})` : ''}`}
                 type="number"
                 value={formData.cupoMaximo}
+                min={1}
+                max={selectedSala?.capacidad ?? 9999}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -752,9 +825,11 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
           {isAdmin && (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Cupo máximo"
+                label={`Cupo máximo${selectedSala ? ` (máx. ${selectedSala.capacidad})` : ''}`}
                 type="number"
                 value={formData.cupoMaximo}
+                min={1}
+                max={selectedSala?.capacidad ?? 9999}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -775,7 +850,7 @@ function ActividadForm({ onClose, salas, profesores, actividad, onError, onSucce
                 options={[
                   { value: "", label: "Sin profesor" },
                   ...profesores
-                    .filter((p) => !p.especialidad || p.especialidad === formData.tipo)
+                    .filter((p) => p.especialidad === formData.tipo)
                     .map((p) => ({
                       value: p.id,
                       label: `${p.nombre} ${p.apellido}`,

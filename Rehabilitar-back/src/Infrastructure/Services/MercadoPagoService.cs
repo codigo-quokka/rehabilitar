@@ -25,7 +25,7 @@ public class MercadoPagoService : IMercadoPagoService
         // meto este fix de no http para poder usarlo en localhost y que mercadopago no rompa los huevos
         // si no se configura se harcodea el localhost:5173
         var frontendUrl = _config["Frontend:BaseUrlNoHttp"] ?? "localhost:5173";
-        // var webhookUrl = _config["MercadoPago:WebhookUrl"];
+        var webhookUrl = _config["MercadoPago:WebhookUrl"];
         var preference = new
         {
             items = new[]
@@ -42,10 +42,19 @@ public class MercadoPagoService : IMercadoPagoService
             {
                 success = $"{frontendUrl}/reservas/pago/exito",
                 failure = $"{frontendUrl}/reservas/pago/error",
-                pending = $"{frontendUrl}/reservas/pago/pendiente"
+                // pending = $"{frontendUrl}/reservas/pago/pendiente"
             },
             auto_return = "approved",
             // notification_url = webhookUrl
+
+            payment_methods = new
+            {
+                excluded_payment_types = new[]
+                {
+                    new { id = "ticket" }, // Bloquea Rapipago, Pago Fácil, etc.
+                    new { id = "atm" }     // Bloquea pagos por cajero automático
+                }
+            }
         };
 
         var response = await _httpClient.PostAsJsonAsync("checkout/preferences", preference);

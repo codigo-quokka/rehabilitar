@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 
 interface NotitoastProps {
-  type: "success" | "error";
+  type: "success" | "error" | "info";
   message: string;
   onClose?: () => void;
   duration?: number;
@@ -27,18 +27,25 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
 
   const styles = {
   success: {
-    bg: "bg-teal-200/30 dark:bg-teal-800/30 backdrop-blur-md",
+    bg: "bg-teal-200/30 dark:bg-teal-800/50 backdrop-blur-md",
     border: "border border-teal-300/40 dark:border-teal-600/40",
     iconBg: "bg-teal-300/30 dark:bg-teal-700/30",
     iconColor: "text-teal-700 dark:text-teal-300",
     text: "text-teal-900 dark:text-teal-100",
   },
   error: {
-    bg: "bg-red-200/30 dark:bg-red-800/30 backdrop-blur-md",
+    bg: "bg-red-200/30 dark:bg-red-800/50 backdrop-blur-md",
     border: "border border-red-300/40 dark:border-red-600/40",
     iconBg: "bg-red-300/30 dark:bg-red-700/30",
     iconColor: "text-red-700 dark:text-red-300",
     text: "text-red-900 dark:text-red-100",
+  },
+  info: {
+    bg: "bg-blue-200/30 dark:bg-blue-800/30 backdrop-blur-md",
+    border: "border border-blue-300/40 dark:border-blue-600/40",
+    iconBg: "bg-blue-300/30 dark:bg-blue-700/30",
+    iconColor: "text-blue-700 dark:text-blue-300",
+    text: "text-blue-900 dark:text-blue-100",
   },
 };
 
@@ -61,9 +68,13 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
             
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             
-          ) : (
+          ) : type === "error" ? (
             
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            
+          ) : (
+            
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
             
           )}
         </div>

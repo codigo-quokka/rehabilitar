@@ -13,7 +13,7 @@ public class AptoFisicoService : IAptoFisicoService
     private readonly IEmailService _emailService;
 
     private static readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
-    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5 MB
 
     public AptoFisicoService(IAptoFisicoRepository aptoFisicoRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork, IEmailService emailService)
     {
@@ -64,7 +64,6 @@ public class AptoFisicoService : IAptoFisicoService
         {
             // Reemplazar el archivo del apto pendiente existente
             pendiente.ReemplazarArchivo(nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
-            cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
             await _unitOfWork.SaveChangesAsync();
             return MapToResponse(pendiente);
         }
@@ -72,8 +71,8 @@ public class AptoFisicoService : IAptoFisicoService
         // Si no hay pendiente, crear uno nuevo
         var aptoFisico = new AptoFisico(clienteId, nombreArchivo, contentType, archivoBytes, archivoBytes.Length);
         _aptoFisicoRepository.Add(aptoFisico);
+        cliente.RechazarAptoFisico(); // Si se sube un nuevo apto, el cliente no tiene un apto aprobado hasta que se evalúe el nuevo
         await _unitOfWork.SaveChangesAsync();
-
         return MapToResponse(aptoFisico);
     }
 
@@ -139,6 +138,12 @@ public class AptoFisicoService : IAptoFisicoService
     public async Task<ErrorOr<List<AptoFisicoResponse>>> GetMisAptosAsync(Guid clienteId)
     {
         var aptos = await _aptoFisicoRepository.GetByClienteIdAsync(clienteId);
+        return aptos.Select(MapToResponse).ToList();
+    }
+
+    public async Task<ErrorOr<List<AptoFisicoResponse>>> GetAllAsync()
+    {
+        var aptos = await _aptoFisicoRepository.GetUltimoPorClienteAsync();
         return aptos.Select(MapToResponse).ToList();
     }
 

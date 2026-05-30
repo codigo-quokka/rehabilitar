@@ -10,14 +10,14 @@ import {
 } from "../../../components/ui";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { Notitoast } from "../../../components/Notitoast";
-import { salasApi } from "../../../api";
-import { Sala } from "../../../types";
+import { salasApi, actividadesApi } from "../../../api";
+import { Sala, Actividad } from "../../../types";
 import { useAuth } from "../../../hooks/useAuth";
 
 export function SalasPage() {
   const { hasRole } = useAuth();
-  const isReception = hasRole(["Recepción"]);
   const [salas, setSalas] = useState<Sala[]>([]);
+  const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
@@ -31,11 +31,29 @@ export function SalasPage() {
   const [showToast, setShowToast] = useState(false);
 
 
+  const tieneActividadesPendientes = (salaId: string): boolean => {
+    return actividades.some(
+      (a) => a.salaId === salaId && a.estado !== 'Finalizada' && a.estado !== 'Cancelada'
+    );
+  };
+
   const HandleDeleteClick = (id: string) => {
+    if (tieneActividadesPendientes(id)) {
+      setToastType('error');
+      setToastMessage('No se puede eliminar una sala con actividades pendientes.');
+      setShowToast(true);
+      return;
+    }
     setShowDeleteConfirm(true);
     setSalaIdAEliminar(id);
   };
   const HandleDesactivarClick = (s: Sala) => {
+    if (s.activo && tieneActividadesPendientes(s.id)) {
+      setToastType('error');
+      setToastMessage('No se puede desactivar una sala con actividades pendientes.');
+      setShowToast(true);
+      return;
+    }
     setShowDesactivarConfirm(true);
     setSalaADesactivar(s);
   };
@@ -60,8 +78,12 @@ export function SalasPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await salasApi.getAll();
-      setSalas(data);
+      const [salasData, actividadesData] = await Promise.all([
+        salasApi.getAll(),
+        actividadesApi.getAll(),
+      ]);
+      setSalas(salasData);
+      setActividades(actividadesData);
     } catch (err) {
     } finally {
       setLoading(false);
@@ -106,33 +128,38 @@ export function SalasPage() {
         </Badge>
       ),
     },
-    {
+    { 
       key: "acciones",
       header: "Acciones",
+      headerClass: "text-right pr-32",
       width: "w-1/6",
       render: (s: Sala) => (
         <div className="flex gap-2">
-          <Button
-            variant="verde"
-            size="sm"
-            onClick={() => setSelectedSala(s)}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="naranja"
-            size="sm"
-            onClick={() => HandleDesactivarClick(s)}
-          >
-            {s.activo ? "Desactivar" : "Activar"}
-          </Button>
-          <Button
-            variant="rojo"
-            size="sm"
-            onClick={() => HandleDeleteClick(s.id)}
-          >
-            Eliminar
-          </Button>
+          {hasRole(['Administrador']) && (
+            <>
+              <Button
+                variant="verde"
+                size="sm"
+                onClick={() => setSelectedSala(s)}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="naranja"
+                size="sm"
+                onClick={() => HandleDesactivarClick(s)}
+              >
+                {s.activo ? "Desactivar" : "Activar"}
+              </Button>
+              <Button
+                variant="rojo"
+                size="sm"
+                onClick={() => HandleDeleteClick(s.id)}
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -142,7 +169,7 @@ export function SalasPage() {
     <MainLayout title="Salas">
       <div className="space-y-6">
         <div className="flex justify-end">
-          {!isReception && (
+          {hasRole(['Administrador']) && (
           <Button variant="primary" onClick={() => setShowModal(true)}>
             Nueva Sala
           </Button>
@@ -150,11 +177,11 @@ export function SalasPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
         ) : salas.length === 0 ? (
           <Card>
-            <p className="text-gray-500 text-center py-8">
-              No hay salas disponibles
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              No hay salas registradas
             </p>
           </Card>
         ) : (
@@ -174,6 +201,7 @@ export function SalasPage() {
       >
         <SalaForm
           sala={selectedSala}
+          tieneActividadesPendientes={selectedSala ? tieneActividadesPendientes(selectedSala.id) : false}
           onClose={() => {
             setShowModal(false);
             setSelectedSala(null);
@@ -214,11 +242,12 @@ export function SalasPage() {
 
 interface SalaFormProps {
   sala: Sala | null;
+  tieneActividadesPendientes: boolean;
   onClose: () => void;
   onNotify?: (type: 'success' | 'error', message: string) => void;
 }
 
-function SalaForm({ sala, onClose, onNotify }: SalaFormProps) {
+function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaFormProps) {
   const [formData, setFormData] = useState({
     nombre: sala?.nombre || "",
     capacidad: sala?.capacidad || 20,
@@ -231,6 +260,11 @@ function SalaForm({ sala, onClose, onNotify }: SalaFormProps) {
     setLoading(true);
     try {
       if (sala) {
+        if (formData.capacidad < sala.capacidad && tieneActividadesPendientes) {
+          onNotify?.('error', 'No se puede reducir la capacidad de una sala con actividades pendientes.');
+          setLoading(false);
+          return;
+        }
         await salasApi.update(sala.id, formData);
         onNotify?.('success', 'Sala actualizada exitosamente.');
       } else {

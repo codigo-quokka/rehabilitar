@@ -38,6 +38,13 @@ public class AuthService : IAuthService
         await _uow.BeginTransactionAsync();
 
         try {
+
+            if (await _clienteRepo.DniExistsAsync(request.Dni))
+            {
+                await _uow.RollbackTransactionAsync();
+                return Error.Conflict("Dni.AlreadyExists", "El DNI proporcionado ya está registrado.");
+            }
+
             var user = User.Create(
                 request.FirstName,
                 request.LastName,
@@ -75,6 +82,7 @@ public class AuthService : IAuthService
         catch (Exception)
         {
             await _uow.RollbackTransactionAsync();
+            // Console.WriteLine($"Error en RegisterAsync: {ex.Message}"); // debug
             return Error.Failure("Auth.UnexpectedError", "Ocurrió un error inesperado durante el registro.");
         }
     }
@@ -174,6 +182,19 @@ public class AuthService : IAuthService
             var errors = result.Errors.Select(e => Error.Validation($"Identity.{e.Code}", e.Description)).ToList();
             return errors;
         }
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> ValidatePasswordResetTokenAsync(ValidatePasswordResetTokenRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(request.UserId);
+        if (user == null)
+            return Error.NotFound("User.NotFound", "Usuario no encontrado.");
+
+        var tokenValid = await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", request.PasswordResetToken);
+        if (!tokenValid)
+            return Error.Validation("Token.InvalidReset", "El token de restablecimiento de contraseña expiró o no es válido.");
+
         return Result.Success;
     }
 

@@ -237,7 +237,7 @@ export function ConfirmarPagoPage() {
 
         <div className="flex gap-3">
           <Button
-            variant="ghost"
+            variant="danger"
             className="flex-1 text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
             onClick={() => navigate('/reservas')}
           >
@@ -250,18 +250,20 @@ export function ConfirmarPagoPage() {
             disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
             onClick={handleRealizarPago}
           >
-            {esMercadoPago ? 'Ir a Mercado Pago' : 'Realizar Pago'}
+            {esMercadoPago ? 'Mercado Pago' : 'Realizar Pago'}
           </Button>
+          {/*
           <Button
             hidden={!esMercadoPago}
             variant="primary"
-            className="flex-1"
+            className="flex-x"
             loading={loading}
             disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
             // onClick={}
           >
             {'Ejecutar MercadoFake (no implementado)'}
           </Button>
+          */}
         </div>
       </div>
     </MainLayout>

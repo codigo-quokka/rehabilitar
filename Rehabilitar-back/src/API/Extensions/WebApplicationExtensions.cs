@@ -24,6 +24,8 @@ public static class WebApplicationExtensions
         try
         {
             var seeder = scope.ServiceProvider.GetRequiredService<ISeedingService>();
+            await seeder.SeedRolesAsync();
+            await seeder.SeedAdminAsync();
             await seeder.SeedAsync();
         }
         catch (Exception e)

@@ -40,7 +40,7 @@ export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'No hay d
             </tr>
           ) : (
             data.map((item) => (
-              <tr key={keyExtractor(item)} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <tr key={keyExtractor(item)} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-primary/10 dark:hover:bg-gray-800/50">
                 {columns.map((col) => (
                   <td key={col.key} className={`px-4 py-3 text-sm text-dark dark:text-gray-100${col.width ? ` ${col.width}` : ''}`}>
                     {col.render ? col.render(item) : (item as Record<string, unknown>)[col.key] as ReactNode}

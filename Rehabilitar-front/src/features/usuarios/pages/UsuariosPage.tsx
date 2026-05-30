@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Badge, Modal, Input, Select, Table, FilterDropdown } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
-import { usuariosApi, reservasApi, actividadesApi, profesorApi } from '../../../api';
-import { User, Role, Reserva, Actividad } from '../../../types';
+import { usuariosApi, reservasApi, actividadesApi, profesorApi} from '../../../api';
+import {aptosFisicosApi} from '../../../api/aptosFisicos';
+import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
@@ -14,6 +15,7 @@ export function UsuariosPage() {
   const { user: currentUser, hasRole } = useAuth();
   const isReception = hasRole(['Recepción']);
   const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [aptosFisicos, setAptosFisicos] = useState<AptoFisico[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -26,6 +28,7 @@ export function UsuariosPage() {
     rol: 'all',
     estado: 'all',
     especialidad: 'all',
+    aptoFisico: 'all',
   });
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -40,6 +43,19 @@ export function UsuariosPage() {
   const [clasesModalUser, setClasesModalUser] = useState<User | null>(null);
   const [clasesModalData, setClasesModalData] = useState<Actividad[]>([]);
   const [clasesModalLoading, setClasesModalLoading] = useState(false);
+
+  const [pagoModal, setPagoModal] = useState<Reserva | null>(null);
+  const [montoPago, setMontoPago] = useState('');
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [procesandoPago, setProcesandoPago] = useState(false);
+
+  const aptosPorCliente = useMemo(() => {
+    const map: Record<string, AptoFisico> = {};
+    aptosFisicos.forEach(apto => {
+      map[apto.clienteId] = apto;
+    });
+    return map;
+  }, [aptosFisicos]);
 
   const roles: Role[] = ['Administrador', 'Recepción', 'Profesor', 'Cliente Registrado'];
 
@@ -57,25 +73,56 @@ export function UsuariosPage() {
 
   };
 
-  const filteredUsuarios = usuarios.filter(u => {
-    if (isReception && u.rol !== 'Cliente Registrado') return false;
-    if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
-    if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
-    if (filters.estado === 'active' && !u.activo) return false;
-    if (filters.estado === 'suspended' && u.activo) return false;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-      if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
-    }
-    return true;
-  }).filter(u => u.id !== currentUser?.id);
+  const ordenRoles: Record<string, number> = {
+    Administrador: 0,
+    Recepción: 1,
+    Profesor: 2,
+    'Cliente Registrado': 3,
+  };
+
+  const filteredUsuarios = usuarios
+    .filter(u => {
+      if (isReception && u.rol !== 'Cliente Registrado') return false;
+      if (filters.rol !== 'all' && u.rol !== filters.rol) return false;
+      if (filters.especialidad !== 'all' && u.especialidad !== filters.especialidad) return false;
+      if (filters.estado === 'active' && !u.activo) return false;
+      if (filters.estado === 'suspended' && u.activo) return false;
+      if (filters.aptoFisico === 'aprobado' && aptosPorCliente[u.id]?.estado !== 'Aprobado') return false;
+      if (filters.aptoFisico === 'pendiente' && aptosPorCliente[u.id]?.estado !== 'Pendiente') return false;
+      if (filters.aptoFisico === 'rechazado' && aptosPorCliente[u.id]?.estado !== 'Rechazado') return false;
+      if (filters.aptoFisico === 'sin_cargar' && !!aptosPorCliente[u.id]) return false;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
+        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
+      }
+      return true;
+    })
+    .filter(u => u.id !== currentUser?.id)
+    .sort((a, b) => {
+      const rolDiff = (ordenRoles[a.rol] ?? 99) - (ordenRoles[b.rol] ?? 99);
+      if (rolDiff !== 0) return rolDiff;
+      return `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`);
+    });
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, filters]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const data = await usuariosApi.getAll();
       setUsuarios(data);
+      try{
+        const aptosData = await aptosFisicosApi.getAll();
+        setAptosFisicos(aptosData);
+      }
+      catch(err){}
+
     } catch (err) {
     } finally {
       setLoading(false);
@@ -85,6 +132,55 @@ export function UsuariosPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!reservasModalUser) return;
+    document.body.style.overflow = 'hidden';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setReservasModalUser(null);
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handler);
+    };
+  }, [reservasModalUser]);
+
+  useEffect(() => {
+    if (!clasesModalUser) return;
+    document.body.style.overflow = 'hidden';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setClasesModalUser(null);
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handler);
+    };
+  }, [clasesModalUser]);
+
+  const handleDeleteClick = async (u: User) => {
+    if (u.rol === 'Profesor') {
+      try {
+        const actividades = await profesorApi.getMisClases(u.id);
+        const pendientes = actividades.filter(
+          (a: Actividad) => a.estado !== 'Finalizada' && a.estado !== 'Cancelada'
+        );
+        if (pendientes.length > 0) {
+          setToastType('error');
+          setToastMessage('No se puede eliminar un profesor con actividades pendientes');
+          setShowToast(true);
+          return;
+        }
+      } catch {
+        setToastType('error');
+        setToastMessage('Error al verificar actividades del profesor');
+        setShowToast(true);
+        return;
+      }
+    }
+    setUserToDelete(u);
+  };
 
   const handleDelete = async () => {
     if (!userToDelete) return;
@@ -158,6 +254,52 @@ export function UsuariosPage() {
     }
   };
 
+  const handleRegistrarPago = async () => {
+    if (!pagoModal) return;
+    const monto = parseFloat(montoPago);
+    if (!monto || monto <= 0) {
+      setToastType('error');
+      setToastMessage('Ingrese un monto válido');
+      setShowToast(true);
+      return;
+    }
+    if (monto > pagoModal.montoPendiente) {
+      setToastType('error');
+      setToastMessage('El monto no puede superar el saldo pendiente');
+      setShowToast(true);
+      return;
+    }
+    setProcesandoPago(true);
+    try {
+      await reservasApi.registrarPago(pagoModal.id, {
+        actividadId: pagoModal.actividadId,
+        metodoPago,
+        monto,
+      });
+      setPagoModal(null);
+      if (reservasModalUser) {
+        const [res, acts] = await Promise.all([
+          reservasApi.getAll({ usuarioId: reservasModalUser.id }),
+          actividadesApi.getAll(),
+        ]);
+        setReservasModalData(res);
+        const actsMap: Record<string, Actividad> = {};
+        acts.forEach((a) => { actsMap[a.id] = a; });
+        setReservasActividadesMap(actsMap);
+      }
+      setToastType('success');
+      setToastMessage('Pago registrado con éxito');
+      setShowToast(true);
+    } catch (err) {
+      const msg = (err as any)?.response?.data?.error || 'Error al registrar el pago';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setProcesandoPago(false);
+    }
+  };
+
   const handleConfirmReactivar = async () => {
     if (!userToReactivar) return;
     try {
@@ -203,15 +345,43 @@ export function UsuariosPage() {
       ),
     },
     {
+      key: 'aptitudFisica',
+      header: 'Apto Físico',
+      render: (u: User) => {
+        if (u.rol !== 'Cliente Registrado') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+        const apto = aptosPorCliente[u.id];
+        if (!apto) return <Badge variant="warning">Sin cargar</Badge>;
+        return (
+          <Badge variant={apto.estado === 'Aprobado' ? 'success' : apto.estado === 'Rechazado' ? 'danger' : 'warning'}>
+            {apto.estado === 'Aprobado' ? 'Aprobado' : apto.estado === 'Rechazado' ? 'Rechazado' : 'Pendiente'}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'acciones',
       header: 'Acciones',
-      headerClass: 'text-center',
+      headerClass: 'text-right pr-32',
       render: (u: User) => (
         <div className="flex justify-end gap-2">
+          {/*
           <Button variant="verde" onClick={() => setSelectedUser(u)}>
             Editar
           </Button>
-          {u.activo ? (
+          */}
+          {u.rol === 'Cliente Registrado' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+              Reservas
+            </Button>
+          ) : u.rol === 'Profesor' ? (
+            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+              Clases
+            </Button>
+          ) : (
+            <span className="min-w-[90px] inline-block" />
+          )}
+          {!isReception && (
+           u.activo ? (
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
@@ -219,25 +389,16 @@ export function UsuariosPage() {
             <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
+          )
           )}
           {!isReception ? (
-            <Button variant="rojo" size="sm" onClick={() => setUserToDelete(u)}>
+            <Button variant="rojo" size="sm" onClick={() => handleDeleteClick(u)}>
               Eliminar
             </Button>
           ) : (
             <span className="min-w-[70px] inline-block" />
           )}
-          {u.rol === 'Cliente Registrado' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
-              Reservas
-            </Button>
-          ) : u.rol === 'Profesor' ? (
-            <Button variant="violeta" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
-              Clases
-            </Button>
-          ) : (
-            <span className="min-w-[90px] inline-block" />
-          )}
+          
         </div>
       ),
     },
@@ -267,6 +428,17 @@ export function UsuariosPage() {
                     { value: 'TrenMedio', label: 'Tren Medio' },
                     { value: 'TrenInferior', label: 'Tren Inferior' },
                   ],
+                }] : []),
+                 ...(filters.rol === 'Cliente Registrado' ? [{
+                  key: 'aptoFisico',
+                  label: 'Apto Físico',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'aprobado', label: 'Aprobado' },
+                    { value: 'pendiente', label: 'Pendiente' },
+                    { value: 'rechazado', label: 'Rechazado' },
+                    { value: 'sin_cargar', label: 'Sin cargar' },
+                  ],
                 }] : [])] : []),
                 {
                   key: 'estado',
@@ -277,10 +449,21 @@ export function UsuariosPage() {
                     { value: 'suspended', label: 'Suspendidos' },
                   ],
                 },
+                {
+                  key: 'aptoFisico',
+                  label: 'Apto Físico',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'aprobado', label: 'Aprobado' },
+                    { value: 'pendiente', label: 'Pendiente' },
+                    { value: 'rechazado', label: 'Rechazado' },
+                    { value: 'sin_cargar', label: 'Sin cargar' },
+                  ],
+                },
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all' })}
+              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
               onOpenChange={setFilterOpen}
             />
             <div className={filterOpen ? 'invisible' : ''}>
@@ -298,7 +481,13 @@ export function UsuariosPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
+        ) : filteredUsuarios.length === 0 ? (
+          <Card>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              {hasActiveFilters ? 'No se encontraron coincidencias' : 'No hay usuarios registrados'}
+            </p>
+          </Card>
         ) : (
           <Card padding="none">
             <Table columns={columns} data={filteredUsuarios} keyExtractor={(u) => u.id} />
@@ -355,7 +544,7 @@ export function UsuariosPage() {
       {reservasModalUser && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setReservasModalUser(null)} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center mb-6 relative">
               <button onClick={() => setReservasModalUser(null)} className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,6 +598,11 @@ export function UsuariosPage() {
                       )}
                       <div className="text-sm text-dark dark:text-gray-100 space-y-1 mt-auto">
                         <p>Pagado: <span className="font-semibold">${(res.montoTotal - res.montoPendiente).toFixed(2)}</span> / <span className="font-semibold">${res.montoTotal.toFixed(2)}</span></p>
+                        {!completado && (res.estadoDeReserva === 'PendienteDePago' || res.estadoDeReserva === 'Activa') && (
+                          <Button variant="primary" size="sm" className="w-full mt-2" onClick={() => { setPagoModal(res); setMontoPago(String(res.montoPendiente)); setMetodoPago('Efectivo'); }}>
+                            Cobrar
+                          </Button>
+                        )}
                       </div>
                     </Card>
                   );
@@ -420,10 +614,47 @@ export function UsuariosPage() {
         document.body
       )}
 
+      {pagoModal && createPortal(
+        <Modal isOpen onClose={() => setPagoModal(null)} title="Registrar Pago" size="sm">
+          <div className="space-y-3 mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <p>Actividad: <span className="font-semibold text-dark dark:text-gray-100">{reservasActividadesMap[pagoModal.actividadId]?.nombre || '—'}</span></p>
+            <p>Total: <span className="font-semibold text-dark dark:text-gray-100">${pagoModal.montoTotal.toFixed(2)}</span></p>
+            <p>Pendiente: <span className="font-semibold text-primary">${pagoModal.montoPendiente.toFixed(2)}</span></p>
+          </div>
+          <div className="space-y-4">
+            <Input
+              label="Monto a cobrar"
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={pagoModal.montoPendiente}
+              value={montoPago}
+              onChange={(e) => setMontoPago(e.target.value)}
+              required
+            />
+            <Select
+              label="Método de pago"
+              value={metodoPago}
+              onChange={(e) => setMetodoPago(e.target.value)}
+              options={[
+                { value: 'Efectivo', label: 'Efectivo' },
+                { value: 'MercadoPago', label: 'Mercado Pago' },
+                { value: 'RehabiliCoins', label: 'RehabiliCoins' },
+              ]}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-6">
+            <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={() => setPagoModal(null)}>Cancelar</Button>
+            <Button variant="primary" loading={procesandoPago} onClick={handleRegistrarPago}>Registrar Pago</Button>
+          </div>
+        </Modal>,
+        document.body
+      )}
+
       {clasesModalUser && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setClasesModalUser(null)} />
-          <div className="relative w-full max-h-[85vh] overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center mb-6 relative">
               <button onClick={() => setClasesModalUser(null)} className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -507,6 +738,10 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.rol === 'Profesor' && !formData.especialidad) {
+      onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
+      return;
+    }
     setLoading(true);
     try {
       if (user) {
@@ -560,17 +795,18 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
         options={roles.map((r) => ({ value: r, label: r.replace('_', ' ') }))}
       />
       {formData.rol === 'Profesor' && (
-        <Select
-          label="Especialidad"
-          value={formData.especialidad}
-          onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
-          options={[
-            { value: 'TrenSuperior', label: 'Tren Superior' },
-            { value: 'TrenMedio', label: 'Tren Medio' },
-            { value: 'TrenInferior', label: 'Tren Inferior' },
-          ]}
-          required
-        />
+          <Select
+            label="Especialidad"
+            value={formData.especialidad}
+            onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+            options={[
+              { value: '', label: 'Seleccione una especialidad', disabled: true },
+              { value: 'TrenSuperior', label: 'Tren Superior' },
+              { value: 'TrenMedio', label: 'Tren Medio' },
+              { value: 'TrenInferior', label: 'Tren Inferior' },
+            ]}
+            required
+          />
       )}
       <div className="flex justify-end gap-3 pt-4">
         <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>Cancelar</Button>

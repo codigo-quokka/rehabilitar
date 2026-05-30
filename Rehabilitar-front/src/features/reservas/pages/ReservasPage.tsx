@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button, Input, FilterDropdown } from '../../../components/ui';
@@ -112,7 +112,7 @@ export function ReservasPage() {
         montoPagado,
         montoPendiente: reserva.montoPendiente,
       },
-    });
+  });
   };
 
   const handleCancelClick = (reserva: Reserva) => {
@@ -166,6 +166,14 @@ export function ReservasPage() {
     }
     return true;
   });
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      dateFilterApplied ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, dateFilterApplied, filters]);
 
   return (
     <MainLayout title={targetName ? `Reservas de ${targetName}` : 'Mis reservas'}>
@@ -283,10 +291,12 @@ export function ReservasPage() {
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-        ) : filteredReservas.length === 0 ? (
-          <Card>
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">No tienes reservas</p>
-          </Card>
+) : filteredReservas.length === 0 ? (
+  <Card>
+    <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+      {hasActiveFilters ? 'No se encontraron coincidencias' : 'No tienes reservas'}
+    </p>
+  </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReservas.map((reserva) => {
@@ -352,7 +362,7 @@ export function ReservasPage() {
                     )}
                     {(reserva.estadoDeReserva === 'PendienteDePago' || reserva.estadoDeReserva === 'Activa' || reserva.estadoDeReserva === 'EnEspera') && (
                       <Button
-                        variant="rojo"
+                        variant="danger"
                         size="sm"
                         className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
                         loading={cancelandoId === reserva.id}
