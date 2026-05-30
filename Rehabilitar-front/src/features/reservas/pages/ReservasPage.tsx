@@ -165,59 +165,13 @@ export function ReservasPage() {
     return true;
   });
 
-  const displayReservas = useMemo(() => {
-    const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
-    const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
-    if (filters.estadoDeReserva === 'Cancelada') return sorted;
-    let cancelCount = 0;
-    return sorted.filter(r => {
-      if (r.estadoDeReserva === 'Cancelada') {
-        cancelCount++;
-        return cancelCount <= 5;
-      }
-      return true;
-    });
-  }, [filteredReservas, filters.estadoDeReserva, actividades]);
-
   const hasActiveFilters = useMemo(() => {
     return (
-      !!dateFrom ||
-      !!dateTo ||
+      searchTerm !== '' ||
+      dateFilterApplied ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [dateFrom, dateTo, filters]);
-
-  const hasActiveSearchFilter = useMemo(() => {
-    return (
-      searchTerm !== ''
-    );
-  }, [searchTerm]);
-
-  const getEmptyStateMessage = () => {
-    if (hasActiveSearchFilter && hasActiveFilters) {
-      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveSearchFilter) {
-      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveFilters) {
-      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
-    }
-    return 'No se realizaron reservas.'
-  }
-
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-
-  const cleanFilters = () => {
-    setFilters({
-      estadoDeReserva: 'all',
-      pagado: 'all',
-    });
-    setDateFrom('');
-    setDateTo('');
-    setSearchTerm('');
-  };
-
+  }, [searchTerm, dateFilterApplied, filters]);
 
   return (
     <MainLayout title={targetName ? `Reservas de ${targetName}` : 'Mis reservas'}>
@@ -305,24 +259,11 @@ export function ReservasPage() {
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-) : displayReservas.length === 0 ? (
+) : filteredReservas.length === 0 ? (
   <Card>
     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-      {getEmptyStateMessage()}
+      {hasActiveFilters ? 'No se encontraron coincidencias' : 'No tienes reservas'}
     </p>
-    {(hasActiveFilters || hasActiveSearchFilter) && (
-      <div className="flex justify-center mt-4">
-        <Button
-          variant="ghost"
-          className="px-4 py-2 justify-center whitespace-nowrap h-10 hover:bg-primary/20 dark:hover:bg-gray-700 transition-colors"
-          onClick={() => {
-          cleanFilters();
-        }}
-        >
-          Limpiar filtros
-        </Button>
-      </div>
-    )}
   </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

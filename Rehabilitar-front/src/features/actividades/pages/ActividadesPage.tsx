@@ -172,37 +172,11 @@ export function ActividadesPage() {
 
   const hasActiveFilters = useMemo(() => {
     return (
-      !!dateFrom ||
-      !!dateTo ||
+      searchTerm !== '' ||
+      dateFilterApplied ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [dateFrom, dateTo, filters]);
-
-  const hasActiveSearchFilter = useMemo(() => {
-    return (
-      searchTerm !== ''
-    );
-  }, [searchTerm]);
-
-  const getEmptyStateMessage = () => {
-    if (hasActiveSearchFilter && hasActiveFilters) {
-      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveSearchFilter) {
-      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
-    }
-    if (hasActiveFilters) {
-      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
-    }
-    return (hasRole(['Cliente Registrado'])) ? 'No hay actividades disponibles' : 'No hay actividades registradas.';
-  }
-
-  const cleanFilters = () => {
-    setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' });
-    setSearchTerm('');
-    setDateFrom('');
-    setDateTo('');
-  };
+  }, [searchTerm, dateFilterApplied, filters]);
 
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
@@ -366,7 +340,11 @@ export function ActividadesPage() {
         ) : filteredActividades.length === 0 ? (
           <Card>
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {getEmptyStateMessage()}
+              {hasActiveFilters
+                ? 'No se encontraron coincidencias'
+                : hasRole(['Cliente Registrado'])
+                  ? 'No hay actividades disponibles'
+                  : 'No hay actividades registradas'}
             </p>
             {(hasActiveFilters || hasActiveSearchFilter) && (
               <div className="flex justify-center mt-4">
