@@ -55,8 +55,14 @@ if (string.IsNullOrEmpty(mpSecret) || mpSecret == "WEBHOOK_SECRET")
     app.Logger.LogWarning("MercadoPago:WebhookSecret is not configured properly. Webhooks will not be validated.");
 }
 
-// Seed de roles al iniciar la aplicación
+// Seed al iniciar la aplicación
+System.Console.WriteLine();
+System.Console.WriteLine("---------- SEEDING ----------");
+System.Console.WriteLine();
 await app.UseSeedingAsync();
+System.Console.WriteLine();
+System.Console.WriteLine("---------- FIN SEEDING ----------");
+System.Console.WriteLine();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
