@@ -36,13 +36,27 @@ public class SeedingService : ISeedingService
         _actividadService = actividadService;
     }
 
+    public async Task SeedRolesAsync()
+    {
+        var roles = new[] { "Administrador", "Recepción", "Profesor", "Cliente Registrado" };
+
+        foreach (var roleName in roles)
+        {
+            if (!await _roleManager.RoleExistsAsync(roleName))
+            {
+                await _roleManager.CreateAsync(new Role(roleName));
+                Console.WriteLine($"Rol '{roleName}' creado exitosamente.");
+            }
+        }
+    }
+
+    public async Task SeedAdminAsync()
+    {
+        await SeedAdminAsync("admin@rehabilitar.com", "Admin", "Administrador");
+    }
+
     public async Task SeedAsync()
     {
-        System.Console.WriteLine();
-        System.Console.WriteLine("---------- SEEDING ----------");
-        System.Console.WriteLine();
-        await SeedRolesAsync();
-        await SeedAdminAsync("admin@rehabilitar.com", "Admin", "Administrador");
         await SeedReceptionAsync("recepcion@rehabilitar.com", "Recepcion", "Receptionist");
         
         await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566");
@@ -57,49 +71,31 @@ public class SeedingService : ISeedingService
         await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
         await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
 
-        await SeedSalaAsync("Sala A", 10);
-        await SeedSalaAsync("Sala B", 20);
-        await SeedSalaAsync("Sala C", 30);
-        await SeedSalaAsync("Sala D", 50);
-        await SeedSalaAsync("Sala E", 80);
+        var salaA = Sala.Create("Sala A", 10);
+        var salaB = Sala.Create("Sala B", 20);
+        var salaC = Sala.Create("Sala C", 30);
+        var salaD = Sala.Create("Sala D", 50);
+        var salaE = Sala.Create("Sala E", 80);
 
-        var salaA = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A");
-        var salaB = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B");
-        var salaC = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C");
-        var salaD = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D");
-        var salaE = await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E");
+        await SeedSalaAsync(salaA);
+        await SeedSalaAsync(salaB);
+        await SeedSalaAsync(salaC);
+        await SeedSalaAsync(salaD);
+        await SeedSalaAsync(salaE);
+
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
         var now = DateTime.Today.AddDays(1);
         await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
-        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
+        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
+        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
         await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(6).AddHours(14), 25, salaD.Id, bruce.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.EnCurso, now.AddHours(8), 12, salaE.Id, clark.UserId, now.AddHours(8).AddDays(30));
-        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
+        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.EnCurso, now.AddHours(8), 12, 1000, salaE.Id, clark.UserId, now.AddHours(8).AddDays(30));
+        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
         await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
-        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
+        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
         // await SeedReservaAsync();
-
-        System.Console.WriteLine();
-        System.Console.WriteLine("---------- FIN SEEDING ----------");
-        System.Console.WriteLine();
-
-    }
-
-    private async Task SeedRolesAsync()
-    {
-        var roles = new[] { "Administrador", "Recepción", "Profesor", "Cliente Registrado" };
-
-        foreach (var roleName in roles)
-        {
-            if (!await _roleManager.RoleExistsAsync(roleName))
-            {
-                await _roleManager.CreateAsync(new Role(roleName));
-                Console.WriteLine($"Rol '{roleName}' creado exitosamente.");
-            }
-        }
     }
 
     public async Task SeedAdminAsync()
