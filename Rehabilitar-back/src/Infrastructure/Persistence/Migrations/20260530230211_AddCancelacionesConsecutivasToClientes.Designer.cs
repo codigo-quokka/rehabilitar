@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RehabilitarDbContext))]
-    partial class RehabilitarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530230211_AddCancelacionesConsecutivasToClientes")]
+    partial class AddCancelacionesConsecutivasToClientes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -150,7 +153,7 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("Dni");
 
-                    b.Property<decimal>("DescuentoProximaReserva")
+                    b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("InasistenciasConsecutivas")
@@ -158,6 +161,9 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<int>("RehabiliCoins")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Telefono")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UserId");
 
@@ -310,21 +316,12 @@ namespace Infrastructure.Persistence.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Dni")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Dni");
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateOnly>("FechaNacimiento")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -359,9 +356,6 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("SolicitoReactivacion")
-                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
