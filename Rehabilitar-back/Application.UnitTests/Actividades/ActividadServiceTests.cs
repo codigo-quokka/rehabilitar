@@ -4,6 +4,7 @@ using Application.Common.Interfaces;
 using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
+using Application.Pagos;
 using Domain.Actividades;
 using Domain.Salas;
 using Domain.Profesores;
@@ -21,6 +22,7 @@ public class ActividadServiceTests
     private readonly Mock<ISalaRepository> _salaRepoMock;
     private readonly Mock<IProfesorRepository> _profesorRepoMock;
     private readonly Mock<IClienteRepository> _clienteRepoMock;
+    private readonly Mock<IIntencionPagoRepository> _intencionPagoRepoMock;
     private readonly Mock<IUnitOfWork> _uowMock;
     private readonly ActividadService _sut;
 
@@ -30,6 +32,7 @@ public class ActividadServiceTests
         _salaRepoMock = new Mock<ISalaRepository>();
         _profesorRepoMock = new Mock<IProfesorRepository>();
         _clienteRepoMock = new Mock<IClienteRepository>();
+        _intencionPagoRepoMock = new Mock<IIntencionPagoRepository>();
         _uowMock = new Mock<IUnitOfWork>();
 
         _sut = new ActividadService(
@@ -37,6 +40,7 @@ public class ActividadServiceTests
             _salaRepoMock.Object,
             _profesorRepoMock.Object,
             _clienteRepoMock.Object,
+            _intencionPagoRepoMock.Object,
             _uowMock.Object);
     }
 
