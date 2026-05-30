@@ -105,6 +105,13 @@ export function UsuariosPage() {
       return `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`);
     });
 
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== '' ||
+      Object.values(filters).some(v => v !== 'all')
+    );
+  }, [searchTerm, filters]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -474,7 +481,13 @@ export function UsuariosPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Cargando...</p>
+          <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
+        ) : filteredUsuarios.length === 0 ? (
+          <Card>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              {hasActiveFilters ? 'No se encontraron coincidencias' : 'No hay usuarios registrados'}
+            </p>
+          </Card>
         ) : (
           <Card padding="none">
             <Table columns={columns} data={filteredUsuarios} keyExtractor={(u) => u.id} />
