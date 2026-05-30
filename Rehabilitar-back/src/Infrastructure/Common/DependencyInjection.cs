@@ -24,6 +24,7 @@ using Application.Profesores;
 using Infrastructure.Profesores;
 using Application.Clientes;
 using Infrastructure.Services;
+using Application.Pagos;
 
 namespace Infrastructure.Common;
 
@@ -96,7 +97,7 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IReservaRepository, ReservaRepository>();
         services.AddScoped<IAptoFisicoRepository, AptoFisicoRepository>();
-        services.AddScoped<ISuscripcionRepository, SuscripcionRepository>();
+        services.AddScoped<IIntencionPagoRepository, IntencionPagoRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
         services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
         {
