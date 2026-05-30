@@ -300,7 +300,6 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
         label="Nombre"
         value={formData.nombre}
         onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-        placeholder="Sin nombre"
       />
       <Input
         label="Capacidad"
