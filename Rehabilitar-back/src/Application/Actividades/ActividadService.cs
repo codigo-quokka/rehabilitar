@@ -10,6 +10,7 @@ using Application.Reservas.DTOs;
 using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
+using Application.Pagos;
 
 namespace Application.Actividades;
 
@@ -20,18 +21,21 @@ public class ActividadService : IActividadService
     public readonly ISalaRepository _salaRepo;
     public readonly IProfesorRepository _profesorRepo;
     public readonly IClienteRepository _clienteRepo;
+    private readonly IIntencionPagoRepository _intencionPagoRepository;
     private readonly IUnitOfWork _uow;
 
     public ActividadService(IActividadRepository actividadRepo,
                             ISalaRepository salaRepo,
                             IProfesorRepository profesorRepo,
                             IClienteRepository clienteRepo,
+                            IIntencionPagoRepository intencionPagoRepository,
                             IUnitOfWork uow)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
         _profesorRepo = profesorRepo;
         _clienteRepo = clienteRepo;
+        _intencionPagoRepository = intencionPagoRepository;
         _uow = uow;
     }
 
@@ -296,6 +300,9 @@ public class ActividadService : IActividadService
         string nombreSala = actividad.Sala?.Nombre ?? string.Empty;
         string? nombreProfesor = actividad.Profesor?.User?.FirstName != null ? $"{actividad.Profesor.User.FirstName} {actividad.Profesor.User.LastName}" : string.Empty;
 
+        int intencionesPendientes = await _intencionPagoRepository.ContarIntencionesPendientesRecientesAsync(actividad.Id, TimeSpan.FromMinutes(15));
+        bool probabilidad = actividad.CupoMaximo > 0 && (actividad.CupoOcupado + intencionesPendientes) >= actividad.CupoMaximo;
+
         return new ActividadResponse(
             actividad.Id,
             actividad.Nombre,
@@ -311,7 +318,7 @@ public class ActividadService : IActividadService
             actividad.ProfesorId,
             nombreProfesor,
             actividad.SerieId,
-            actividad.ProbabilidadListaEspera
+            probabilidad
         );
     }
 
