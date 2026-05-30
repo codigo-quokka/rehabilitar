@@ -164,33 +164,28 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Clientes", (string)null);
                 });
 
-            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
+            modelBuilder.Entity("Domain.Pagos.IntencionPago", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ClienteId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Estado")
+                    b.Property<string>("ActividadesIds")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("FechaFin")
+                    b.Property<Guid>("ClienteId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("FechaInicio")
+                    b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("SerieId")
+                    b.Property<decimal>("MontoTotal")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClienteId");
-
-                    b.ToTable("SuscripcionesAbonado", (string)null);
+                    b.ToTable("IntencionesPago", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
@@ -545,15 +540,6 @@ namespace Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
-                {
-                    b.HasOne("Domain.Clientes.Cliente", null)
-                        .WithMany()
-                        .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
