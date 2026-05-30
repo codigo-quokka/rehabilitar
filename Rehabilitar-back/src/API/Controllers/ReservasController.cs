@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using Application.Reservas;
 using Application.Reservas.DTOs;
+using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Application.Pagos.Requests;
 
 namespace API.Controllers;
@@ -38,6 +41,23 @@ public class ReservasController : ApiControllerBase
         }
         
         return BadRequest("Debe especificar usuarioId o actividadId en la consulta.");
+    }
+
+    [HttpGet("mis-reservas")]
+    [Authorize(Roles = "Cliente Registrado")]
+    public async Task<IActionResult> GetMisReservas(CancellationToken ct)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var clienteId))
+        {
+            return Problem(new List<Error> { Error.Validation(code: "User.InvalidId", description: "ID de usuario inválido.") });
+        }
+
+        var result = await _reservaService.ObtenerReservasDeClientePorId(clienteId, ct);
+        return result.Match(
+            reservas => Ok(reservas),
+            errores => Problem(errores)
+        );
     }
 
     [HttpGet("{id:guid}")]
