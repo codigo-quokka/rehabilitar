@@ -67,7 +67,7 @@ export function Header({ title }: HeaderProps) {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-black text-gray-500 dark:text-gray-400">
+          <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-primary/10 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
             <img
               src={coinIcon}
               alt=""
