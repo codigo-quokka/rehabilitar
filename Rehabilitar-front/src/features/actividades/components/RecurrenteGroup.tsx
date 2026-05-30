@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, Badge, Button, Modal, Input, Select } from "../../../components/ui";
 import { Actividad, Role, Sala, User } from "../../../types";
-import { actividadesApi } from "../../../api";
+import { actividadesApi, reservasApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
 import { ActividadCard } from "./ActividadCard";
 import { formatDate, tipoLabel } from "../constants";
@@ -31,8 +32,10 @@ export function RecurrenteGroup({
   const [expanded, setExpanded] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
   const { hasRole } = cardProps;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const first = actividades[0];
   const count = actividades.length;
 
@@ -128,8 +131,42 @@ export function RecurrenteGroup({
     setShowEditGroup(true);
   };
 
-  const handleSubscribe = () => {
-      onError?.('Falta implementar suscripcion');
+  const handleComprarPaquete = async () => {
+    setSubscribeLoading(true);
+    try {
+      const userReservas = await reservasApi.getAll({ usuarioId: user!.id });
+      const reservedIds = userReservas.map(r => r.actividadId);
+      
+      const availableActs = actividades
+        .filter(a => new Date(a.fechaYHora) > new Date() && !reservedIds.includes(a.id))
+        .sort((a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime());
+
+      const selectedActs = availableActs.slice(0, 4);
+
+      if (selectedActs.length < 4) {
+        onError?.('No hay suficientes clases futuras disponibles en esta serie para armar un paquete (mínimo 4).');
+        return;
+      }
+
+      const res = await reservasApi.createRecurrente({ clienteId: user!.id, actividadesIds: selectedActs.map(a => a.id) });
+      
+      navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
+        state: {
+          intencionId: res.intencionId,
+          actividades: selectedActs,
+          montoTotal: selectedActs.reduce((sum, a) => sum + a.precio, 0)
+        }
+      });
+    } catch (err) {
+      console.error('Error al comprar paquete', err);
+      onError?.('Error al iniciar la compra del paquete.');
+    } finally {
+      setSubscribeLoading(false);
+    }
+  };
+
+  const handleVerSuscriptores = () => {
+      onError?.('Falta implementar ver suscriptores');
       return;
     }
 
@@ -269,7 +306,7 @@ export function RecurrenteGroup({
                   className="flex-1"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSubscribe();
+                    handleVerSuscriptores();
                   }}
                 >
                   Ver suscriptores
@@ -282,7 +319,7 @@ export function RecurrenteGroup({
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSubscribe();
+                  handleVerSuscriptores();
                 }}
               >
                 Ver suscriptores
@@ -292,12 +329,13 @@ export function RecurrenteGroup({
               <Button
                 variant="verde"
                 className="w-full"
+                loading={subscribeLoading}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSubscribe();
+                  handleComprarPaquete();
                 }}
               >
-                Suscribirse
+                Comprar Paquete
               </Button>
             )}
             {hasRole(["Profesor"]) && unassignedCount > 0 && (
