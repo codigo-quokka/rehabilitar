@@ -30,6 +30,9 @@
     <None Update="Auth\TessData\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Persistence\Seeding\Apto-Fisico-RehabilitAR.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

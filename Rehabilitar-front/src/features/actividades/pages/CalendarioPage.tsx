@@ -41,6 +41,8 @@ export function CalendarioPage() {
   const [editingActividad, setEditingActividad] = useState<Actividad | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  const hasActiveFilters = filters.frecuencia !== 'all' || filters.tipo !== 'all' || filters.estado !== 'all' || filters.sala !== 'all' || filters.profesor !== 'all';
+
   const navigate = useNavigate();
 
   const profesores = usuarios.filter(u => u.rol === 'Profesor' && u.activo);
@@ -79,6 +81,14 @@ export function CalendarioPage() {
     };
     fetchData();
   }, [currentDate]);
+
+  useEffect(() => {
+    if (!loading && filteredActividades.length === 0 && hasActiveFilters) {
+      setToastType('error');
+      setToastMessage('No hay actividades que coincidan con los filtros seleccionados');
+      setShowToast(true);
+    }
+  }, [loading, filteredActividades.length, hasActiveFilters]);
 
   useEffect(() => {
     if (!showReservasModal && !showDayModal && !showActividadModal) return;
