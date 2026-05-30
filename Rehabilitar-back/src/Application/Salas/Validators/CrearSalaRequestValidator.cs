@@ -7,7 +7,7 @@ public class CrearSalaRequestValidator : AbstractValidator<CrearSalaRequest>
 {
     public CrearSalaRequestValidator()
     {
-        RuleFor(x => x.Nombre).NotEmpty();
-        RuleFor(x => x.Capacidad).GreaterThan(0);
+        RuleFor(x => x.Nombre).NotEmpty().WithMessage("Por favor, completa todos los campos obligatorios.");
+        RuleFor(x => x.Capacidad).GreaterThan(0).WithMessage("Por favor, completa todos los campos obligatorios.");
     }
 }

@@ -257,6 +257,12 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.nombre || !formData.capacidad) {
+      onNotify?.('error', 'Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+
     setLoading(true);
     try {
       if (sala) {
@@ -289,7 +295,6 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
         label="Nombre"
         value={formData.nombre}
         onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-        required
       />
       <Input
         label="Capacidad"
@@ -299,11 +304,10 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
         onChange={(e) =>
           setFormData({ ...formData, capacidad: parseInt(e.target.value) })
         }
-        required
       />
       <div>
         <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
-          Descripción
+          Descripción (opcional)
         </label>
         <textarea
           className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
