@@ -34,7 +34,7 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
     text: "text-teal-900 dark:text-teal-100",
   },
   error: {
-    bg: "bg-red-200/90 dark:bg-red-800/50 backdrop-blur-md",
+    bg: "bg-red-200/30 dark:bg-red-800/50 backdrop-blur-md",
     border: "border border-red-300/40 dark:border-red-600/40",
     iconBg: "bg-red-300 dark:bg-red-700",
     iconColor: "text-red-700 dark:text-red-300",
