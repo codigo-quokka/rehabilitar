@@ -2,23 +2,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge } from '../../../components/ui';
 import { useAuth } from '../../../hooks/useAuth';
-import { metricasApi, actividadesApi, reservasApi } from '../../../api';
-import { Metricas, Actividad, Reserva } from '../../../types';
+import { metricasApi, actividadesApi, reservasApi, usuariosApi } from '../../../api';
+import { Metricas, Actividad, Reserva, SaldoAFavor } from '../../../types';
 
 export function DashboardPage() {
   const { user, hasRole } = useAuth();
   const [metricas, setMetricas] = useState<Metricas | null>(null);
   const [actividades, setActividades] = useState<Actividad[]>([]);
-  const [reservas, setReservas] = useState<Reserva[]>([]);
-  const [actividadNombreMap, setActividadNombreMap] = useState<Record<string, string>>({});
+  const [reservasCliente, setReservasCliente] = useState<Reserva[]>([]);
+  const [actividadMap, setActividadMap] = useState<Record<string, Actividad>>({});
+  const [saldoAFavor, setSaldoAFavor] = useState<SaldoAFavor | null>(null);
+  const [cancelacionesConsecutivas, setCancelacionesConsecutivas] = useState(0);
   const [loading, setLoading] = useState(true);
+  const isCliente = hasRole(['Cliente Registrado']);
 
   const isAdmin = hasRole(['Administrador']);
 
   const fetchData = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-
       const fetchPromises: Promise<unknown>[] = [];
 
       if (isAdmin) {
@@ -33,11 +35,41 @@ export function DashboardPage() {
         )
       );
 
-      if (user) {
+      if (isCliente && user) {
         fetchPromises.push(
-          reservasApi.getAll({ usuarioId: user.id }).then((data) =>
-            setReservas(data.slice(0, 5))
-          )
+          (async () => {
+            const [allReservas, userData] = await Promise.all([
+              reservasApi.getAll({ usuarioId: user.id }),
+              usuariosApi.getById(user.id).catch(() => null),
+            ]);
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const uniqueIds = [...new Set(allReservas.map(r => r.actividadId))];
+            const acts = await Promise.all(uniqueIds.map(id => actividadesApi.getById(id).catch(() => null)));
+            const aMap: Record<string, Actividad> = {};
+            for (const a of acts) {
+              if (a) aMap[a.id] = a;
+            }
+            setActividadMap(aMap);
+
+            const proximas = [...allReservas]
+              .filter(r => aMap[r.actividadId]?.fechaYHora >= todayStr)
+              .sort((a, b) => (aMap[a.actividadId]?.fechaYHora ?? '').localeCompare(aMap[b.actividadId]?.fechaYHora ?? ''))
+              .slice(0, 5);
+            setReservasCliente(proximas);
+
+            const sorted = [...allReservas].sort(
+              (a, b) => (aMap[a.actividadId]?.fechaYHora ?? '').localeCompare(aMap[b.actividadId]?.fechaYHora ?? '')
+            );
+            let consecutive = 0;
+            for (const r of sorted) {
+              if (r.estadoDeReserva === 'Cancelada') consecutive++;
+              else break;
+            }
+            setCancelacionesConsecutivas(consecutive);
+
+            if (userData?.saldoAFavor) setSaldoAFavor(userData.saldoAFavor);
+          })()
         );
       }
 
@@ -47,32 +79,11 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [isCliente, user, isAdmin]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    if (reservas.length === 0) return;
-
-    const known = actividades.reduce<Record<string, string>>((acc, a) => {
-      acc[a.id] = a.nombre;
-      return acc;
-    }, {});
-
-    const missing = reservas
-      .filter((r) => !known[r.actividadId])
-      .map((r) => r.actividadId);
-
-    Promise.all(missing.map((id) => actividadesApi.getById(id))).then((acts) => {
-      const fresh: Record<string, string> = { ...known };
-      for (const a of acts) {
-        fresh[a.id] = a.nombre;
-      }
-      setActividadNombreMap(fresh);
-    });
-  }, [actividades, reservas]);
 
   return (
     <MainLayout title="Dashboard">
@@ -113,8 +124,9 @@ export function DashboardPage() {
             </Card>
           </div>
         )}
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {!hasRole(['Cliente Registrado']) &&  ( 
           <Card>
             <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Próximas actividades</h3>
             {loading ? (
@@ -137,44 +149,65 @@ export function DashboardPage() {
               </div>
             )}
           </Card>
+          )}
           {hasRole(['Cliente Registrado']) && (
-          <Card>
-            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas</h3>
-            {loading ? (
-              <p className="text-gray-500">Cargando...</p>
-            ) : reservas.length === 0 ? (
-              <p className="text-gray-500">No tienes reservas</p>
-            ) : (
-              <div className="space-y-3">
-                {reservas.map((res) => (
-                  <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-dark dark:text-gray-100">{actividadNombreMap[res.actividadId] ?? `Actividad #${res.actividadId}`}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(res.fechaReserva).toLocaleDateString('es-AR', {
-                          year: 'numeric', month: 'long', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
-                      </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:col-span-2 items-start">
+            <Card>
+              <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas proximas</h3>
+              {loading ? (
+                <p className="text-gray-500">Cargando...</p>
+              ) : reservasCliente.length === 0 ? (
+                <p className="text-gray-500">No tienes reservas</p>
+              ) : (
+                <div className="space-y-3">
+                  {reservasCliente.map((res) => (
+                    <div key={res.id} className="flex items-center justify-between p-3 bg-primary/10 dark:bg-gray-800/50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-dark dark:text-gray-100">{actividadMap[res.actividadId]?.nombre ?? `Actividad #${res.actividadId}`}</p>
+                        <p className="text-sm text-gray-500">
+                          {actividadMap[res.actividadId]?.fechaYHora
+                            ? new Date(actividadMap[res.actividadId].fechaYHora).toLocaleDateString('es-AR', {
+                                year: 'numeric', month: 'long', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })
+                            : new Date(res.fechaReserva).toLocaleDateString('es-AR', {
+                                year: 'numeric', month: 'long', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          res.estadoDeReserva === 'Activa' ? 'success' :
+                          res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                          res.estadoDeReserva === 'EnEspera' ? 'info' :
+                          res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
+                        }
+                      >
+                        {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
+                         res.estadoDeReserva === 'Activa' ? 'Activa' :
+                         res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                         res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        res.estadoDeReserva === 'Activa' ? 'success' :
-                        res.estadoDeReserva === 'Cancelada' ? 'danger' :
-                        res.estadoDeReserva === 'EnEspera' ? 'info' :
-                        res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
-                      }
-                    >
-                      {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
-                       res.estadoDeReserva === 'Activa' ? 'Activa' :
-                       res.estadoDeReserva === 'EnEspera' ? 'En espera' :
-                       res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Card className="flex flex-col items-center text-center space-y-2">
+                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1">Saldo a favor</p>
+                <p className="text-2xl font-bold text-primary">
+                  ${saldoAFavor?.montoTotal.toLocaleString() ?? '0'}
+                </p>
+              </Card>
+              <Card className="flex flex-col items-center text-center space-y-2">
+                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1 whitespace-nowrap">Cancelaciones consecutivas</p>
+                <p className="text-2xl justify-center font-bold text-dark dark:text-gray-100">{cancelacionesConsecutivas}</p>
+                <p className="text-lg font-semibold text-red-400 dark:text-red-700 mb-1 whitespace-nowrap">Maximo 3</p>
+              </Card>
+            </div>
+          </div>
           )}
         </div>
       </div>

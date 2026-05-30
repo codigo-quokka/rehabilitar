@@ -7,6 +7,11 @@ export const reservasApi = {
     return response.data as Reserva[];
   },
 
+  getMisReservas: async () => {
+    const response = await apiClient.get('/reservas/mis-reservas');
+    return response.data as Reserva[];
+  },
+
   getById: async (id: string) => {
     const response = await apiClient.get(`/reservas/${id}`);
     return response.data as Reserva;
