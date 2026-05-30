@@ -1,16 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Modal, Badge } from '../../../components/ui';
 import { PrivacyEye } from '../../../components/PrivacyEye';
 import { useAuth } from '../../../hooks/useAuth';
 import { authApi, usuariosApi } from '../../../api';
 import { Notitoast } from '../../../components/Notitoast';
+
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
+
+import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
+import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
+import { useInputFilter } from '../../../hooks/useInputFilter';
+import { INPUT_PRESETS } from '../../../utils/inputPresets';
+
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
-import { AptoFisico } from '../../../types';
+import { AptoFisico, ChangePasswordData } from '../../../types';
 import { AptoFisicoUploader } from '../../aptosFisicos/components/AptoFisicoUploader';
 import { AptoFisicoViewer } from '../../aptosFisicos/components/AptoFisicoViewer';
+
+const MAX_PASSWORD_LENGTH = 32;
+
+const passwordReqs: Requirement[] = [
+  { label: 'Mínimo 8 caracteres', test: (v) => v.length >= 8 },
+  { label: 'Al menos una mayúscula', test: (v) => /[A-Z]/.test(v) },
+  { label: 'Al menos una minúscula', test: (v) => /[a-z]/.test(v) },
+  { label: 'Al menos un número', test: (v) => /[0-9]/.test(v) },
+  {
+    label: 'Al menos un carácter especial',
+    test: (v) => /[^a-zA-Z0-9]/.test(v),
+  },
+];
 
 export function PerfilPage() {
   const { user, updateUser } = useAuth();
@@ -38,6 +58,36 @@ export function PerfilPage() {
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const currentPasswordFilter = useInputFilter(
+    passwordData.currentPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, currentPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+  const newPasswordFilter = useInputFilter(
+    passwordData.newPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, newPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+  const confirmPasswordFilter = useInputFilter(
+    passwordData.confirmNewPassword,
+    (v) => setPasswordData((prev) => ({ ...prev, confirmNewPassword: v })),
+    INPUT_PRESETS.password(MAX_PASSWORD_LENGTH)
+  );
+
+  const confirmPasswordReqs = useMemo<Requirement[]>(
+    () => [
+      {
+        label: 'Las contraseñas coinciden',
+        test: (v) => v.length > 0 && v === passwordData.newPassword,
+      },
+    ],
+    [passwordData.newPassword]
+  );
+
+  const [showPasswordCard, setShowPasswordCard] = useState(false);
+  const [showConfirmPasswordModal, setShowConfirmPasswordModal] = useState(false);
+  const changePasswordDataRef = useRef<ChangePasswordData | null>(null);
+
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
@@ -49,6 +99,8 @@ export function PerfilPage() {
   const [verArchivo, setVerArchivo] = useState(false);
 
   const aptoActual = aptos.length > 0 ? aptos[0] : null;
+
+  const MIN_PASSWORD_LENGTH = 8;
 
   useEffect(() => {
     if (user?.rol === 'Cliente Registrado') {
@@ -119,29 +171,74 @@ export function PerfilPage() {
       showToastMessage('Todos los campos son obligatorios.', 'error');
       return;
     }
-    if (passwordData.newPassword.length < 8) {
-      showToastMessage('La nueva contraseña debe tener al menos 8 caracteres.', 'error');
-      return;
-    }
+    
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
       showToastMessage('La nueva contraseña y la confirmación no coinciden.', 'error');
       return;
     }
 
+    if (passwordReqs.some((r) => !r.test(passwordData.newPassword))) {
+      setToastType("error");
+      setToastMessage("La contraseña no cumple los requisitos de seguridad.");
+      setShowToast(true);
+      return;
+    }
+    /*
+    if (passwordData.newPassword.length < MIN_PASSWORD_LENGTH) {
+      setToastType("error");
+      setToastMessage(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+      setShowToast(true);
+      return;
+    }
+    if (!/[A-Z]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos una mayúscula.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[a-z]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos una minúscula.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[0-9]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos un número.");
+      setShowToast(true);
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(passwordData.newPassword)) {
+      setToastType("error");
+      setToastMessage("La contraseña debe contener al menos un carácter especial.");
+      setShowToast(true);
+      return;
+    }
+    */
+    changePasswordDataRef.current = {
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+      confirmNewPassword: passwordData.confirmNewPassword,
+    };
+    setShowConfirmPasswordModal(true);
+  };
+
+  const confirmChangePassword = async () => {
+    if (!changePasswordDataRef.current) return;
+
+    setShowConfirmPasswordModal(false);
     setPasswordLoading(true);
+
     try {
-      const result = await authApi.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-        confirmNewPassword: passwordData.confirmNewPassword,
-      });
-      showToastMessage(result.message || 'Contraseña actualizada exitosamente.', 'success');
+      const result = await authApi.changePassword(changePasswordDataRef.current);
+      showToastMessage(result.message || 'Contraseña actualizada correctamente.', 'success');
       setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
     } catch (err: any) {
       const message = err?.response?.data?.title || err?.response?.data?.error || 'Error al actualizar la contraseña.';
       showToastMessage(message, 'error');
     } finally {
       setPasswordLoading(false);
+      changePasswordDataRef.current = null;
     }
   };
 
@@ -299,7 +396,24 @@ export function PerfilPage() {
         </Card>
 
         <Card className="mt-6">
-          <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Cambiar contraseña</h3>
+          <button
+            type="button"
+            onClick={() => setShowPasswordCard((prev) => !prev)}
+            className="w-full flex items-center justify-between text-left mb-4"
+            aria-expanded={showPasswordCard}
+            aria-controls="password-card-content"
+          >
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100">Cambiar contraseña</h3>
+            <svg
+              className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${showPasswordCard ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showPasswordCard && (
           <div className="space-y-4 max-w-md">
             <div className="relative">
               <Input
@@ -308,6 +422,8 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.currentPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                onKeyDown={currentPasswordFilter.handleKeyDown}
+                onPaste={currentPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showCurrentPassword} onToggle={() => setShowCurrentPassword(prev => !prev)} />
             </div>
@@ -318,9 +434,12 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                onKeyDown={newPasswordFilter.handleKeyDown}
+                onPaste={newPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
             </div>
+            <InformRequirements value={passwordData.newPassword} requirements={passwordReqs} />
             <div className="relative">
               <Input
                 label="Confirmar contraseña"
@@ -328,12 +447,28 @@ export function PerfilPage() {
                 className="pr-16"
                 value={passwordData.confirmNewPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })}
+                onKeyDown={confirmPasswordFilter.handleKeyDown}
+                onPaste={confirmPasswordFilter.handlePaste}
               />
               <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />
             </div>
+            <InformRequirements value={passwordData.confirmNewPassword} requirements={confirmPasswordReqs} />
             <Button onClick={handleChangePassword} loading={passwordLoading}>Actualizar contraseña</Button>
           </div>
+          )}
         </Card>
+
+        <ConfirmActionModalVerde
+          title="Cambiar contraseña"
+          body="¿Estás seguro de que deseas cambiar tu contraseña?"
+          confirmLabel="Confirmar"
+          onConfirm={confirmChangePassword}
+          onCancel={() => {
+            setShowConfirmPasswordModal(false);
+            changePasswordDataRef.current = null;
+          }}
+          isOpen={showConfirmPasswordModal}
+        />
 
         {/* Modal de subida */}
         <Modal isOpen={subiendo} onClose={() => setSubiendo(false)} title="Subir apto físico">

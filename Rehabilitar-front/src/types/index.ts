@@ -122,6 +122,11 @@ export interface ResetPasswordData {
   newPassword: string;
 }
 
+export interface ValidatePasswordResetTokenData {
+  userId: string;
+  passwordResetToken: string;
+}
+
 export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;

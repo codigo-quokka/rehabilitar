@@ -1,16 +1,34 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Input, Card } from '../../../components/ui';
 import { authApi } from '../../../api';
+import { Notitoast } from '../../../components/Notitoast';
+import { useInputFilter } from '../../../hooks/useInputFilter';
+import { INPUT_PRESETS } from '../../../utils/inputPresets';
 
 export function PasswordRecoveryPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toastMessage, setToastMessage] = useState("");
+  const handleCloseToast = useCallback(() => setShowToast(false), []);
+
+  const emailFilter = useInputFilter(email, (v) => setEmail(v), INPUT_PRESETS.email);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!email) {
+      setLoading(false);
+      setToastType("error");
+      setToastMessage("Por favor, ingresa tu email");
+      setShowToast(true);
+      return;
+    }
 
     try {
       await authApi.recoverPassword(email);
@@ -64,7 +82,9 @@ export function PasswordRecoveryPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
-              required
+              onKeyDown={emailFilter.handleKeyDown}
+              onPaste={emailFilter.handlePaste}
+              // required
             />
 
             <Button type="submit" className="w-full" loading={loading}>
@@ -79,6 +99,9 @@ export function PasswordRecoveryPage() {
           </div>
         </Card>
       </div>
+      {showToast && (
+      <Notitoast type={toastType} message={toastMessage} onClose={handleCloseToast} />
+      )}
     </div>
   );
 }
