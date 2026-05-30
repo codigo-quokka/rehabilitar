@@ -53,7 +53,7 @@ export function LoginPage() {
         setShowToast(true);
       } else if (err.response?.data?.error === "Usuario suspendido.") {
         setToastType("error");
-        setToastMessage("Cuenta suspendida, deberás reactivala presencialmente.");
+        setToastMessage("Cuenta suspendida, deberás reactivarla presencialmente.");
         setShowToast(true);
       } else {
         setToastType("error");
@@ -104,13 +104,16 @@ export function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {unverifiedEmail && !resendSuccess && (
-                <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+                <div className="p-4 bg-bg-surface dark:bg-gray-800/50 rounded-xl border border-border dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 text-center">
+                    Tu correo electrónico aún no ha sido verificado.
+                  </p>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleResendEmail}
                     loading={resending}
-                    className="text-xs py-2 w-full"
+                    className="w-full"
                   >
                     Reenviar correo de confirmación
                   </Button>
@@ -118,9 +121,13 @@ export function LoginPage() {
               )}
 
               {resendSuccess && (
-                <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm font-medium">
-                  Correo de confirmación reenviado exitosamente. Por favor
-                  revisa tu bandeja de entrada y tu bandeja de spam.
+                <div className="p-4 bg-bg-surface dark:bg-gray-800/50 rounded-xl border border-border dark:border-gray-700">
+                  <p className="text-sm text-primary font-medium text-center">
+                    Correo de confirmación reenviado exitosamente.
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                    Revisa tu bandeja de entrada y tu bandeja de spam.
+                  </p>
                 </div>
               )}
 
