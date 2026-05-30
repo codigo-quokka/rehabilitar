@@ -27,14 +27,14 @@ export function Notitoast({ type, message, onClose, duration = 4000 }: Notitoast
 
   const styles = {
   success: {
-    bg: "bg-teal-200/30 dark:bg-teal-800/30 backdrop-blur-md",
+    bg: "bg-teal-200/30 dark:bg-teal-800/50 backdrop-blur-md",
     border: "border border-teal-300/40 dark:border-teal-600/40",
     iconBg: "bg-teal-300/30 dark:bg-teal-700/30",
     iconColor: "text-teal-700 dark:text-teal-300",
     text: "text-teal-900 dark:text-teal-100",
   },
   error: {
-    bg: "bg-red-200/30 dark:bg-red-800/30 backdrop-blur-md",
+    bg: "bg-red-200/30 dark:bg-red-800/50 backdrop-blur-md",
     border: "border border-red-300/40 dark:border-red-600/40",
     iconBg: "bg-red-300/30 dark:bg-red-700/30",
     iconColor: "text-red-700 dark:text-red-300",

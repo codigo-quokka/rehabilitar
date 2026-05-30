@@ -7,7 +7,6 @@ import { authApi, usuariosApi } from '../../../api';
 import { Notitoast } from '../../../components/Notitoast';
 
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
-import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
