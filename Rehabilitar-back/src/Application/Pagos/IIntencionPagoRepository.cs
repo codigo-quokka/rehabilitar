@@ -1,0 +1,10 @@
+using Domain.Pagos;
+
+namespace Application.Pagos;
+
+public interface IIntencionPagoRepository
+{
+    Task AddAsync(IntencionPago intencionPago, CancellationToken ct = default);
+    Task<IntencionPago?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<int> ContarIntencionesPendientesRecientesAsync(Guid actividadId, TimeSpan ventanaTiempo);
+}
