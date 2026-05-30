@@ -66,10 +66,19 @@ public class SeedingService : ISeedingService
         await SeedClienteAsync("Marilina", "Bertoldi", "marilina@bertoldi.com", "22333444");
         await SeedClienteAsync("Ricardo", "Mollo", "ricardo@mollo.com", "33444555", "541110102020");
         await SeedClienteAsync("José", "Hernández", "joseh@gmail.com", "10000000", password: "Jose123!");
+        await SeedClienteAsync("Morgan", "Freeman", "morgan@freeman.com", "77888999", "542211112233");
+        await SeedClienteAsync("Ellen", "Ripley", "ellen@ripley.com", "88999000", "542213334455");
+        await SeedClienteAsync("Tony", "Stark", "tony@stark.com", "99000111", "542215556677");
+        await SeedClienteAsync("Sarah", "Connor", "sarah@connor.com", "11122333");
+        await SeedClienteAsync("Gandalf", "Gris", "gandalf@gris.com", "22233444", "542217778899");
+        await SeedClienteAsync("Leia", "Organa", "leia@organa.com", "33344555");
 
         await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
         await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
         await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", TipoEspecialidad.TrenInferior);
 
         var salaA = Sala.Create("Sala A", 10);
         var salaB = Sala.Create("Sala B", 20);
@@ -86,6 +95,9 @@ public class SeedingService : ISeedingService
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
+        var diana = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "diana@prince.com");
+        var steve = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "steve@rogers.com");
+        var natasha = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "natasha@romanoff.com");
         var now = DateTime.Today.AddDays(1);
         await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddHours(9), 10, salaA.Id, peter.UserId);
         await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.EnCurso, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
@@ -95,7 +107,13 @@ public class SeedingService : ISeedingService
         await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
         await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(5).AddHours(16), 20, salaB.Id, clark.UserId);
         await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
-        // await SeedReservaAsync();
+        await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
+        await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(5).AddHours(15), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(5).AddHours(15).AddDays(45));
+        await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
+        await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.EnCurso, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
+        await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
+        await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+        await SeedReservasAsync();
     }
 
     public async Task SeedAdminAsync()
@@ -221,7 +239,7 @@ public class SeedingService : ISeedingService
         }
     }
 
-    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null)
+    private async Task SeedClienteAsync(string clientFirstName, string clientLastName, string clientEmail, string clientDni, string? clientTelefono = null, string? password = null, bool aprobarApto = true)
     {
         User? clientUser = await _userManager.FindByEmailAsync(clientEmail);
         if (clientUser != null)
@@ -398,31 +416,12 @@ public class SeedingService : ISeedingService
         var actividades = await _dbContext.Actividades.ToListAsync();
         Console.WriteLine($"SeedReservasAsync: {actividades.Count} actividades cargadas");
 
-        // Crear AptoFisico en distintos estados para los clientes que no tengan uno
-        // Algunos quedarán sin cargar (sin registro), otros pendientes, rechazados, y la mayoría aprobados
+        // Crear AptoFisico aprobado para cada cliente que no tenga uno
         var adminUser = await _userManager.FindByEmailAsync("admin@rehabilitar.com");
-        var sinApto = new HashSet<string> { "mr@robot.com" };
-        var pendientes = new HashSet<string> { "sarah@connor.com" };
-        var rechazados = new HashSet<string> { "gandalf@gris.com" };
         var existingAptos = await _dbContext.Set<AptoFisico>().Select(a => a.ClienteId).ToHashSetAsync();
         foreach (var c in clientes)
         {
-            var email = c.User?.Email;
-            if (email != null && sinApto.Contains(email))
-            {
-                Console.WriteLine($"SeedReservasAsync: {email} queda sin apto físico cargado");
-                continue;
-            }
-
-            if (email != null && (pendientes.Contains(email) || rechazados.Contains(email)))
-            {
-                // No se marca como aprobado — queda pendiente o rechazado
-            }
-            else
-            {
-                c.AprobarAptoFisico();
-            }
-
+            c.AprobarAptoFisico();
             if (!existingAptos.Contains(c.UserId))
             {
                 var seedPdfPath = Path.Combine(AppContext.BaseDirectory, "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
@@ -430,24 +429,9 @@ public class SeedingService : ISeedingService
                     seedPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Infrastructure", "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
                 var pdfBytes = File.Exists(seedPdfPath) ? await File.ReadAllBytesAsync(seedPdfPath) : new byte[] { 0x25, 0x50, 0x44, 0x46 };
                 var apto = new AptoFisico(c.UserId, "Apto_Fisico_RehabilitAR.pdf", "application/pdf", pdfBytes, pdfBytes.Length);
-
-                if (email != null && pendientes.Contains(email))
-                {
-                    // Se deja en estado Pendiente (default del constructor)
-                    Console.WriteLine($"SeedReservasAsync: apto físico creado (pendiente) para {email}");
-                }
-                else if (email != null && rechazados.Contains(email))
-                {
-                    apto.Rechazar(adminUser!.Id, "El apto físico no cumple con los requisitos mínimos.");
-                    Console.WriteLine($"SeedReservasAsync: apto físico creado y rechazado para {email}");
-                }
-                else
-                {
-                    apto.Aprobar(adminUser!.Id);
-                    Console.WriteLine($"SeedReservasAsync: apto físico creado y aprobado para {email}");
-                }
-
+                apto.Aprobar(adminUser!.Id);
                 _dbContext.Set<AptoFisico>().Add(apto);
+                Console.WriteLine($"SeedReservasAsync: apto físico creado y aprobado para {c.User?.Email}");
             }
             else
             {

@@ -12,7 +12,7 @@ export function DashboardPage() {
   const [reservasCliente, setReservasCliente] = useState<Reserva[]>([]);
   const [actividadMap, setActividadMap] = useState<Record<string, Actividad>>({});
   const [saldoAFavor, setSaldoAFavor] = useState<SaldoAFavor | null>(null);
-  const [InasistenciasConsecutivas, setInasistenciasConsecutivas] = useState(0);
+  const [cancelacionesConsecutivas, setCancelacionesConsecutivas] = useState(0);
   const [loading, setLoading] = useState(true);
   const isCliente = hasRole(['Cliente Registrado']);
 
@@ -61,7 +61,13 @@ export function DashboardPage() {
             const sorted = [...allReservas].sort(
               (a, b) => (aMap[a.actividadId]?.fechaYHora ?? '').localeCompare(aMap[b.actividadId]?.fechaYHora ?? '')
             );
-            if (userData?.InasistenciasConsecutivas !== undefined) setInasistenciasConsecutivas(userData.InasistenciasConsecutivas);
+            let consecutive = 0;
+            for (const r of sorted) {
+              if (r.estadoDeReserva === 'Cancelada') consecutive++;
+              else break;
+            }
+            setCancelacionesConsecutivas(consecutive);
+
             if (userData?.saldoAFavor) setSaldoAFavor(userData.saldoAFavor);
           })()
         );
@@ -143,44 +149,65 @@ export function DashboardPage() {
               </div>
             )}
           </Card>
+          )}
           {hasRole(['Cliente Registrado']) && (
-          <Card>
-            <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas</h3>
-            {loading ? (
-              <p className="text-gray-500">Cargando...</p>
-            ) : reservas.length === 0 ? (
-              <p className="text-gray-500">No tienes reservas</p>
-            ) : (
-              <div className="space-y-3">
-                {reservas.map((res) => (
-                  <div key={res.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-dark dark:text-gray-100">{actividadNombreMap[res.actividadId] ?? `Actividad #${res.actividadId}`}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(res.fechaReserva).toLocaleDateString('es-AR', {
-                          year: 'numeric', month: 'long', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
-                      </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:col-span-2 items-start">
+            <Card>
+              <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis reservas proximas</h3>
+              {loading ? (
+                <p className="text-gray-500">Cargando...</p>
+              ) : reservasCliente.length === 0 ? (
+                <p className="text-gray-500">No tienes reservas</p>
+              ) : (
+                <div className="space-y-3">
+                  {reservasCliente.map((res) => (
+                    <div key={res.id} className="flex items-center justify-between p-3 bg-primary/10 dark:bg-gray-800/50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-dark dark:text-gray-100">{actividadMap[res.actividadId]?.nombre ?? `Actividad #${res.actividadId}`}</p>
+                        <p className="text-sm text-gray-500">
+                          {actividadMap[res.actividadId]?.fechaYHora
+                            ? new Date(actividadMap[res.actividadId].fechaYHora).toLocaleDateString('es-AR', {
+                                year: 'numeric', month: 'long', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })
+                            : new Date(res.fechaReserva).toLocaleDateString('es-AR', {
+                                year: 'numeric', month: 'long', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          res.estadoDeReserva === 'Activa' ? 'success' :
+                          res.estadoDeReserva === 'Cancelada' ? 'danger' :
+                          res.estadoDeReserva === 'EnEspera' ? 'info' :
+                          res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
+                        }
+                      >
+                        {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
+                         res.estadoDeReserva === 'Activa' ? 'Activa' :
+                         res.estadoDeReserva === 'EnEspera' ? 'En espera' :
+                         res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        res.estadoDeReserva === 'Activa' ? 'success' :
-                        res.estadoDeReserva === 'Cancelada' ? 'danger' :
-                        res.estadoDeReserva === 'EnEspera' ? 'info' :
-                        res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
-                      }
-                    >
-                      {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
-                       res.estadoDeReserva === 'Activa' ? 'Activa' :
-                       res.estadoDeReserva === 'EnEspera' ? 'En espera' :
-                       res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Card className="flex flex-col items-center text-center space-y-2">
+                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1">Saldo a favor</p>
+                <p className="text-2xl font-bold text-primary">
+                  ${saldoAFavor?.montoTotal.toLocaleString() ?? '0'}
+                </p>
+              </Card>
+              <Card className="flex flex-col items-center text-center space-y-2">
+                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1 whitespace-nowrap">Cancelaciones consecutivas</p>
+                <p className="text-2xl justify-center font-bold text-dark dark:text-gray-100">{cancelacionesConsecutivas}</p>
+                <p className="text-lg font-semibold text-red-400 dark:text-red-700 mb-1 whitespace-nowrap">Maximo 3</p>
+              </Card>
+            </div>
+          </div>
           )}
         </div>
       </div>
