@@ -130,9 +130,13 @@ export function LoginPage() {
               )}
 
               {resendSuccess && (
-                <div className="p-4 bg-green-50 text-green-600 rounded-xl text-sm font-medium">
-                  Correo de confirmación reenviado exitosamente. Por favor
-                  revisa tu bandeja de entrada y tu bandeja de spam.
+                <div className="p-4 bg-bg-surface dark:bg-gray-800/50 rounded-xl border border-border dark:border-gray-700">
+                  <p className="text-sm text-primary font-medium text-center">
+                    Correo de confirmación reenviado exitosamente.
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                    Revisa tu bandeja de entrada y tu bandeja de spam.
+                  </p>
                 </div>
               )}
 
