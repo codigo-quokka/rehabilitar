@@ -38,6 +38,15 @@ export function LoginPage() {
     setResendSuccess(false);
     setUnverifiedEmail("");
     setShowToast(false);
+
+    if (!email || !password) {
+      setToastType("error");
+      setToastMessage("Por favor, completa todos los campos.");
+      setShowToast(true);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -133,13 +142,12 @@ export function LoginPage() {
 
               <Input
                 label="Email"
-                type="email"
+                type=""
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.replace(INPUT_PRESETS.email.cleanPasteRegex, ''))}
                 onKeyDown={emailFilter.handleKeyDown}
                 onPaste={emailFilter.handlePaste}
                 placeholder="tu@email.com"
-                required
               />
 
               <div className="relative">
@@ -147,11 +155,10 @@ export function LoginPage() {
                   label="Contraseña"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.replace(INPUT_PRESETS.password().cleanPasteRegex, ''))}
                   onKeyDown={passwordFilter.handleKeyDown}
                   onPaste={passwordFilter.handlePaste}
                   placeholder="••••••••"
-                  required
                   className="pr-16"
                 />
                 <PrivacyEye

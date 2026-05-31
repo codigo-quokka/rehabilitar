@@ -789,6 +789,14 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const MAX_DNI_LENGTH = 8;
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
+  const fieldCleaners: Partial<Record<keyof typeof formData, RegExp>> = {
+    nombre: INPUT_PRESETS.name.cleanPasteRegex,
+    apellido: INPUT_PRESETS.name.cleanPasteRegex,
+    email: INPUT_PRESETS.email.cleanPasteRegex,
+    dni: INPUT_PRESETS.digits(MAX_DNI_LENGTH).cleanPasteRegex,
+    telefono: INPUT_PRESETS.digits(12).cleanPasteRegex,
+  };
+
   const dniReqs: Requirement[] = [
     { label: 'Mínimo 7 caracteres', test: (v) => v.length >= 7 },
   ];
@@ -815,7 +823,10 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const telefonoFilter = useInputFilter(formData.telefono, (v) => updateField('telefono', v), INPUT_PRESETS.digits(12));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const name = e.target.name as keyof typeof formData;
+    const clean = fieldCleaners[name];
+    const value = clean ? e.target.value.replace(clean, '') : e.target.value;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
