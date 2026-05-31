@@ -144,23 +144,11 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<decimal>("DescuentoProximaReserva")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Dni")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Dni");
-
-                    b.Property<DateOnly>("FechaNacimiento")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("InasistenciasConsecutivas")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("RehabiliCoins")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Telefono")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("UserId");
 
@@ -312,12 +300,21 @@ namespace Infrastructure.Persistence.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Dni")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Dni");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("FechaNacimiento")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
