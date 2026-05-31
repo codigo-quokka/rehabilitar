@@ -478,7 +478,7 @@ export function ActividadesPage() {
             setShowToast(true);
           }}
           onSuccess={(msg) => {
-        setToastType('error');
+        setToastType('success');
             setToastMessage(msg);
             setShowToast(true);
           }}
