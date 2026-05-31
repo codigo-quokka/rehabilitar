@@ -133,8 +133,7 @@ public class AuthService : IAuthService
             Activo = user.EmailConfirmed,
             Telefono = user?.PhoneNumber,
             FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
-            Documento = user?.Dni.Valor,
-            Especialidad = especialidad
+            Documento = user?.Dni.Valor
         };
 
         return new AuthResponse(token, userResponse);
