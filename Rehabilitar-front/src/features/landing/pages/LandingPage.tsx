@@ -227,7 +227,7 @@ export const LandingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-[#2F6274] dark:text-gray-100 mb-3">Tren inferior</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Rutinas destinadas a piernas y glúteos. Mejora la fuerza, resistencia y movilidad, asistiendo en la recuperación de rodillas, caderas y tobillos.
+                Rutinas enfocadas en piernas y glúteos para desarrollar fuerza, resistencia y movilidad. Ayudan a fortalecer las articulaciones y músculos de la zona inferior del cuerpo, contribuyendo a la recuperación y el cuidado de rodillas, caderas y tobillos.
               </p>
             </div>
           </div>
@@ -237,7 +237,7 @@ export const LandingPage = () => {
             <div className="p-8 lg:w-2/3">
               <h3 className="text-2xl font-bold text-[#2F6274] dark:text-gray-100 mb-4">¿Por qué ser abonado?</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Accedé a beneficios exclusivos pagando una cuota mensual. Garantizá tu lugar en las actividades recurrentes y organizá tu rutina con anticipación.
+                Accedé a nuestros beneficios exclusivos:
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start">
@@ -246,11 +246,11 @@ export const LandingPage = () => {
                 </li>
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />
-                  <span className="text-gray-700 dark:text-gray-300">Sistema de créditos y reintegros ante cancelaciones.</span>
+                  <span className="text-gray-700 dark:text-gray-300">Sistema de créditos ante cancelaciones.</span>
                 </li>
                 <li className="flex items-start">
                   <ShieldCheck className="text-[#48B7A5] dark:text-[#6DD3A8] mr-2 flex-shrink-0" size={20} />
-                  <span className="text-gray-700 dark:text-gray-300">Prioridad preferencial en listas de espera.</span>
+                  <span className="text-gray-700 dark:text-gray-300">Prioridad preferencial en las listas de espera.</span>
                 </li>
               </ul>
             </div>
@@ -287,12 +287,12 @@ export const LandingPage = () => {
             <ul className="space-y-3">
               <li className="flex items-center text-gray-300 dark:text-gray-400">
                 <MapPin size={18} className="mr-2 text-[#48B7A5] dark:text-[#6DD3A8]" />
-                <span>La Plata, Buenos Aires, Argentina</span>
+                <span>La Plata - Buenos Aires, Argentina.</span>
               </li>
-              <li className="flex items-center text-gray-300 dark:text-gray-400">
+              {/*<li className="flex items-center text-gray-300 dark:text-gray-400">
                 <Phone size={18} className="mr-2 text-[#48B7A5] dark:text-[#6DD3A8]" />
                 <span>+54 9 221 XXX-XXXX</span>
-              </li>
+              </li>*/}
               <li className="flex items-center text-gray-300 dark:text-gray-400">
                 <Mail size={18} className="mr-2 text-[#48B7A5] dark:text-[#6DD3A8]" />
                 <span>contacto@rehabilitar.com</span>
@@ -304,21 +304,17 @@ export const LandingPage = () => {
             <ul className="space-y-3">
               <li className="flex items-center text-gray-300 dark:text-gray-400">
                 <Clock size={18} className="mr-2 text-[#48B7A5] dark:text-[#6DD3A8]" />
-                <span>Lunes a Viernes: 08:00 - 20:00</span>
-              </li>
-              <li className="flex items-center text-gray-300 dark:text-gray-400">
-                <Clock size={18} className="mr-2 text-[#48B7A5] dark:text-[#6DD3A8]" />
-                <span>Sábados: 09:00 - 13:00</span>
-              </li>
+                <span>Lunes a Sábado: 08:00 - 20:00 hs.</span>
+              </li>              
             </ul>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-600 dark:border-gray-800 text-sm text-gray-400 flex flex-col md:flex-row justify-between items-center transition-colors duration-300">
           <p>&copy; 2026 RehabilitAR. Todos los derechos reservados.</p>
-          <div className="mt-4 md:mt-0 space-x-4">
+          {/*<div className="mt-4 md:mt-0 space-x-4">
             <a href="#" className="hover:text-white transition-colors">Términos y Condiciones</a>
             <a href="#" className="hover:text-white transition-colors">Política de Privacidad</a>
-          </div>
+          </div>*/}
         </div>
       </footer>
     </div>
