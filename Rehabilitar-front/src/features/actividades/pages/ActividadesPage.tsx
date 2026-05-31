@@ -417,13 +417,25 @@ export function ActividadesPage() {
                   try {
                     await actividadesApi.asignarProfesor(act.id, user!.id);
                     fetchData();
+                    setToastType('success');
+                    setToastMessage('Te has asignado a la actividad exitosamente');
+                    setShowToast(true);
                   } catch (err) {
                     console.error('Error al tomar la actividad', err);
+                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
+                    setToastType('error');
+                    setToastMessage(msg);
+                    setShowToast(true);
                   }
                 }}
                 onVerReservas={handleVerReservas}
                 onError={(msg) => {
                   setToastType('error');
+                  setToastMessage(msg);
+                  setShowToast(true);
+                }}
+                onSuccess={(msg) => {
+                  setToastType('success');
                   setToastMessage(msg);
                   setShowToast(true);
                 }}
@@ -443,8 +455,15 @@ export function ActividadesPage() {
                   try {
                     await actividadesApi.asignarProfesor(act.id, user!.id);
                     fetchData();
+                    setToastType('success');
+                    setToastMessage('Te has asignado a la actividad exitosamente');
+                    setShowToast(true);
                   } catch (err) {
                     console.error('Error al tomar la actividad', err);
+                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
+                    setToastType('error');
+                    setToastMessage(msg);
+                    setShowToast(true);
                   }
                 }}
                 onVerReservas={handleVerReservas}
@@ -478,7 +497,7 @@ export function ActividadesPage() {
             setShowToast(true);
           }}
           onSuccess={(msg) => {
-        setToastType('error');
+        setToastType('success');
             setToastMessage(msg);
             setShowToast(true);
           }}

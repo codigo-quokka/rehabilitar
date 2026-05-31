@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { Notitoast } from '../../../components/Notitoast';
 import { useAuth } from '../../../hooks/useAuth';
 import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
@@ -50,6 +51,9 @@ export function MisClasesPage() {
   const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [confirmGroupSerieId, setConfirmGroupSerieId] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,8 +92,14 @@ export function MisClasesPage() {
     try {
       await actividadesApi.removerProfesor(selectedActividad.id, user.id);
       setClases(prev => prev.filter(a => a.id !== selectedActividad.id));
-    } catch {
-      // empty
+      setToastType('success');
+      setToastMessage('Te has dado de baja exitosamente');
+      setShowToast(true);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
     } finally {
       setShowConfirmModal(false);
       setSelectedActividad(null);
@@ -104,8 +114,14 @@ export function MisClasesPage() {
         groupActividades.map((act) => actividadesApi.removerProfesor(act.id, user.id))
       );
       setClases(prev => prev.filter(a => a.serieId !== serieId));
-    } catch {
-      // empty
+      setToastType('success');
+      setToastMessage('Te has dado de baja de todas las actividades exitosamente');
+      setShowToast(true);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
     } finally {
       setConfirmGroupSerieId(null);
     }
@@ -303,6 +319,14 @@ export function MisClasesPage() {
         onConfirm={() => confirmGroupSerieId && handleRemoverGrupo(confirmGroupSerieId)}
         onCancel={() => setConfirmGroupSerieId(null)}
       />
+
+      {showToast && (
+        <Notitoast
+          type={toastType}
+          message={toastMessage}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </MainLayout>
   );
 }
