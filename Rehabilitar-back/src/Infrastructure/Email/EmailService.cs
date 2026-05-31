@@ -222,7 +222,7 @@ public class EmailService : IEmailService
 
         return await SendEmailAsync(userEmail, "Cuenta reactivada", content);
     }
-    }
+    
 
     // --- MÉTODOS PRIVADOS DE INFRAESTRUCTURA ---
 
