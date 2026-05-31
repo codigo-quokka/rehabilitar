@@ -103,7 +103,7 @@ public class ReservaServiceTests
         typeof(Cliente).GetProperty("AptoFisicoAprobado")?.SetValue(cliente, true);
         
         // Setup User for mapping
-        var user = User.Create("Pepe", "López", "pepe@gmail.com");
+        var user = User.Create("Pepe", "López", "pepe@gmail.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(Cliente).GetProperty("User")?.SetValue(cliente, user);
 
         _clienteRepoMock.Setup(x => x.GetByIdAsync(clienteId, It.IsAny<CancellationToken>()))
