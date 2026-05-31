@@ -10,6 +10,7 @@ public class User : IdentityUser<Guid>
     public string LastName {get; private set;}
     public Dni Dni {get; private set;}
     public DateOnly FechaNacimiento { get; private set; }
+    public bool SolicitoReactivacion { get; private set; }
 
     // constructor vacío para EF Core.
     #nullable disable
@@ -26,6 +27,7 @@ public class User : IdentityUser<Guid>
         PhoneNumber = phoneNumber;
         Dni = dni;
         FechaNacimiento = fechaNacimiento;
+        SolicitoReactivacion = false;
     }
 
     public static User Create(string firstName, string lastName, string email, string dni, DateOnly fechaNacimiento, string? phoneNumber = null)
@@ -52,6 +54,15 @@ public class User : IdentityUser<Guid>
     {
         LockoutEnabled = false;
         LockoutEnd = null;
+        if (SolicitoReactivacion)
+        {
+            SolicitoReactivacion = false;
+        }
+    }
+
+    public void SolicitarReactivacion()
+    {
+        SolicitoReactivacion = true;
     }
 
     private static void ValidarMayorDeEdad(DateOnly fechaNac)
