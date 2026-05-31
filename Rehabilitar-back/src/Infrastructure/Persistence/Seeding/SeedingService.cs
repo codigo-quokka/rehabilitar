@@ -350,12 +350,31 @@ public class SeedingService : ISeedingService
         var actividades = await _dbContext.Actividades.ToListAsync();
         Console.WriteLine($"SeedReservasAsync: {actividades.Count} actividades cargadas");
 
-        // Crear AptoFisico aprobado para cada cliente que no tenga uno
+        // Crear AptoFisico en distintos estados para los clientes que no tengan uno
+        // Algunos quedarán sin cargar (sin registro), otros pendientes, rechazados, y la mayoría aprobados
         var adminUser = await _userManager.FindByEmailAsync("admin@rehabilitar.com");
+        var sinApto = new HashSet<string> { "mr@robot.com" };
+        var pendientes = new HashSet<string> { "sarah@connor.com" };
+        var rechazados = new HashSet<string> { "gandalf@gris.com" };
         var existingAptos = await _dbContext.Set<AptoFisico>().Select(a => a.ClienteId).ToHashSetAsync();
         foreach (var c in clientes)
         {
-            c.AprobarAptoFisico();
+            var email = c.User?.Email;
+            if (email != null && sinApto.Contains(email))
+            {
+                Console.WriteLine($"SeedReservasAsync: {email} queda sin apto físico cargado");
+                continue;
+            }
+
+            if (email != null && (pendientes.Contains(email) || rechazados.Contains(email)))
+            {
+                // No se marca como aprobado — queda pendiente o rechazado
+            }
+            else
+            {
+                c.AprobarAptoFisico();
+            }
+
             if (!existingAptos.Contains(c.UserId))
             {
                 var seedPdfPath = Path.Combine(AppContext.BaseDirectory, "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
@@ -363,9 +382,24 @@ public class SeedingService : ISeedingService
                     seedPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Infrastructure", "Persistence", "Seeding", "Apto_Fisico_RehabilitAR.pdf");
                 var pdfBytes = File.Exists(seedPdfPath) ? await File.ReadAllBytesAsync(seedPdfPath) : new byte[] { 0x25, 0x50, 0x44, 0x46 };
                 var apto = new AptoFisico(c.UserId, "Apto_Fisico_RehabilitAR.pdf", "application/pdf", pdfBytes, pdfBytes.Length);
-                apto.Aprobar(adminUser!.Id);
+
+                if (email != null && pendientes.Contains(email))
+                {
+                    // Se deja en estado Pendiente (default del constructor)
+                    Console.WriteLine($"SeedReservasAsync: apto físico creado (pendiente) para {email}");
+                }
+                else if (email != null && rechazados.Contains(email))
+                {
+                    apto.Rechazar(adminUser!.Id, "El apto físico no cumple con los requisitos mínimos.");
+                    Console.WriteLine($"SeedReservasAsync: apto físico creado y rechazado para {email}");
+                }
+                else
+                {
+                    apto.Aprobar(adminUser!.Id);
+                    Console.WriteLine($"SeedReservasAsync: apto físico creado y aprobado para {email}");
+                }
+
                 _dbContext.Set<AptoFisico>().Add(apto);
-                Console.WriteLine($"SeedReservasAsync: apto físico creado y aprobado para {c.User?.Email}");
             }
             else
             {

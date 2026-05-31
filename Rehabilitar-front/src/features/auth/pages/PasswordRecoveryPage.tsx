@@ -93,9 +93,9 @@ export function PasswordRecoveryPage() {
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-500">
-            <Link to="/login" className="text-primary hover:underline">
+            <span onClick={() => (window.location.href = '/login')} className="text-dark-green dark:text-primary hover:underline font-medium cursor-pointer">
               Volver a iniciar sesión
-            </Link>
+            </span>
           </div>
         </Card>
       </div>
