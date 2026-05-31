@@ -8,6 +8,9 @@ import {aptosFisicosApi} from '../../../api/aptosFisicos';
 import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
+import { useInputFilter } from '../../../hooks/useInputFilter';
+import { INPUT_PRESETS } from '../../../utils/inputPresets';
 
 
 
@@ -398,23 +401,23 @@ export function UsuariosPage() {
           </Button>
           */}
           {u.rol === 'Cliente Registrado' ? (
-            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenReservas(u)}>
               Reservas
             </Button>
           ) : u.rol === 'Profesor' ? (
-            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenClases(u)}>
               Clases
             </Button>
           ) : (
-            <span className="min-w-[90px] inline-block" />
+            <span className="min-w-22.5 inline-block" />
           )}
           {!isReception && (
            u.activo ? (
-            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
+            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
+            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )
@@ -424,7 +427,7 @@ export function UsuariosPage() {
               Eliminar
             </Button>
           ) : (
-            <span className="min-w-[70px] inline-block" />
+            <span className="min-w-17.5 inline-block" />
           )}
           
         </div>
@@ -437,76 +440,90 @@ export function UsuariosPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <FilterDropdown
-              filters={[
-                ...(!isReception ? [{
-                  key: 'rol',
-                  label: 'Roles',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
-                  ],
-                },
-                ...(filters.rol === 'Profesor' ? [{
-                  key: 'especialidad',
-                  label: 'Especialidad',
-                  options: [
-                    { value: 'all', label: 'Todas' },
-                    { value: 'TrenSuperior', label: 'Tren Superior' },
-                    { value: 'TrenMedio', label: 'Tren Medio' },
-                    { value: 'TrenInferior', label: 'Tren Inferior' },
-                  ],
-                }] : []),
-                 ...(filters.rol === 'Cliente Registrado' ? [{
-                  key: 'aptoFisico',
-                  label: 'Apto Físico',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'aprobado', label: 'Aprobado' },
-                    { value: 'pendiente', label: 'Pendiente' },
-                    { value: 'rechazado', label: 'Rechazado' },
-                    { value: 'sin_cargar', label: 'Sin cargar' },
-                  ],
-                }] : [])] : []),
-                {
-                  key: 'estado',
-                  label: 'Estados',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'active', label: 'Activos' },
-                    { value: 'suspended', label: 'Suspendidos' },
-                  ],
-                },
-                {
-                  key: 'aptoFisico',
-                  label: 'Apto Físico',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'aprobado', label: 'Aprobado' },
-                    { value: 'pendiente', label: 'Pendiente' },
-                    { value: 'rechazado', label: 'Rechazado' },
-                    { value: 'sin_cargar', label: 'Sin cargar' },
-                  ],
-                },
-              ]}
-              values={filters}
-              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() =>  cleanFilters()}
-              onOpenChange={setFilterOpen}
+            <Input
+              placeholder="Buscar por nombre o email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-125"
             />
-            <div className={filterOpen ? 'invisible' : ''}>
-              <Input
-                placeholder="Buscar por nombre o email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125"
-              />
-            </div>
+            <Button
+              variant="verde"
+              type="button"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="border-none gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+                Filtros
+              <svg className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
           </div>
-          <div className={filterOpen ? 'invisible' : ''}>
+          <div>
             {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
           </div>
         </div>
+
+        <FilterDropdown
+          inline
+          open={filterOpen}
+          filters={[
+            ...(!isReception ? [{
+              key: 'rol',
+              label: 'Roles',
+              options: [
+                { value: 'all', label: 'Todos' },
+                ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
+              ],
+            },
+            ...(filters.rol === 'Profesor' ? [{
+              key: 'especialidad',
+              label: 'Especialidad',
+              options: [
+                { value: 'all', label: 'Todas' },
+                { value: 'TrenSuperior', label: 'Tren Superior' },
+                { value: 'TrenMedio', label: 'Tren Medio' },
+                { value: 'TrenInferior', label: 'Tren Inferior' },
+              ],
+            }] : []),
+             ...(filters.rol === 'Cliente Registrado' ? [{
+              key: 'aptoFisico',
+              label: 'Apto Físico',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'aprobado', label: 'Aprobado' },
+                { value: 'pendiente', label: 'Pendiente' },
+                { value: 'rechazado', label: 'Rechazado' },
+                { value: 'sin_cargar', label: 'Sin cargar' },
+              ],
+            }] : [])] : []),
+            {
+              key: 'estado',
+              label: 'Estados',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'suspended', label: 'Suspendidos' },
+              ],
+            },
+            {
+              key: 'aptoFisico',
+              label: 'Apto Físico',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'aprobado', label: 'Aprobado' },
+                { value: 'pendiente', label: 'Pendiente' },
+                { value: 'rechazado', label: 'Rechazado' },
+                { value: 'sin_cargar', label: 'Sin cargar' },
+              ],
+            },
+          ]}
+          values={filters}
+          onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
+        />
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
@@ -768,17 +785,49 @@ interface UsuarioFormProps {
 }
 
 function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
+  const MIN_DNI_LENGTH = 7;
+  const MAX_DNI_LENGTH = 8;
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const dniReqs: Requirement[] = [
+    { label: 'Mínimo 7 caracteres', test: (v) => v.length >= 7 },
+  ];
+
   const [formData, setFormData] = useState({
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
+    dni: user?.documento || '',
+    fechaNacimiento: user?.fechaNacimiento || '',
+    telefono: user?.telefono || '',
     rol: user?.rol || 'Administrador',
     especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
 
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const nombreFilter = useInputFilter(formData.nombre, (v) => updateField('nombre', v), INPUT_PRESETS.name);
+  const apellidoFilter = useInputFilter(formData.apellido, (v) => updateField('apellido', v), INPUT_PRESETS.name);
+  const dniFilter = useInputFilter(formData.dni, (v) => updateField('dni', v), INPUT_PRESETS.digits(MAX_DNI_LENGTH));
+  const telefonoFilter = useInputFilter(formData.telefono, (v) => updateField('telefono', v), INPUT_PRESETS.digits(12));
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nombre || !formData.apellido || !formData.email || !formData.dni || !formData.fechaNacimiento) {
+      onNotify?.('error', 'Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+    if (formData.dni.length < MIN_DNI_LENGTH) {
+      onNotify?.('error', `Ingrese un DNI válido`);
+      return;
+    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
       return;
@@ -811,23 +860,63 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Nombre"
+          name="nombre"
           value={formData.nombre}
-          onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-          required
+          onChange={handleChange}
+          onKeyDown={nombreFilter.handleKeyDown}
+          onPaste={nombreFilter.handlePaste}
         />
         <Input
           label="Apellido"
+          name="apellido"
           value={formData.apellido}
-          onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-          required
+          onChange={handleChange}
+          onKeyDown={apellidoFilter.handleKeyDown}
+          onPaste={apellidoFilter.handlePaste}
         />
       </div>
       <Input
         label="Email"
         type="email"
+        name="email"
         value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        required
+        onChange={handleChange}
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Input
+            label="DNI"
+            type="text"
+            name="dni"
+            value={formData.dni}
+            onChange={handleChange}
+            onKeyDown={dniFilter.handleKeyDown}
+            onPaste={dniFilter.handlePaste}
+            placeholder="12345678"
+            maxLength={MAX_DNI_LENGTH}
+          />
+          <InformRequirements value={formData.dni} requirements={dniReqs} />
+        </div>
+        <Input
+          label="Fecha de nacimiento"
+          type="date"
+          name="fechaNacimiento"
+          value={formData.fechaNacimiento}
+          onChange={handleChange}
+          min="1900-01-01"
+          max={todayStr}
+        />
+      </div>
+      <Input
+        label="Teléfono (opcional)"
+        type="tel"
+        name="telefono"
+        value={formData.telefono}
+        onChange={handleChange}
+        onKeyDown={telefonoFilter.handleKeyDown}
+        onPaste={telefonoFilter.handlePaste}
+        placeholder="+54 221 123 4567"
+        maxLength={12}
       />
       <Select
         label="Rol"
@@ -846,7 +935,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
               { value: 'TrenMedio', label: 'Tren Medio' },
               { value: 'TrenInferior', label: 'Tren Inferior' },
             ]}
-            required
           />
       )}
       <div className="flex justify-end gap-3 pt-4">
