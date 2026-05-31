@@ -8,4 +8,5 @@ public interface IIntencionPagoRepository
     void Update(IntencionPago intencionPago);
     Task<IntencionPago?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<int> ContarIntencionesPendientesRecientesAsync(Guid actividadId, TimeSpan ventanaTiempo);
+    Task<bool> ExisteIntencionPendienteAsync(Guid clienteId, Guid actividadId, CancellationToken ct = default);
 }

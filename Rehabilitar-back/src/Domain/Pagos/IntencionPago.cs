@@ -9,6 +9,7 @@ public class IntencionPago
     public Guid ClienteId { get; private set; }
     public List<Guid> ActividadesIds { get; private set; }
     public decimal MontoTotal { get; private set; }
+    public decimal MontoAPagar { get; private set; }
     public DateTime FechaCreacion { get; private set; }
 
     public bool Pagado { get; private set; }
@@ -24,10 +25,13 @@ public class IntencionPago
         ClienteId = clienteId;
         ActividadesIds = actividadesIds;
         MontoTotal = montoTotal;
+        MontoAPagar = montoTotal;
         FechaCreacion = DateTime.UtcNow;
         Pagado = false;
         Estado = EstadoDelPago.Pendiente;
     }
+
+    public void SetMontoAPagar(decimal monto) { MontoAPagar = monto; }
 
     public void MarcarPagado()
     {
