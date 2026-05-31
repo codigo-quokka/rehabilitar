@@ -188,6 +188,8 @@ When making significant changes or adding new features, run:
 
 ## Commit Types Cheatsheet
 
+**Before suggesting a commit type, think carefully about what the change actually does.** Do not default to `feat`. Use `fix` for behavior corrections, `refactor` for restructuring without behavior changes, `style` for cosmetic/formatting only, etc.
+
 Use this reference when creating git commits:
 
 - **feat** – New feature or functionality
