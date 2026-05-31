@@ -130,7 +130,7 @@ export function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {actividades.map((act) => (
-                  <div key={act.id} className="flex items-center justify-between p-3 bg-bg-surface dark:bg-gray-800/50 rounded-lg">
+                  <div key={act.id} className="flex items-center justify-between p-3 bg-primary/10 dark:bg-gray-800/50 rounded-lg">
                     <div>
                       <p className="font-medium text-dark dark:text-gray-100">{act.nombre}</p>
                       <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
