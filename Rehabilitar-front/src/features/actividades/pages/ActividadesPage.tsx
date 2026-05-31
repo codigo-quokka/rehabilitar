@@ -589,6 +589,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const [fechaFinRecurrente, setFechaFinRecurrente] = useState("");
   const [stepFrecuencia, setStepFrecuencia] = useState(!!actividad);
 
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
   const selectedSala = useMemo(() => salas.find(s => s.id === formData.salaId), [salas, formData.salaId]);
 
   const handleDelete = async () => {
@@ -610,13 +611,13 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId) {
-      onError('Por favor, completa todos los campos obligatorios.');
+    if (!formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1]) {
+      onError('Debe seleccionar una fecha y hora.');
       return;
     }
 
-    if (selectedSala && formData.cupoMaximo > selectedSala.capacidad) {
-      onError(`El cupo máximo no puede superar la capacidad de la sala (${selectedSala.capacidad})`);
+    if (!formData.salaId) {
+      onError('Debe seleccionar una sala');
       return;
     }
 
@@ -633,14 +634,14 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
 
     const dia = parsedDate.getDay();
     if (dia === 0) {
-      onError('No se pueden crear actividades los domingos. El horario permitido es de lunes a sábado de 8:00 a 19:00');
+      onError('No se pueden crear actividades los domingos. El horario permitido es de lunes a sábado de 8:00 a 19:00 ');
       return;
     }
 
     const hora = parsedDate.getHours();
     const minutos = parsedDate.getMinutes();
     if (hora < 8 || hora > 19 || (hora === 19 && minutos > 0)) {
-      onError('El horario permitido es de lunes a sábado de 8:00 a 19:00');
+      onError('El horario permitido es de lunes a viernes de 8:00 a 19:00');
       return;
     }
 
@@ -751,48 +752,29 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               }}
               min={todayStr}
             />
-            <div className="relative">
-              <label className="block text-base font-medium text-dark dark:text-gray-100 mb-2.5">
-                Hora
-              </label>
-              <div className="flex gap-2 items-start">
-                <TimeSelect
-                  value={formData.fechaYHora.split('T')[1]?.split(':')[0] || ''}
-                  placeholder="HH"
-                  options={Array.from({ length: 12 }, (_, i) => {
-                    const h = String(i + 8).padStart(2, '0');
-                    return { value: h, label: h };
-                  })}
-                  onChange={(hh) => {
-                    const fecha = formData.fechaYHora.split('T')[0] || '';
-                    const currentMm = formData.fechaYHora.split('T')[1]?.split(':')[1] || '';
-                    const mm = hh === '19' ? '00' : (currentMm || '00');
-                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
-                  }}
-                />
-                <span className="text-dark dark:text-gray-100 text-lg font-medium pt-3">:</span>
-                <TimeSelect
-                  value={
-                    formData.fechaYHora.split('T')[1]?.split(':')[0] === '19'
-                      ? '00'
-                      : formData.fechaYHora.split('T')[1]?.split(':')[1] || ''
-                  }
-                  placeholder="MM"
-                  options={Array.from(
-                    { length: formData.fechaYHora.split('T')[1]?.split(':')[0] === '19' ? 1 : 60 },
-                    (_, i) => {
-                      const m = String(i).padStart(2, '0');
-                      return { value: m, label: m };
-                    },
-                  )}
-                  onChange={(mm) => {
-                    const fecha = formData.fechaYHora.split('T')[0] || '';
-                    const hh = formData.fechaYHora.split('T')[1]?.split(':')[0] || '08';
-                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
-                  }}
-                />
-              </div>
-            </div>
+            <Input
+              label="Hora"
+              type="time"
+              value={formData.fechaYHora.split('T')[1] || ''}
+              onChange={(e) => {
+                const fecha = formData.fechaYHora.split('T')[0] || '';
+                setFormData({ ...formData, fechaYHora: `${fecha}T${e.target.value}` });
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (!val) return;
+                const [hh, mm] = val.split(':').map(Number);
+                if (hh < 8) {
+                  const nueva = `08:00`;
+                  const fecha = formData.fechaYHora.split('T')[0] || '';
+                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
+                } else if (hh > 19 || (hh === 19 && mm > 0)) {
+                  const nueva = `19:00`;
+                  const fecha = formData.fechaYHora.split('T')[0] || '';
+                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
+                }
+              }}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select
