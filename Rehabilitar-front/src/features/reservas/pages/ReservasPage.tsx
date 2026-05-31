@@ -54,6 +54,9 @@ export function ReservasPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [dateFilterApplied, setDateFilterApplied] = useState(false);
+  const dateFromRef = useRef<HTMLInputElement>(null);
+  const dateToRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState({
     estadoDeReserva: 'all',
     pagado: 'all',
@@ -165,6 +168,20 @@ export function ReservasPage() {
     return true;
   });
 
+  const displayReservas = useMemo(() => {
+    const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
+    const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
+    if (filters.estadoDeReserva === 'Cancelada') return sorted;
+    let cancelCount = 0;
+    return sorted.filter(r => {
+      if (r.estadoDeReserva === 'Cancelada') {
+        cancelCount++;
+        return cancelCount <= 5;
+      }
+      return true;
+    });
+  }, [filteredReservas, filters.estadoDeReserva, actividades]);
+
   const hasActiveFilters = useMemo(() => {
     return (
       dateFilterApplied ||
@@ -211,24 +228,106 @@ export function ReservasPage() {
             <Input
               placeholder="Buscar por actividad..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="min-w-125 h-12"
-              maxLength={40}
             />
-            <Button
-              variant="primary"
-              type="button"
-              onClick={() => setFilterOpen(!filterOpen)}
-              className="border-none gap-2 h-12"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-                Filtros
-              <svg className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </Button>
+            <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
+              <div className="flex items-center gap-1 w-22.5">
+                <button
+                  type="button"
+                  onClick={() => dateFromRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateFrom ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateFrom.split('-')[0]}</span>
+                      <span className="block">{dateFrom.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Desde</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateFromRef}
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <div className="flex items-center gap-1 w-22.5">
+                <button
+                  type="button"
+                  onClick={() => dateToRef.current?.showPicker()}
+                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
+                >
+                  {dateTo ? (
+                    <span className="text-xs font-medium leading-tight">
+                      <span className="block">{dateTo.split('-')[0]}</span>
+                      <span className="block">{dateTo.split('-').slice(1).join('/')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-sm font-medium">Hasta</span>
+                  )}
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <input
+                  ref={dateToRef}
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (dateFilterApplied) {
+                    setDateFrom('');
+                    setDateTo('');
+                    setDateFilterApplied(false);
+                  } else {
+                    setDateFilterApplied(true);
+                  }
+                }}
+                disabled={!dateFilterApplied && !dateFrom && !dateTo}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-19"
+              >
+                {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
+              </button>
+            </div>
+            <FilterDropdown
+              filters={[
+                {
+                  key: 'estadoDeReserva',
+                  label: 'Estado',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'PendienteDePago', label: 'Pendiente de pago' },
+                    { value: 'Activa', label: 'Activa' },
+                    { value: 'EnEspera', label: 'En espera' },
+                    { value: 'Cancelada', label: 'Cancelada' },
+                  ],
+                },
+                {
+                  key: 'pagado',
+                  label: 'Pago',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'pagados', label: 'Pagados' },
+                    { value: 'pendientes', label: 'Pendientes' },
+                  ],
+                },
+              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ estadoDeReserva: 'all', pagado: 'all' })}
+            />
           </div>
         </div>
 
@@ -289,7 +388,7 @@ export function ReservasPage() {
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-) : filteredReservas.length === 0 ? (
+) : displayReservas.length === 0 ? (
   <Card>
     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
       {getEmptyStateMessage()}

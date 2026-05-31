@@ -28,6 +28,20 @@ export function Header({ title }: HeaderProps) {
       .catch(() => {});
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const refreshCoins = () => {
+      usuariosApi
+        .getById(user.id)
+        .then((data) => {
+          setCoins(data.rehabiliCoins ?? 0);
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('rehabicoins:refresh', refreshCoins);
+    return () => window.removeEventListener('rehabicoins:refresh', refreshCoins);
+  }, [user?.id]);
+
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
   };
@@ -108,7 +122,7 @@ export function Header({ title }: HeaderProps) {
             )}
           </button>
           {user?.rol === "Cliente Registrado" && (
-            <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-primary/10 dark:bg-gray-950 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-primary/10 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
               <img
                 src={coinIcon}
                 alt=""

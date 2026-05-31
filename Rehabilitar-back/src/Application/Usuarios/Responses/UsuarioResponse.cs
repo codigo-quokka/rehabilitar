@@ -17,6 +17,7 @@ public class UsuarioResponse
     public bool? AptitudFisica { get; set; }
     public string? FechaAptitud { get; set; }
     public int? RehabiliCoins { get; set; }
-    public decimal? SaldoAFavor { get; set; }
+    public SaldoAFavor? SaldoAFavor { get; set; }
+    public int? CancelacionesConsecutivas { get; set; }
     public string? Especialidad { get; set; }
 }
