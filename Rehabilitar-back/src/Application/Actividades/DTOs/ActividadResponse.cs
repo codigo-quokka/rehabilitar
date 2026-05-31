@@ -13,6 +13,7 @@ public record ActividadResponse(
     EstadoActividad Estado,
     int CupoMaximo,
     int CupoDisponible,
+    decimal Precio,
     Guid SalaId,
     string SalaNombre,
     Guid? ProfesorId,
