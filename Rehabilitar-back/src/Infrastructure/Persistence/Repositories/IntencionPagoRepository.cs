@@ -19,6 +19,11 @@ public class IntencionPagoRepository : IIntencionPagoRepository
         await _context.IntencionesPago.AddAsync(intencionPago, ct);
     }
 
+    public void Update(IntencionPago intencionPago)
+    {
+        _context.IntencionesPago.Update(intencionPago);
+    }
+
     public async Task<IntencionPago?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.IntencionesPago.FindAsync(new object[] { id }, ct);
