@@ -202,32 +202,46 @@ export function AdminAptosFisicosPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <FilterDropdown
-              filters={[{
-                key: 'estado',
-                label: 'Estado',
-                options: [
-                  { value: 'all', label: 'Todos' },
-                  { value: 'Pendiente', label: 'Pendiente' },
-                  { value: 'Aprobado', label: 'Aprobado' },
-                  { value: 'Rechazado', label: 'Rechazado' },
-                ],
-              }]}
-              values={filters}
-              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ estado: 'all' })}
-              onOpenChange={setFilterOpen}
+            <Input
+              placeholder="Buscar por cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-125"
             />
-            <div className={filterOpen ? 'invisible' : ''}>
-              <Input
-                placeholder="Buscar por cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125"
-              />
-            </div>
+            <Button
+              variant="verde"
+              type="button"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="border-none gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+                Filtros
+              <svg className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
           </div>
         </div>
+
+        <FilterDropdown
+          inline
+          open={filterOpen}
+          filters={[{
+            key: 'estado',
+            label: 'Estado',
+            options: [
+              { value: 'all', label: 'Todos' },
+              { value: 'Pendiente', label: 'Pendiente' },
+              { value: 'Aprobado', label: 'Aprobado' },
+              { value: 'Rechazado', label: 'Rechazado' },
+            ],
+          }]}
+          values={filters}
+          onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          onApply={() => setFilters({ estado: 'all' })}
+        />
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
         ) : filteredAptos.length === 0 ? (

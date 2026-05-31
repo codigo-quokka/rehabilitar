@@ -19,7 +19,6 @@ interface FilterDropdownProps {
   onOpenChange?: (isOpen: boolean) => void;
   inline?: boolean;
   open?: boolean;
-  children?: React.ReactNode;
 }
 
 export function FilterDropdown({
@@ -30,7 +29,6 @@ export function FilterDropdown({
   onOpenChange,
   inline,
   open,
-  children,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,12 +75,10 @@ export function FilterDropdown({
           </select>
         </div>
       ))}
-      {children}
-      <div className="flex items-end ml-auto">
+      <div className="flex items-end">
         <Button
           type="button"
           variant="primary"
-          className="min-w-32"
           onClick={() => {
             onApply();
             if (!inline) setIsOpen(false);
@@ -101,10 +97,10 @@ export function FilterDropdown({
   return (
     <div ref={containerRef} className="relative flex items-center">
       <Button
-        variant="primary"
+        variant="verde"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="border-none"
+        className="border-none flex items-center gap-2"
       >
         <svg
           className="w-4 h-4"
@@ -119,9 +115,6 @@ export function FilterDropdown({
             d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
           />
         </svg>
-        Filtros
-        <span className="text-lg font-medium">{isOpen ? '<' : '>'}</span>
-      </Button>
 
         <span>Filtros</span>
 
