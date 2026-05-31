@@ -18,5 +18,6 @@ public class UsuarioResponse
     public string? FechaAptitud { get; set; }
     public int? RehabiliCoins { get; set; }
     public SaldoAFavor? SaldoAFavor { get; set; }
+    public int? CancelacionesConsecutivas { get; set; }
     public string? Especialidad { get; set; }
 }
