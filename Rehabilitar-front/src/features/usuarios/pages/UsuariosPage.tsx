@@ -409,76 +409,90 @@ export function UsuariosPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <FilterDropdown
-              filters={[
-                ...(!isReception ? [{
-                  key: 'rol',
-                  label: 'Roles',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
-                  ],
-                },
-                ...(filters.rol === 'Profesor' ? [{
-                  key: 'especialidad',
-                  label: 'Especialidad',
-                  options: [
-                    { value: 'all', label: 'Todas' },
-                    { value: 'TrenSuperior', label: 'Tren Superior' },
-                    { value: 'TrenMedio', label: 'Tren Medio' },
-                    { value: 'TrenInferior', label: 'Tren Inferior' },
-                  ],
-                }] : []),
-                 ...(filters.rol === 'Cliente Registrado' ? [{
-                  key: 'aptoFisico',
-                  label: 'Apto Físico',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'aprobado', label: 'Aprobado' },
-                    { value: 'pendiente', label: 'Pendiente' },
-                    { value: 'rechazado', label: 'Rechazado' },
-                    { value: 'sin_cargar', label: 'Sin cargar' },
-                  ],
-                }] : [])] : []),
-                {
-                  key: 'estado',
-                  label: 'Estados',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'active', label: 'Activos' },
-                    { value: 'suspended', label: 'Suspendidos' },
-                  ],
-                },
-                {
-                  key: 'aptoFisico',
-                  label: 'Apto Físico',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'aprobado', label: 'Aprobado' },
-                    { value: 'pendiente', label: 'Pendiente' },
-                    { value: 'rechazado', label: 'Rechazado' },
-                    { value: 'sin_cargar', label: 'Sin cargar' },
-                  ],
-                },
-              ]}
-              values={filters}
-              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
-              onOpenChange={setFilterOpen}
+            <Input
+              placeholder="Buscar por nombre o email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-125"
             />
-            <div className={filterOpen ? 'invisible' : ''}>
-              <Input
-                placeholder="Buscar por nombre o email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125"
-              />
-            </div>
+            <Button
+              variant="verde"
+              type="button"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="border-none gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+                Filtros
+              <svg className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
           </div>
-          <div className={filterOpen ? 'invisible' : ''}>
+          <div>
             {!isReception && <Button onClick={() => setShowModal(true)}>Nuevo Usuario</Button>}
           </div>
         </div>
+
+        <FilterDropdown
+          inline
+          open={filterOpen}
+          filters={[
+            ...(!isReception ? [{
+              key: 'rol',
+              label: 'Roles',
+              options: [
+                { value: 'all', label: 'Todos' },
+                ...roles.map((r) => ({ value: r, label: r.replace('_', ' ') })),
+              ],
+            },
+            ...(filters.rol === 'Profesor' ? [{
+              key: 'especialidad',
+              label: 'Especialidad',
+              options: [
+                { value: 'all', label: 'Todas' },
+                { value: 'TrenSuperior', label: 'Tren Superior' },
+                { value: 'TrenMedio', label: 'Tren Medio' },
+                { value: 'TrenInferior', label: 'Tren Inferior' },
+              ],
+            }] : []),
+             ...(filters.rol === 'Cliente Registrado' ? [{
+              key: 'aptoFisico',
+              label: 'Apto Físico',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'aprobado', label: 'Aprobado' },
+                { value: 'pendiente', label: 'Pendiente' },
+                { value: 'rechazado', label: 'Rechazado' },
+                { value: 'sin_cargar', label: 'Sin cargar' },
+              ],
+            }] : [])] : []),
+            {
+              key: 'estado',
+              label: 'Estados',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'active', label: 'Activos' },
+                { value: 'suspended', label: 'Suspendidos' },
+              ],
+            },
+            {
+              key: 'aptoFisico',
+              label: 'Apto Físico',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'aprobado', label: 'Aprobado' },
+                { value: 'pendiente', label: 'Pendiente' },
+                { value: 'rechazado', label: 'Rechazado' },
+                { value: 'sin_cargar', label: 'Sin cargar' },
+              ],
+            },
+          ]}
+          values={filters}
+          onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          onApply={() => setFilters({ rol: 'all', estado: 'all', especialidad: 'all', aptoFisico: 'all' })}
+        />
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
