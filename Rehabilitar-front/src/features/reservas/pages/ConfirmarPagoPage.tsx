@@ -33,6 +33,7 @@ export function ConfirmarPagoPage() {
   const [monto, setMonto] = useState<number>(state?.montoPendiente ?? state?.montoTotal ?? 0);
   const [metodoPago, setMetodoPago] = useState('MercadoPago');
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const processingRef = useRef(false);
 
   const { addNotification } = useNotifications();
@@ -300,10 +301,26 @@ export function ConfirmarPagoPage() {
           <Button
             type="button"
             variant="danger"
-            className="flex-1 text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={() => navigate('/reservas')}
+            className="flex-1"
+            loading={deleting}
+            onClick={async () => {
+              if (isIntent && intencionId) {
+                setDeleting(true);
+                try {
+                  await reservasApi.eliminarIntencion(intencionId);
+                  addNotification('Intención de pago cancelada.', 'info');
+                } catch {
+                  // Even if delete fails, navigate away
+                } finally {
+                  setDeleting(false);
+                  navigate('/reservas');
+                }
+              } else {
+                navigate('/reservas');
+              }
+            }}
           >
-            Volver
+            {isIntent ? 'Cancelar y volver' : 'Volver'}
           </Button>
           <Button
             type="button"

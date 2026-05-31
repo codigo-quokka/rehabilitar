@@ -36,4 +36,9 @@ export const reservasApi = {
     const response = await apiClient.post('/reservas/recurrente', data);
     return response.data; // Should return { intencionId: string }
   },
+
+  eliminarIntencion: async (intencionId: string) => {
+    const response = await apiClient.delete(`/pagos/intencion/${intencionId}`);
+    return response.data;
+  },
 };
