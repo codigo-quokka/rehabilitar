@@ -675,13 +675,8 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1]) {
-      onError('Debe seleccionar una fecha y hora.');
-      return;
-    }
-
-    if (!formData.salaId) {
-      onError('Debe seleccionar una sala');
+    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId) {
+      onError('Por favor, completa todos los campos obligatorios.');
       return;
     }
 
