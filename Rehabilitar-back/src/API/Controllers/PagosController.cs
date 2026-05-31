@@ -60,16 +60,29 @@ public class PagosController : ApiControllerBase
     }
 
     [HttpPost("preferencia-paquete/{intencionId}")]
-    public async Task<IActionResult> CrearPreferenciaPaquete(Guid intencionId)
+    public async Task<IActionResult> CrearPreferenciaPaquete(Guid intencionId, [FromBody] CrearPreferenciaPaqueteRequest request)
     {
         var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
         if (intencion == null) return NotFound();
 
-        var result = await _mercadoPagoService.CreatePreferenceAsync($"INT_{intencionId}", intencion.MontoTotal, "Paquete de clases");
+        intencion.SetMontoAPagar(request.Monto);
+        await _uow.SaveChangesAsync();
+
+        var result = await _mercadoPagoService.CreatePreferenceAsync($"INT_{intencionId}", request.Monto, "Paquete de clases");
         
         return result.Match(
             p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
             errors => Problem(errors)
+        );
+    }
+
+    [HttpPost("intencion/{intencionId}/pago-rehabilicoins")]
+    public async Task<IActionResult> PagarIntencionConRehabilicoins(Guid intencionId)
+    {
+        var result = await _reservaService.PagarIntencionConRehabilicoinsAsync(intencionId);
+        return result.Match(
+            success => Ok(),
+            errores => Problem(errores)
         );
     }
 
@@ -165,18 +178,20 @@ public class PagosController : ApiControllerBase
             var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
             if (cliente == null) return NotFound("Cliente no encontrado");
 
+            var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
             foreach (var actividadId in intencion.ActividadesIds)
             {
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId);
                 if (actividad == null) continue;
 
-                actividad.IniciarReserva(cliente, TipoCliente.Abonado);
+                actividad.IniciarReserva(cliente, tipoCliente);
                 
                 // Find the newly created Reserva
                 var reserva = actividad.Reservas.FirstOrDefault(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago && r.DetallePago.MontoPagado == 0);
                 if (reserva != null)
                 {
-                    actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                    actividad.ProcesarPagoReserva(reserva.Id, intencion.MontoAPagar);
                 }
                 
                 _actividadRepo.Update(actividad);
@@ -192,5 +207,6 @@ public class PagosController : ApiControllerBase
 }
 
 public record CrearPreferenciaRequest(Guid ReservaId);
+public record CrearPreferenciaPaqueteRequest(decimal Monto);
 public record WebhookPayload(string Topic, string Action, string Type, WebhookData Data);
 public record WebhookData(string Id);
