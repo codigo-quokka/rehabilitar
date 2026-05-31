@@ -56,7 +56,6 @@ export function ReservasPage() {
   const [dateFilterApplied, setDateFilterApplied] = useState(false);
   const dateFromRef = useRef<HTMLInputElement>(null);
   const dateToRef = useRef<HTMLInputElement>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     estadoDeReserva: 'all',
     pagado: 'all',
@@ -129,6 +128,7 @@ export function ReservasPage() {
     try {
       await reservasApi.cancelar(reservaId, actividadId);
       setReservas((prev) => prev.map((r) => r.id === reservaId ? { ...r, estadoDeReserva: 'Cancelada' } : r));
+      window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
       setToastType('success');
       setToastMessage('Reserva cancelada correctamente');
       setShowToast(true);
@@ -166,6 +166,20 @@ export function ReservasPage() {
     }
     return true;
   });
+
+  const displayReservas = useMemo(() => {
+    const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
+    const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
+    if (filters.estadoDeReserva === 'Cancelada') return sorted;
+    let cancelCount = 0;
+    return sorted.filter(r => {
+      if (r.estadoDeReserva === 'Cancelada') {
+        cancelCount++;
+        return cancelCount <= 5;
+      }
+      return true;
+    });
+  }, [filteredReservas, filters.estadoDeReserva, actividades]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -210,33 +224,11 @@ export function ReservasPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <FilterDropdown
-              filters={[
-                {
-                  key: 'estadoDeReserva',
-                  label: 'Estado',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'PendienteDePago', label: 'Pendiente de pago' },
-                    { value: 'Activa', label: 'Activa' },
-                    { value: 'EnEspera', label: 'En espera' },
-                    { value: 'Cancelada', label: 'Cancelada' },
-                  ],
-                },
-                {
-                  key: 'pagado',
-                  label: 'Pago',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'pagados', label: 'Pagados' },
-                    { value: 'pendientes', label: 'Pendientes' },
-                  ],
-                },
-              ]}
-              values={filters}
-              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ estadoDeReserva: 'all', pagado: 'all' })}
-              onOpenChange={setFilterOpen}
+            <Input
+              placeholder="Buscar por actividad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-125 h-12"
             />
             <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
               <div className="flex items-center gap-1 w-22.5">
@@ -308,20 +300,39 @@ export function ReservasPage() {
                 {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
               </button>
             </div>
-            <div className={filterOpen ? 'invisible' : ''}>
-              <Input
-                placeholder="Buscar por actividad..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125 h-12"
-              />
-            </div>
+            <FilterDropdown
+              filters={[
+                {
+                  key: 'estadoDeReserva',
+                  label: 'Estado',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'PendienteDePago', label: 'Pendiente de pago' },
+                    { value: 'Activa', label: 'Activa' },
+                    { value: 'EnEspera', label: 'En espera' },
+                    { value: 'Cancelada', label: 'Cancelada' },
+                  ],
+                },
+                {
+                  key: 'pagado',
+                  label: 'Pago',
+                  options: [
+                    { value: 'all', label: 'Todos' },
+                    { value: 'pagados', label: 'Pagados' },
+                    { value: 'pendientes', label: 'Pendientes' },
+                  ],
+                },
+              ]}
+              values={filters}
+              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+              onApply={() => setFilters({ estadoDeReserva: 'all', pagado: 'all' })}
+            />
           </div>
         </div>
 
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-) : filteredReservas.length === 0 ? (
+) : displayReservas.length === 0 ? (
   <Card>
     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
       {getEmptyStateMessage()}
@@ -342,7 +353,7 @@ export function ReservasPage() {
   </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredReservas.map((reserva) => {
+            {displayReservas.map((reserva) => {
               const act = actividades[reserva.actividadId];
               const pagado = montoPagado(reserva);
               const completado = estaCompletado(reserva);
