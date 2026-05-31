@@ -137,7 +137,7 @@ public class UsuarioServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = User.Create("Nombre", "Apellido", "email@test.com");
+        var user = User.Create("Nombre", "Apellido", "email@test.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(User).GetProperty("Id")?.SetValue(user, userId);
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
@@ -157,7 +157,7 @@ public class UsuarioServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = User.Create("Nombre", "Apellido", "email@test.com");
+        var user = User.Create("Nombre", "Apellido", "email@test.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(User).GetProperty("Id")?.SetValue(user, userId);
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
@@ -177,7 +177,7 @@ public class UsuarioServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = User.Create("Nombre", "Apellido", "email@test.com");
+        var user = User.Create("Nombre", "Apellido", "email@test.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(User).GetProperty("Id")?.SetValue(user, userId);
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
