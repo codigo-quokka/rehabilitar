@@ -64,7 +64,7 @@ public class UsuarioService : IUsuarioService
 
     public async Task<ErrorOr<UsuarioResponse>> CreateAsync(CrearUsuarioRequest request)
     {
-        var user = User.Create(request.Nombre, request.Apellido, request.Email);
+        var user = User.Create(request.Nombre, request.Apellido, request.Email, request.Dni, request.FechaNacimiento);
 
         var password = GenerateRandomPassword();
         var result = await _userManager.CreateAsync(user, password);
@@ -216,9 +216,9 @@ public class UsuarioService : IUsuarioService
             Rol = rol,
             Activo = !(user.LockoutEnabled && user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow),
             FechaAlta = DateTime.UtcNow,
-            Telefono = cliente?.Telefono,
-            FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
-            Documento = cliente?.Dni.Valor,
+            Telefono = user?.PhoneNumber,
+            FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
+            Documento = user?.Dni.Valor,
             AptitudFisica = cliente?.AptoFisicoAprobado ?? null,
             RehabiliCoins = cliente?.RehabiliCoins ?? null,
             SaldoAFavor = cliente?.SaldoAFavor ?? null,
