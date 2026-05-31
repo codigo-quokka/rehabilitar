@@ -250,6 +250,7 @@ public class UsuarioService : IUsuarioService
             RehabiliCoins = cliente?.RehabiliCoins ?? null,
             SaldoAFavor = cliente?.SaldoAFavor ?? null,
             CancelacionesConsecutivas = cliente?.CancelacionesConsecutivas ?? null,
+            InasistenciasConsecutivas = cliente?.InasistenciasConsecutivas ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
         };
     }

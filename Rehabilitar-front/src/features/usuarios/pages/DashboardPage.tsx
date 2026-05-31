@@ -12,7 +12,7 @@ export function DashboardPage() {
   const [reservasCliente, setReservasCliente] = useState<Reserva[]>([]);
   const [actividadMap, setActividadMap] = useState<Record<string, Actividad>>({});
   const [saldoAFavor, setSaldoAFavor] = useState<SaldoAFavor | null>(null);
-  const [cancelacionesConsecutivas, setCancelacionesConsecutivas] = useState(0);
+  const [InasistenciasConsecutivas, setInasistenciasConsecutivas] = useState(0);
   const [loading, setLoading] = useState(true);
   const isCliente = hasRole(['Cliente Registrado']);
 
@@ -61,13 +61,7 @@ export function DashboardPage() {
             const sorted = [...allReservas].sort(
               (a, b) => (aMap[a.actividadId]?.fechaYHora ?? '').localeCompare(aMap[b.actividadId]?.fechaYHora ?? '')
             );
-            let consecutive = 0;
-            for (const r of sorted) {
-              if (r.estadoDeReserva === 'Cancelada') consecutive++;
-              else break;
-            }
-            setCancelacionesConsecutivas(consecutive);
-
+            if (userData?.InasistenciasConsecutivas !== undefined) setInasistenciasConsecutivas(userData.InasistenciasConsecutivas);
             if (userData?.saldoAFavor) setSaldoAFavor(userData.saldoAFavor);
           })()
         );
@@ -202,8 +196,8 @@ export function DashboardPage() {
                 </p>
               </Card>
               <Card className="flex flex-col items-center text-center space-y-2">
-                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1 whitespace-nowrap">Cancelaciones consecutivas</p>
-                <p className="text-2xl justify-center font-bold text-dark dark:text-gray-100">{cancelacionesConsecutivas}</p>
+                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1 whitespace-nowrap">Inasistencias consecutivas</p>
+                <p className="text-2xl justify-center font-bold text-dark dark:text-gray-100">{InasistenciasConsecutivas}</p>
                 <p className="text-lg font-semibold text-red-400 dark:text-red-700 mb-1 whitespace-nowrap">Maximo 3</p>
               </Card>
             </div>

@@ -19,6 +19,7 @@ interface FilterDropdownProps {
   onOpenChange?: (isOpen: boolean) => void;
   inline?: boolean;
   open?: boolean;
+  children?: React.ReactNode;
 }
 
 export function FilterDropdown({
@@ -29,6 +30,7 @@ export function FilterDropdown({
   onOpenChange,
   inline,
   open,
+  children,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,10 +77,12 @@ export function FilterDropdown({
           </select>
         </div>
       ))}
-      <div className="flex items-end">
+      {children}
+      <div className="flex items-end ml-auto">
         <Button
           type="button"
           variant="primary"
+          className="min-w-32"
           onClick={() => {
             onApply();
             if (!inline) setIsOpen(false);
