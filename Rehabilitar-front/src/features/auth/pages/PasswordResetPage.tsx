@@ -77,6 +77,14 @@ export function PasswordResetPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!newPassword || !confirmPassword) {
+      setToastType("error");
+      setToastMessage("Por favor, completa ambos campos de contraseña.");
+      setShowToast(true);
+      return;
+    }
+    
     if (newPassword !== confirmPassword) {
       setToastType("error");
       setToastMessage("Las contraseñas no coinciden.");
@@ -143,7 +151,7 @@ export function PasswordResetPage() {
                   className="pr-16"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  required
+                  // required
                   // minLength={8}
                 />
                 <PrivacyEye show={showNewPassword} onToggle={() => setShowNewPassword(prev => !prev)} />
@@ -161,7 +169,7 @@ export function PasswordResetPage() {
                   className="pr-16"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
+                  // required
                   // minLength={8}
                 />
                 <PrivacyEye show={showConfirmPassword} onToggle={() => setShowConfirmPassword(prev => !prev)} />

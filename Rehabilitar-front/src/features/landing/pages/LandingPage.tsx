@@ -125,13 +125,15 @@ export const LandingPage = () => {
             </p>
             <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center md:mt-10">
               <div className="rounded-md shadow">
-                <Link
-                  to={isAuthenticated ? "/dashboard" : "/register"}
-                  className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#48B7A5] hover:bg-[#309B9B] dark:bg-[#309B9B] dark:hover:bg-[#48B7A5] transition-colors md:py-4 md:text-lg md:px-10"
-                >
-                  Comenzar ahora
-                  <ChevronRight className="ml-2 -mr-1 h-5 w-5" />
-                </Link>
+                {!isAuthenticated && (
+                  <Link
+                    to={isAuthenticated ? "/dashboard" : "/register"}
+                    className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#48B7A5] hover:bg-[#309B9B] dark:bg-[#309B9B] dark:hover:bg-[#48B7A5] transition-colors md:py-4 md:text-lg md:px-10"
+                  >
+                    Comenzar ahora
+                    <ChevronRight className="ml-2 -mr-1 h-5 w-5" />
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -259,12 +261,14 @@ export const LandingPage = () => {
               <p className="text-[#EAF2F8] dark:text-gray-300 mb-6">
                 También podés asistir a clases esporádicas abonando por sesión.
               </p>
-              <Link
-                to="/register"
-                className="bg-white dark:bg-[#48B7A5] text-[#2F6274] dark:text-white font-bold py-3 px-6 rounded-md hover:bg-gray-100 dark:hover:bg-[#309B9B] transition-colors w-full"
-              >
-                Sumate a RehabilitAR
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  to="/register"
+                  className="bg-white dark:bg-[#48B7A5] text-[#2F6274] dark:text-white font-bold py-3 px-6 rounded-md hover:bg-gray-100 dark:hover:bg-[#309B9B] transition-colors w-full"
+                >
+                  Sumate a RehabilitAR
+                </Link>
+              )}
             </div>
           </div>
         </div>
