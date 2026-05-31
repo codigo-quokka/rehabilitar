@@ -16,6 +16,7 @@ interface RecurrenteGroupProps {
   onVerReservas?: (act: Actividad) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
+  onSuccess?: (message: string) => void;
   salas: Sala[];
   profesores: User[];
 }
@@ -24,6 +25,7 @@ export function RecurrenteGroup({
   actividades,
   onUpdate,
   onError,
+  onSuccess,
   onVerReservas,
   salas,
   ...cardProps
@@ -188,6 +190,12 @@ export function RecurrenteGroup({
         return err?.response?.data?.error || err?.message || 'Error desconocido';
       });
       onError?.(`${failed.length} actividad(es) no pudieron asignarse: ${reasons[0]}`);
+    }
+    const succeeded = results.filter(r => r.status === 'fulfilled');
+    if (succeeded.length > 0 && failed.length === 0) {
+      onSuccess?.(`Te has asignado a ${succeeded.length} actividad(es) exitosamente`);
+    } else if (succeeded.length > 0 && failed.length > 0) {
+      onSuccess?.(`Te has asignado a ${succeeded.length} actividad(es), pero ${failed.length} no pudieron asignarse`);
     }
     onUpdate();
   };
