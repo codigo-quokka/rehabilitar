@@ -432,10 +432,10 @@ export function RegisterPage() {
 
                       <div className="pt-6 border-t border-border text-center">
                         <p>
-                          <span className="text-gray-500">¿Ya tienes cuenta? </span>
-                          <Link to="/login" className="inline text-black hover:underline font-medium cursor-pointer">
+                          <span className="text-gray-600 dark:text-gray-400">¿Ya tienes cuenta? </span>
+                          <span onClick={() => (window.location.href = '/login')}  className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer">
                             Iniciar sesión
-                          </Link>
+                          </span>
                         </p>
                       </div>
                     </div>
