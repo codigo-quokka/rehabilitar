@@ -197,11 +197,10 @@ export function RegisterPage() {
 
     if (formData.dni.length < MIN_DNI_LENGTH) {
       setToastType("error");
-      setToastMessage(`El DNI debe tener al menos ${MIN_DNI_LENGTH} caracteres.`);
+      setToastMessage("Ingrese un DNI válido");
       setShowToast(true);
       return;
     }
-    */
     if (formData.fechaNacimiento) {
       const [y, m, d] = formData.fechaNacimiento.split("-").map(Number);
       const today = new Date();
@@ -358,7 +357,6 @@ export function RegisterPage() {
                             onKeyDown={dniFilter.handleKeyDown}
                             onPaste={dniFilter.handlePaste}
                             placeholder="12345678"
-                            minLength={MIN_DNI_LENGTH}
                             maxLength={MAX_DNI_LENGTH}
                           />
                           <InformRequirements value={formData.dni} requirements={dniReqs} />

@@ -749,14 +749,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const MAX_DNI_LENGTH = 8;
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const fieldCleaners: Partial<Record<keyof typeof formData, RegExp>> = {
-    nombre: INPUT_PRESETS.name.cleanPasteRegex,
-    apellido: INPUT_PRESETS.name.cleanPasteRegex,
-    email: INPUT_PRESETS.email.cleanPasteRegex,
-    dni: INPUT_PRESETS.digits(MAX_DNI_LENGTH).cleanPasteRegex,
-    telefono: INPUT_PRESETS.digits(12).cleanPasteRegex,
-  };
-
   const dniReqs: Requirement[] = [
     { label: 'Mínimo 7 caracteres', test: (v) => v.length >= 7 },
   ];
@@ -783,14 +775,19 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const telefonoFilter = useInputFilter(formData.telefono, (v) => updateField('telefono', v), INPUT_PRESETS.digits(12));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.name as keyof typeof formData;
-    const clean = fieldCleaners[name];
-    const value = clean ? e.target.value.replace(clean, '') : e.target.value;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nombre || !formData.apellido || !formData.email || !formData.dni || !formData.fechaNacimiento) {
+      onNotify?.('error', 'Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+    if (formData.dni.length < MIN_DNI_LENGTH) {
+      onNotify?.('error', `Ingrese un DNI válido`);
+      return;
+    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
       return;
@@ -828,7 +825,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={nombreFilter.handleKeyDown}
           onPaste={nombreFilter.handlePaste}
-          placeholder="Sin nombre"
         />
         <Input
           label="Apellido"
@@ -837,7 +833,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={apellidoFilter.handleKeyDown}
           onPaste={apellidoFilter.handlePaste}
-          placeholder="Sin apellido"
         />
       </div>
       <Input
@@ -900,7 +895,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
               { value: 'TrenMedio', label: 'Tren Medio' },
               { value: 'TrenInferior', label: 'Tren Inferior' },
             ]}
-            required
           />
       )}
       <div className="flex justify-end gap-3 pt-4">
