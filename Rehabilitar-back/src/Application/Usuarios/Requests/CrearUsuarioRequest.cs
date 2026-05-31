@@ -6,6 +6,7 @@ public class CrearUsuarioRequest
     public string Apellido { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Rol { get; set; } = "Cliente Registrado";
+    public string? Telefono {get; set}
     public string? Password { get; set; }
     public string? Especialidad { get; set; }
 }

@@ -8,6 +8,9 @@ import {aptosFisicosApi} from '../../../api/aptosFisicos';
 import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
+import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
+import { useInputFilter } from '../../../hooks/useInputFilter';
+import { INPUT_PRESETS } from '../../../utils/inputPresets';
 
 
 
@@ -741,17 +744,49 @@ interface UsuarioFormProps {
 }
 
 function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
+  const MIN_DNI_LENGTH = 7;
+  const MAX_DNI_LENGTH = 8;
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const dniReqs: Requirement[] = [
+    { label: 'Mínimo 7 caracteres', test: (v) => v.length >= 7 },
+  ];
+
   const [formData, setFormData] = useState({
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
     email: user?.email || '',
+    dni: user?.documento || '',
+    fechaNacimiento: user?.fechaNacimiento || '',
+    telefono: user?.telefono || '',
     rol: user?.rol || 'Administrador',
     especialidad: user?.especialidad || '',
   });
   const [loading, setLoading] = useState(false);
 
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const nombreFilter = useInputFilter(formData.nombre, (v) => updateField('nombre', v), INPUT_PRESETS.name);
+  const apellidoFilter = useInputFilter(formData.apellido, (v) => updateField('apellido', v), INPUT_PRESETS.name);
+  const dniFilter = useInputFilter(formData.dni, (v) => updateField('dni', v), INPUT_PRESETS.digits(MAX_DNI_LENGTH));
+  const telefonoFilter = useInputFilter(formData.telefono, (v) => updateField('telefono', v), INPUT_PRESETS.digits(12));
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nombre || !formData.apellido || !formData.email || !formData.dni || !formData.fechaNacimiento) {
+      onNotify?.('error', 'Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+    if (formData.dni.length < MIN_DNI_LENGTH) {
+      onNotify?.('error', `Ingrese un DNI válido`);
+      return;
+    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
       return;
@@ -784,23 +819,63 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Nombre"
+          name="nombre"
           value={formData.nombre}
-          onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-          required
+          onChange={handleChange}
+          onKeyDown={nombreFilter.handleKeyDown}
+          onPaste={nombreFilter.handlePaste}
         />
         <Input
           label="Apellido"
+          name="apellido"
           value={formData.apellido}
-          onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-          required
+          onChange={handleChange}
+          onKeyDown={apellidoFilter.handleKeyDown}
+          onPaste={apellidoFilter.handlePaste}
         />
       </div>
       <Input
         label="Email"
         type="email"
+        name="email"
         value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        required
+        onChange={handleChange}
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Input
+            label="DNI"
+            type="text"
+            name="dni"
+            value={formData.dni}
+            onChange={handleChange}
+            onKeyDown={dniFilter.handleKeyDown}
+            onPaste={dniFilter.handlePaste}
+            placeholder="12345678"
+            maxLength={MAX_DNI_LENGTH}
+          />
+          <InformRequirements value={formData.dni} requirements={dniReqs} />
+        </div>
+        <Input
+          label="Fecha de nacimiento"
+          type="date"
+          name="fechaNacimiento"
+          value={formData.fechaNacimiento}
+          onChange={handleChange}
+          min="1900-01-01"
+          max={todayStr}
+        />
+      </div>
+      <Input
+        label="Teléfono (opcional)"
+        type="tel"
+        name="telefono"
+        value={formData.telefono}
+        onChange={handleChange}
+        onKeyDown={telefonoFilter.handleKeyDown}
+        onPaste={telefonoFilter.handlePaste}
+        placeholder="+54 221 123 4567"
+        maxLength={12}
       />
       <Select
         label="Rol"
@@ -819,7 +894,6 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
               { value: 'TrenMedio', label: 'Tren Medio' },
               { value: 'TrenInferior', label: 'Tren Inferior' },
             ]}
-            required
           />
       )}
       <div className="flex justify-end gap-3 pt-4">
