@@ -79,6 +79,16 @@ public class PagosController : ApiControllerBase
         );
     }
 
+    [HttpDelete("intencion/{intencionId}")]
+    public async Task<IActionResult> EliminarIntencionPago(Guid intencionId)
+    {
+        var result = await _reservaService.EliminarIntencionPagoAsync(intencionId);
+        return result.Match(
+            _ => NoContent(),
+            errors => Problem(errors)
+        );
+    }
+
     [AllowAnonymous]
     [HttpPost("mercadopago/webhook")]
     public async Task<IActionResult> Webhook([FromHeader(Name = "x-signature")] string? signature, [FromHeader(Name = "x-request-id")] string? requestId)
