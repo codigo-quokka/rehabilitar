@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Select } from '../../../components/ui';
@@ -33,6 +33,7 @@ export function ConfirmarPagoPage() {
   const [monto, setMonto] = useState<number>(state?.montoPendiente ?? state?.montoTotal ?? 0);
   const [metodoPago, setMetodoPago] = useState('MercadoPago');
   const [loading, setLoading] = useState(false);
+  const processingRef = useRef(false);
 
   const { addNotification } = useNotifications();
 
@@ -86,10 +87,12 @@ export function ConfirmarPagoPage() {
   const montoMinimoMP = isPackage ? montoTotal : montoTotal / 2;
 
   const efectuarPago = async (amount: number) => {
+    if (processingRef.current) return;
+    processingRef.current = true;
     setLoading(true);
     try {
       await reservasApi.registrarPago(reservaId!, {
-        actividadId: state.actividadId,
+        actividadId: state.actividadId!,
         metodoPago,
         monto: amount,
       });
@@ -117,6 +120,7 @@ export function ConfirmarPagoPage() {
       addNotification(msg, 'error');
     } finally {
       setLoading(false);
+      processingRef.current = false;
     }
   };
 
@@ -139,7 +143,7 @@ export function ConfirmarPagoPage() {
         const body = isIntent ? { monto } : { reservaId };
         const response = await apiClient.post(url, body);
         window.location.href = response.data.initPoint;
-      } catch (err) {
+      } catch {
         addNotification('Error al iniciar el pago con Mercado Pago', 'error');
         setLoading(false);
       }
@@ -147,6 +151,8 @@ export function ConfirmarPagoPage() {
     }
 
     if (isIntent) {
+      if (processingRef.current) return;
+      processingRef.current = true;
       setLoading(true);
       try {
         await apiClient.post(`/pagos/intencion/${intencionId}/pago-rehabilicoins`);
@@ -155,16 +161,17 @@ export function ConfirmarPagoPage() {
           navigate('/reservas', { replace: true });
         }, 1500);
       } catch (err) {
-        const apiError = (err as any)?.response?.data;
+        const apiError = (err as { response?: { data?: { errorCode?: string; error?: string; title?: string } } })?.response?.data;
         const msg = apiError?.errorCode ?? apiError?.error ?? apiError?.title ?? 'Error al procesar el pago con RehabiliCoins';
         addNotification(msg, 'error');
       } finally {
+        processingRef.current = false;
         setLoading(false);
       }
       return;
     }
 
-    efectuarPago(amountToPay);
+    await efectuarPago(amountToPay);
   };
 
   const hayListaEspera = isPackage && state.actividades?.some(a => a.probabilidadListaEspera === true);
@@ -291,6 +298,7 @@ export function ConfirmarPagoPage() {
 
         <div className="flex gap-3">
           <Button
+            type="button"
             variant="danger"
             className="flex-1 text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
             onClick={() => navigate('/reservas')}
@@ -298,6 +306,7 @@ export function ConfirmarPagoPage() {
             Volver
           </Button>
           <Button
+            type="button"
             variant="primary"
             className="flex-1"
             loading={loading}
