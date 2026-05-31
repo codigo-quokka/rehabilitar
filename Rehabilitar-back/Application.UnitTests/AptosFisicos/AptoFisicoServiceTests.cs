@@ -46,7 +46,7 @@ public class AptoFisicoServiceTests
         
         var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
         typeof(Cliente).GetProperty("UserId")?.SetValue(cliente, clienteId);
-        var user = User.Create("Nombre", "Apellido", "email@test.com");
+        var user = User.Create("Nombre", "Apellido", "email@test.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(Cliente).GetProperty("User")?.SetValue(cliente, user);
         typeof(AptoFisico).GetProperty("Cliente")?.SetValue(apto, cliente);
         
@@ -76,7 +76,7 @@ public class AptoFisicoServiceTests
         
         var cliente = (Cliente)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(Cliente));
         typeof(Cliente).GetProperty("UserId")?.SetValue(cliente, clienteId);
-        var user = User.Create("Nombre", "Apellido", "email@test.com");
+        var user = User.Create("Nombre", "Apellido", "email@test.com", "12345678", DateOnly.FromDateTime(new DateTime(1990, 1, 1)));
         typeof(Cliente).GetProperty("User")?.SetValue(cliente, user);
         typeof(AptoFisico).GetProperty("Cliente")?.SetValue(apto, cliente);
         
