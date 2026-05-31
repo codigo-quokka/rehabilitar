@@ -5,9 +5,6 @@ namespace Domain.Clientes;
 public class Cliente
 {
     public Guid UserId { get; private set; }
-    public DateOnly FechaNacimiento { get; private set; }
-    public Dni Dni { get; private set; }
-    public string? Telefono { get; private set; }
 
     public User User { get; private set; }
     public int RehabiliCoins {get; private set;}
@@ -21,29 +18,17 @@ public class Cliente
     private Cliente() { }
     #nullable enable
 
-    private Cliente(Guid userId, DateOnly fechaNacimiento, Dni dni, string? telefono = null)
+    private Cliente(Guid userId)
     {
         UserId = userId;
-        FechaNacimiento = fechaNacimiento;
-        Dni = dni;
-        Telefono = telefono;
         AptoFisicoAprobado = false;
+        SaldoAFavor = new SaldoAFavor(0m);
     }
 
     // factory
     public static Cliente Create(Guid userId, DateOnly fechaNacimiento, Dni dni, string? telefono = null)
     {
-        ValidarMayorDeEdad(fechaNacimiento);
-        return new Cliente(userId, fechaNacimiento, dni, telefono);
-    }
-
-    private static void ValidarMayorDeEdad(DateOnly fechaNac)
-    {
-        var hoy = DateOnly.FromDateTime(DateTime.Today);
-        if (fechaNac.AddYears(18) > hoy)
-        {
-            throw new DomainException("Debe ser mayor de edad para registrarse en el sitio.");
-        }
+        return new Cliente(userId);
     }
 
     public void RecibirRehabilicoin()
