@@ -1,9 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
-import { useNotifications } from '../../../hooks/useNotifications';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface AptoFisicoViewerProps {
   aptoFisico: AptoFisico;
@@ -13,8 +18,11 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { addNotification } = useNotifications();
   const fileUrlRef = useRef<string | null>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pageWidth, setPageWidth] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,8 +69,24 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
     }
   };
 
-  const [showFallback, setShowFallback] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    if (containerRef.current) {
+      setPageWidth(containerRef.current.clientWidth);
+    }
+  }, []);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
+
+  const goToPrevPage = useCallback(() => {
+    setPageNumber((prev) => Math.max(prev - 1, 1));
+  }, []);
+
+  const goToNextPage = useCallback(() => {
+    setPageNumber((prev) => Math.min(prev + 1, numPages ?? prev));
+  }, [numPages]);
 
   return (
     <>
@@ -92,21 +116,62 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
               Descargar
             </Button>
           </div>
-          {!showFallback && aptoFisico.contentType.startsWith('image/') ? (
+
+          {aptoFisico.contentType.startsWith('image/') ? (
             <img
               src={fileUrl}
               alt="Apto Físico"
               className="max-w-full h-auto mx-auto block"
             />
-          ) : !showFallback && aptoFisico.contentType === 'application/pdf' ? (
-            <iframe
-              ref={iframeRef}
-              src={fileUrl}
-              title="Apto Físico PDF"
-              className="w-full border-none"
-              style={{ height: '80vh' }}
-              onError={() => setShowFallback(true)}
-            />
+          ) : aptoFisico.contentType === 'application/pdf' ? (
+            <div ref={containerRef} className="flex flex-col items-center w-full">
+              <Document
+                file={fileUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                    <p>Renderizando PDF...</p>
+                  </div>
+                }
+                error={
+                  <div className="flex flex-col items-center justify-center h-64 text-red-500 dark:text-red-400">
+                    <p>No se pudo renderizar el PDF.</p>
+                  </div>
+                }
+              >
+                <Page
+                  pageNumber={pageNumber}
+                  width={pageWidth}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className="shadow-lg"
+                />
+              </Document>
+              {numPages && numPages > 1 && (
+                <div className="flex items-center gap-4 mt-4">
+                  <button
+                    onClick={goToPrevPage}
+                    disabled={pageNumber <= 1}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-dark dark:text-gray-100 transition-colors"
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Página {pageNumber} de {numPages}
+                  </span>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={pageNumber >= numPages}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-dark dark:text-gray-100 transition-colors"
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
               <p className="mb-4">No se puede mostrar la vista previa.</p>
