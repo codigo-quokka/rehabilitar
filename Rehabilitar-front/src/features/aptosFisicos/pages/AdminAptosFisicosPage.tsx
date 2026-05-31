@@ -295,7 +295,7 @@ export function AdminAptosFisicosPage() {
       </div>
 
       {/* Modal para ver apto físico */}
-      <Modal isOpen={isViewerOpen} onClose={() => setIsViewerOpen(false)} title="Visualizar Apto Físico" size="lg">
+      <Modal isOpen={isViewerOpen} onClose={() => setIsViewerOpen(false)} title="Visualizar Apto Físico" size="xl">
         {selectedApto && (
           <AptoFisicoViewer aptoFisico={selectedApto} />
         )}

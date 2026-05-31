@@ -625,7 +625,7 @@ export function PerfilPage() {
           isOpen={verArchivo}
           onClose={() => setVerArchivo(false)}
           title="Apto físico"
-          size="lg"
+          size="l"
         >
           {aptoActual && <AptoFisicoViewer aptoFisico={aptoActual} />}
         </Modal>
