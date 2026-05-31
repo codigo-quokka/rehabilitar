@@ -1,6 +1,7 @@
 using Application.Auth.DTOs;
 using Application.Common.Interfaces;
 using Application.Clientes;
+using Application.Profesores;
 using Domain;
 using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
@@ -14,12 +15,14 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly IUnitOfWork _uow;
     private readonly IClienteRepository _clienteRepo;
+    private readonly IProfesorRepository _profesorRepo;
     private readonly IEmailService _emailService;
     private readonly IJwtProvider _jwt;
     private readonly FrontendSettings _frontendSettings;
 
     public AuthService(UserManager<User> userManager,
                         IClienteRepository clienteRepo,
+                        IProfesorRepository profesorRepo,
                         IUnitOfWork uow,
                         IEmailService emailService,
                         IJwtProvider jwt,
@@ -27,6 +30,7 @@ public class AuthService : IAuthService
     {
         _userManager = userManager;
         _clienteRepo = clienteRepo;
+        _profesorRepo = profesorRepo;
         _uow = uow;
         _emailService = emailService;
         _jwt = jwt;
@@ -112,6 +116,13 @@ public class AuthService : IAuthService
 
         var cliente = await _clienteRepo.GetByIdAsync(user.Id);
 
+        string? especialidad = null;
+        if (rol == "Profesor")
+        {
+            var profesor = await _profesorRepo.GetByIdAsync(user.Id);
+            especialidad = profesor?.Especialidad.ToString();
+        }
+
         var userResponse = new UserResponse
         {
             Id = user.Id,
@@ -122,7 +133,8 @@ public class AuthService : IAuthService
             Activo = user.EmailConfirmed,
             Telefono = user?.PhoneNumber,
             FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
-            Documento = user?.Dni.Valor
+            Documento = user?.Dni.Valor,
+            Especialidad = especialidad
         };
 
         return new AuthResponse(token, userResponse);

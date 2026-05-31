@@ -1,5 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 
+let openModalCount = 0;
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,13 +15,17 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   useEffect(() => {
     if (isOpen) {
+      openModalCount++;
       document.body.style.overflow = 'hidden';
       modalRef.current?.focus();
-    } else {
-      document.body.style.overflow = 'unset';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      if (isOpen) {
+        openModalCount--;
+      }
+      if (openModalCount <= 0) {
+        document.body.style.overflow = '';
+      }
     };
   }, [isOpen]);
 

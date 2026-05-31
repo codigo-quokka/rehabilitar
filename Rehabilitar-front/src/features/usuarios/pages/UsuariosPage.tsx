@@ -444,8 +444,9 @@ export function UsuariosPage() {
             <Input
               placeholder="Buscar por nombre, email o DNI..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125"
+              maxLength={40}
             />
             <Button
               variant="primary"
@@ -877,6 +878,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={nombreFilter.handleKeyDown}
           onPaste={nombreFilter.handlePaste}
+          placeholder="Sin nombre"
         />
         <Input
           label="Apellido"
@@ -885,6 +887,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={apellidoFilter.handleKeyDown}
           onPaste={apellidoFilter.handlePaste}
+          placeholder="Sin apellido"
         />
       </div>
       <Input
