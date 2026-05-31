@@ -29,6 +29,15 @@ public class IntencionPagoRepository : IIntencionPagoRepository
         return await _context.IntencionesPago.FindAsync(new object[] { id }, ct);
     }
 
+    public async Task<bool> ExisteIntencionPendienteAsync(Guid clienteId, Guid actividadId, CancellationToken ct = default)
+    {
+        var intenciones = await _context.IntencionesPago
+            .Where(i => i.ClienteId == clienteId && i.Estado == Domain.Enums.EstadoDelPago.Pendiente)
+            .ToListAsync(ct);
+
+        return intenciones.Any(i => i.ActividadesIds.Contains(actividadId));
+    }
+
     public async Task<int> ContarIntencionesPendientesRecientesAsync(Guid actividadId, TimeSpan ventanaTiempo)
     {
         var limite = DateTime.UtcNow.Subtract(ventanaTiempo);
