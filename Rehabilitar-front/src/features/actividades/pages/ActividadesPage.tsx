@@ -118,15 +118,32 @@ export function ActividadesPage() {
     setReservandoId(actividad.id);
     try {
       const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate(`/reservas/confirmar/${reserva.id}`, {
-        state: {
-          reservaId: reserva.id,
-          actividadId: reserva.actividadId,
-          montoTotal: reserva.montoTotal,
-          montoPagado: 0,
-          montoPendiente: reserva.montoPendiente,
-        },
-      });
+      if (reserva.probabilidadListaEspera) {
+        setToastType('error');
+        setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
+        setShowToast(true);
+        setTimeout(() => {
+          navigate(`/reservas/confirmar/${reserva.id}`, {
+            state: {
+              reservaId: reserva.id,
+              actividadId: reserva.actividadId,
+              montoTotal: reserva.montoTotal,
+              montoPagado: 0,
+              montoPendiente: reserva.montoPendiente,
+            },
+          });
+        }, 2000);
+      } else {
+        navigate(`/reservas/confirmar/${reserva.id}`, {
+          state: {
+            reservaId: reserva.id,
+            actividadId: reserva.actividadId,
+            montoTotal: reserva.montoTotal,
+            montoPagado: 0,
+            montoPendiente: reserva.montoPendiente,
+          },
+        });
+      }
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
@@ -461,7 +478,7 @@ export function ActividadesPage() {
             setShowToast(true);
           }}
           onSuccess={(msg) => {
-            setToastType('success');
+        setToastType('error');
             setToastMessage(msg);
             setShowToast(true);
           }}
@@ -575,7 +592,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           serieId: actividad.serieId && actividad.serieId !== '00000000-0000-0000-0000-000000000000' ? actividad.serieId : undefined,
         }
       : {
-          nombre: "",
+          nombre: "Sin nombre",
           descripcion: "",
           tipo: "TrenSuperior" as CreateActividadRequest['tipo'],
           frecuencia: "Esporadica",

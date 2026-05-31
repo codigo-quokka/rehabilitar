@@ -48,12 +48,6 @@ export function SalasPage() {
     setSalaIdAEliminar(id);
   };
   const HandleDesactivarClick = (s: Sala) => {
-    if (s.activo && tieneActividadesPendientes(s.id)) {
-      setToastType('error');
-      setToastMessage('No se puede desactivar una sala con actividades pendientes.');
-      setShowToast(true);
-      return;
-    }
     setShowDesactivarConfirm(true);
     setSalaADesactivar(s);
   };
@@ -101,8 +95,13 @@ export function SalasPage() {
       fetchData();
       setShowDesactivarConfirm(false);
       setSalaADesactivar(null);
-      setToastType('success');
-      setToastMessage(salaADesactivar.activo ? 'Sala desactivada exitosamente.' : 'Sala activada exitosamente.');
+      if (salaADesactivar.activo) {
+        setToastType('error');
+        setToastMessage('Sala desactivada correctamente, no se podrán crear nuevas actividades con esta sala');
+      } else {
+        setToastType('success');
+        setToastMessage('Sala activada exitosamente.');
+      }
       setShowToast(true);
     } catch (err) {
       setShowDesactivarConfirm(false);
@@ -249,7 +248,7 @@ interface SalaFormProps {
 
 function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaFormProps) {
   const [formData, setFormData] = useState({
-    nombre: sala?.nombre || "",
+    nombre: sala?.nombre || "Sin nombre",
     capacidad: sala?.capacidad || 20,
     descripcion: sala?.descripcion || "",
   });
@@ -310,7 +309,7 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
           Descripción (opcional)
         </label>
         <textarea
-          className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-800 text-dark dark:text-gray-100"
+          className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-gray-600 bg-white dark:bg-gray-600 text-dark dark:text-gray-100"
           rows={3}
           value={formData.descripcion}
           onChange={(e) =>

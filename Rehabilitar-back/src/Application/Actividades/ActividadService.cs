@@ -327,6 +327,9 @@ public class ActividadService : IActividadService
         
         if (sala == null) return Error.NotFound("Sala no encontrada");
 
+        if (!sala.Activo)
+            return Error.Validation("No se pueden crear actividades en una sala inactiva.");
+
         if (cupoMaximo > sala.Capacidad) 
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
