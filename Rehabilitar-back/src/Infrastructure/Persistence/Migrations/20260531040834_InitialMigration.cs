@@ -47,6 +47,8 @@ namespace Infrastructure.Persistence.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", nullable: false),
                     LastName = table.Column<string>(type: "TEXT", nullable: false),
+                    Dni = table.Column<string>(type: "TEXT", maxLength: 8, nullable: false),
+                    FechaNacimiento = table.Column<DateOnly>(type: "TEXT", nullable: false),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -93,9 +95,12 @@ namespace Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    FechaNacimiento = table.Column<DateOnly>(type: "TEXT", nullable: false),
-                    Dni = table.Column<string>(type: "TEXT", maxLength: 8, nullable: false),
-                    Telefono = table.Column<string>(type: "TEXT", nullable: true)
+                    RehabiliCoins = table.Column<int>(type: "INTEGER", nullable: false),
+                    CancelacionesConsecutivas = table.Column<int>(type: "INTEGER", nullable: false),
+                    InasistenciasConsecutivas = table.Column<int>(type: "INTEGER", nullable: false),
+                    DescuentoProximaReserva = table.Column<decimal>(type: "TEXT", nullable: false),
+                    MontoTotal = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
+                    AptoFisicoAprobado = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -212,6 +217,61 @@ namespace Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AptosFisicos",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    NombreArchivo = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    ContentType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Archivo = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    Tamaño = table.Column<long>(type: "INTEGER", nullable: false),
+                    Estado = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    FechaSubida = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FechaEvaluacion = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    EvaluadoPor = table.Column<Guid>(type: "TEXT", nullable: true),
+                    MotivoRechazo = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AptosFisicos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AptosFisicos_Clientes_ClienteId",
+                        column: x => x.ClienteId,
+                        principalTable: "Clientes",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AptosFisicos_Users_EvaluadoPor",
+                        column: x => x.EvaluadoPor,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SuscripcionesAbonado",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SerieId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FechaInicio = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FechaFin = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Estado = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SuscripcionesAbonado", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SuscripcionesAbonado_Clientes_ClienteId",
+                        column: x => x.ClienteId,
+                        principalTable: "Clientes",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Actividades",
                 columns: table => new
                 {
@@ -259,7 +319,10 @@ namespace Infrastructure.Persistence.Migrations
                     TipoCliente = table.Column<int>(type: "INTEGER", nullable: false),
                     MontoTotal = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
                     MontoPagado = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
-                    EstadoDeReserva = table.Column<int>(type: "INTEGER", nullable: false)
+                    DetallePago_MontoDescuento = table.Column<decimal>(type: "TEXT", nullable: false),
+                    PorcentajeDescuentoAplicado = table.Column<decimal>(type: "TEXT", nullable: false),
+                    EstadoDeReserva = table.Column<int>(type: "INTEGER", nullable: false),
+                    Asistencia = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -289,6 +352,16 @@ namespace Infrastructure.Persistence.Migrations
                 column: "SalaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AptosFisicos_ClienteId",
+                table: "AptosFisicos",
+                column: "ClienteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AptosFisicos_EvaluadoPor",
+                table: "AptosFisicos",
+                column: "EvaluadoPor");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Reservas_ActividadId",
                 table: "Reservas",
                 column: "ActividadId");
@@ -314,6 +387,11 @@ namespace Infrastructure.Persistence.Migrations
                 table: "Salas",
                 column: "Nombre",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SuscripcionesAbonado_ClienteId",
+                table: "SuscripcionesAbonado",
+                column: "ClienteId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserClaims_UserId",
@@ -346,10 +424,16 @@ namespace Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AptosFisicos");
+
+            migrationBuilder.DropTable(
                 name: "Reservas");
 
             migrationBuilder.DropTable(
                 name: "RoleClaims");
+
+            migrationBuilder.DropTable(
+                name: "SuscripcionesAbonado");
 
             migrationBuilder.DropTable(
                 name: "UserClaims");
