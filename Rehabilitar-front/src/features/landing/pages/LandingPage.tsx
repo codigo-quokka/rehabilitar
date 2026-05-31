@@ -239,7 +239,7 @@ export const LandingPage = () => {
             <div className="p-8 lg:w-2/3">
               <h3 className="text-2xl font-bold text-[#2F6274] dark:text-gray-100 mb-4">¿Por qué ser abonado?</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Accedé a beneficios exclusivos pagando una cuota mensual. Garantizá tu lugar en las actividades recurrentes y organizá tu rutina con anticipación.
+                Accedé a nuestros beneficios exclusivos:
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start">
