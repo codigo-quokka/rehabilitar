@@ -49,6 +49,7 @@ export interface Actividad {
   profesorNombre: string | null;
   serieId: string;
   precio: number;
+  probabilidadListaEspera?: boolean;
 }
 
 export interface CreateActividadRequest {
