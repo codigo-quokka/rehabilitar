@@ -48,7 +48,10 @@ public class AuthService : IAuthService
             var user = User.Create(
                 request.FirstName,
                 request.LastName,
-                request.Email
+                request.Email,
+                request.Dni,
+                request.FechaNacimiento,
+                request.Telefono
             );
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -117,9 +120,9 @@ public class AuthService : IAuthService
             Apellido = user.LastName,
             Rol = rol,
             Activo = user.EmailConfirmed,
-            Telefono = cliente?.Telefono,
-            FechaNacimiento = cliente?.FechaNacimiento.ToString("yyyy-MM-dd"),
-            Documento = cliente?.Dni.Valor
+            Telefono = user?.PhoneNumber,
+            FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
+            Documento = user?.Dni.Valor
         };
 
         return new AuthResponse(token, userResponse);
