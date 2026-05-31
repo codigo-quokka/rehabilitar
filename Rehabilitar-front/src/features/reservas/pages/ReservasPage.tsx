@@ -51,12 +51,9 @@ export function ReservasPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [dateFilterApplied, setDateFilterApplied] = useState(false);
-  const dateFromRef = useRef<HTMLInputElement>(null);
-  const dateToRef = useRef<HTMLInputElement>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
     estadoDeReserva: 'all',
     pagado: 'all',
@@ -129,6 +126,7 @@ export function ReservasPage() {
     try {
       await reservasApi.cancelar(reservaId, actividadId);
       setReservas((prev) => prev.map((r) => r.id === reservaId ? { ...r, estadoDeReserva: 'Cancelada' } : r));
+      window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
       setToastType('success');
       setToastMessage('Reserva cancelada correctamente');
       setShowToast(true);
@@ -151,7 +149,7 @@ export function ReservasPage() {
     if (filters.estadoDeReserva !== 'all' && r.estadoDeReserva !== filters.estadoDeReserva) return false;
     if (filters.pagado === 'pagados' && r.montoPendiente !== 0) return false;
     if (filters.pagado === 'pendientes' && r.montoPendiente === 0) return false;
-    if (dateFilterApplied) {
+    if (dateFrom || dateTo) {
       const act = actividades[r.actividadId];
       if (act) {
         const actDate = new Date(act.fechaYHora);
@@ -167,12 +165,27 @@ export function ReservasPage() {
     return true;
   });
 
+  const displayReservas = useMemo(() => {
+    const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
+    const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
+    if (filters.estadoDeReserva === 'Cancelada') return sorted;
+    let cancelCount = 0;
+    return sorted.filter(r => {
+      if (r.estadoDeReserva === 'Cancelada') {
+        cancelCount++;
+        return cancelCount <= 5;
+      }
+      return true;
+    });
+  }, [filteredReservas, filters.estadoDeReserva, actividades]);
+
   const hasActiveFilters = useMemo(() => {
     return (
-      dateFilterApplied ||
+      !!dateFrom ||
+      !!dateTo ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [dateFilterApplied, filters]);
+  }, [dateFrom, dateTo, filters]);
 
   const hasActiveSearchFilter = useMemo(() => {
     return (
@@ -193,6 +206,8 @@ export function ReservasPage() {
     return 'No se realizaron reservas.'
   }
 
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
   const cleanFilters = () => {
     setFilters({
       estadoDeReserva: 'all',
@@ -200,7 +215,6 @@ export function ReservasPage() {
     });
     setDateFrom('');
     setDateTo('');
-    setDateFilterApplied(false);
     setSearchTerm('');
   };
 
@@ -210,118 +224,87 @@ export function ReservasPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <FilterDropdown
-              filters={[
-                {
-                  key: 'estadoDeReserva',
-                  label: 'Estado',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'PendienteDePago', label: 'Pendiente de pago' },
-                    { value: 'Activa', label: 'Activa' },
-                    { value: 'EnEspera', label: 'En espera' },
-                    { value: 'Cancelada', label: 'Cancelada' },
-                  ],
-                },
-                {
-                  key: 'pagado',
-                  label: 'Pago',
-                  options: [
-                    { value: 'all', label: 'Todos' },
-                    { value: 'pagados', label: 'Pagados' },
-                    { value: 'pendientes', label: 'Pendientes' },
-                  ],
-                },
-              ]}
-              values={filters}
-              onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ estadoDeReserva: 'all', pagado: 'all' })}
-              onOpenChange={setFilterOpen}
+            <Input
+              placeholder="Buscar por actividad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="min-w-125 h-12"
             />
-            <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
-              <div className="flex items-center gap-1 w-22.5">
-                <button
-                  type="button"
-                  onClick={() => dateFromRef.current?.showPicker()}
-                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
-                >
-                  {dateFrom ? (
-                    <span className="text-xs font-medium leading-tight">
-                      <span className="block">{dateFrom.split('-')[0]}</span>
-                      <span className="block">{dateFrom.split('-').slice(1).join('/')}</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium">Desde</span>
-                  )}
-                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </button>
-                <input
-                  ref={dateFromRef}
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
-              <div className="flex items-center gap-1 w-22.5">
-                <button
-                  type="button"
-                  onClick={() => dateToRef.current?.showPicker()}
-                  className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-1.5 py-1 transition-colors"
-                >
-                  {dateTo ? (
-                    <span className="text-xs font-medium leading-tight">
-                      <span className="block">{dateTo.split('-')[0]}</span>
-                      <span className="block">{dateTo.split('-').slice(1).join('/')}</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium">Hasta</span>
-                  )}
-                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </button>
-                <input
-                  ref={dateToRef}
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (dateFilterApplied) {
-                    setDateFrom('');
-                    setDateTo('');
-                    setDateFilterApplied(false);
-                  } else {
-                    setDateFilterApplied(true);
-                  }
-                }}
-                disabled={!dateFilterApplied && !dateFrom && !dateTo}
-                className="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed self-center min-w-19"
-              >
-                {dateFilterApplied ? 'Limpiar' : 'Aplicar'}
-              </button>
-            </div>
-            <div className={filterOpen ? 'invisible' : ''}>
-              <Input
-                placeholder="Buscar por actividad..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="min-w-125 h-12"
-              />
-            </div>
+            <Button
+              variant="primary"
+              type="button"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="border-none gap-2 h-12"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+                Filtros
+              <svg className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </Button>
           </div>
         </div>
 
+        <FilterDropdown
+          inline
+          open={filterOpen}
+          filters={[
+            {
+              key: 'estadoDeReserva',
+              label: 'Estado',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'PendienteDePago', label: 'Pendiente de pago' },
+                { value: 'Activa', label: 'Activa' },
+                { value: 'EnEspera', label: 'En espera' },
+                { value: 'Cancelada', label: 'Cancelada' },
+              ],
+            },
+            {
+              key: 'pagado',
+              label: 'Pago',
+              options: [
+                { value: 'all', label: 'Todos' },
+                { value: 'pagados', label: 'Pagados' },
+                { value: 'pendientes', label: 'Pendientes' },
+              ],
+            },
+          ]}
+          values={filters}
+          onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          onApply={() => {
+            setFilters({ estadoDeReserva: 'all', pagado: 'all' });
+            setDateFrom('');
+            setDateTo('');
+          }}
+        >
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-dark dark:text-gray-100 mb-1">Desde</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              min={todayStr}
+              className="w-32 px-2 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-dark dark:text-gray-100 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-dark dark:text-gray-100 mb-1">Hasta</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              min={dateFrom || todayStr}
+              className="w-32 px-2 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-dark dark:text-gray-100 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </FilterDropdown>
+
         {loading ? (
           <p className="text-gray-500 dark:text-gray-400">Cargando...</p>
-) : filteredReservas.length === 0 ? (
+) : displayReservas.length === 0 ? (
   <Card>
     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
       {getEmptyStateMessage()}
@@ -342,7 +325,7 @@ export function ReservasPage() {
   </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredReservas.map((reserva) => {
+            {displayReservas.map((reserva) => {
               const act = actividades[reserva.actividadId];
               const pagado = montoPagado(reserva);
               const completado = estaCompletado(reserva);

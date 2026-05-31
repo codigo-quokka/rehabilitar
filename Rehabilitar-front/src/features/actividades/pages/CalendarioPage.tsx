@@ -239,7 +239,7 @@ export function CalendarioPage() {
         <div className="grid grid-cols-[1fr_auto_1fr] items-center">
           <div className="flex gap-2">
             <Button
-              variant="verde"
+              variant="primary"
               type="button"
               onClick={() => setFilterOpen(!filterOpen)}
               className="border-none gap-2"
