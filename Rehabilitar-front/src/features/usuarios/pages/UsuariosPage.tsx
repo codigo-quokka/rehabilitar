@@ -110,10 +110,38 @@ export function UsuariosPage() {
 
   const hasActiveFilters = useMemo(() => {
     return (
-      searchTerm !== '' ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [searchTerm, filters]);
+  }, [filters]);
+
+  const hasActiveSearchFilter = useMemo(() => {
+    return (
+      searchTerm !== ''
+    );
+  }, [searchTerm]);
+
+  const getEmptyStateMessage = () => {
+    if (hasActiveSearchFilter && hasActiveFilters) {
+      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveSearchFilter) {
+      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveFilters) {
+      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
+    }
+    return 'No hay usuarios registrados.'
+  }
+
+  const cleanFilters = () => {
+    setFilters({
+      rol: 'all',
+      especialidad: 'all',
+      estado: 'all',
+      aptoFisico: 'all',
+    });
+    setSearchTerm('');
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -502,8 +530,21 @@ export function UsuariosPage() {
         ) : filteredUsuarios.length === 0 ? (
           <Card>
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {hasActiveFilters ? 'No se encontraron coincidencias' : 'No hay usuarios registrados'}
+              {getEmptyStateMessage()}
             </p>
+            {(hasActiveFilters || hasActiveSearchFilter) && (
+              <div className="flex justify-center mt-4">
+                <Button
+                  variant="ghost"
+                  className="px-4 py-2 justify-center whitespace-nowrap h-10 hover:bg-primary/20 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => {
+                  cleanFilters();
+                }}
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
           </Card>
         ) : (
           <Card padding="none">
