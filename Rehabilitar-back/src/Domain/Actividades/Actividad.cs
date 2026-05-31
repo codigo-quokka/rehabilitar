@@ -101,6 +101,7 @@ public class Actividad
 	{
 		Version = Guid.NewGuid();
 		Reserva reserva = Reserva.Create(cliente.UserId, this.Id, new DetallePago(this.Precio, 0), EstadoDeReserva.PendienteDePago, tipoCliente);
+		_reservas.Add(reserva);
 		return reserva;
 	}
 
