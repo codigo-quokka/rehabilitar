@@ -151,6 +151,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                       v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
                       v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions)null)!
                   );
+            entity.Property(i => i.MontoAPagar).HasColumnType("decimal(18, 2)");
         });
     }
 }

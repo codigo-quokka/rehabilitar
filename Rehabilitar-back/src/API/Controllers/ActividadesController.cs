@@ -108,7 +108,7 @@ public class ActividadesController : ApiControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var result = await _actividadService.EliminarActividad(id, ct);
+        var result = await _actividadService.CancelarActividad(id, ct);
         return result.Match(
             _ => NoContent(),
             errores => Problem(errores)

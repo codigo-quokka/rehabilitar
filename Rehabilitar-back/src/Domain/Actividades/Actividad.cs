@@ -107,7 +107,6 @@ public class Actividad
 
 	public Reserva ProcesarPagoReserva(Guid reservaId, decimal montoPagado)
 	{
-		Version = Guid.NewGuid();
 		Reserva reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
 		
 		var detalleAnterior = reserva.DetallePago;
@@ -116,6 +115,7 @@ public class Actividad
 		bool recienPagado = reserva.DetallePago.MontoPagado > 0 && detalleAnterior.MontoPagado == 0;
 		if (recienPagado)
 		{
+			Version = Guid.NewGuid();
 			if (HayCupoDisponible())
 			{
 				CupoOcupado++;
