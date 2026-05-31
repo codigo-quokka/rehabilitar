@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RehabilitarDbContext))]
-    [Migration("20260518020128_InitialMigration")]
+    [Migration("20260531040834_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -80,26 +80,111 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Actividades", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.AptosFisicos.AptoFisico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Archivo")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("EvaluadoPor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaEvaluacion")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaSubida")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MotivoRechazo")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Tamaño")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EvaluadoPor");
+
+                    b.ToTable("AptosFisicos", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Dni")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Dni");
+                    b.Property<bool>("AptoFisicoAprobado")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<DateOnly>("FechaNacimiento")
+                    b.Property<int>("CancelacionesConsecutivas")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DescuentoProximaReserva")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Telefono")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("InasistenciasConsecutivas")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RehabiliCoins")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UserId");
 
                     b.ToTable("Clientes", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SerieId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.ToTable("SuscripcionesAbonado", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
@@ -124,6 +209,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ActividadId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Asistencia")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("ClienteId")
                         .HasColumnType("TEXT");
 
@@ -131,6 +219,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaReserva")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeDescuentoAplicado")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TipoCliente")
@@ -212,12 +303,21 @@ namespace Infrastructure.Persistence.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Dni")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Dni");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("FechaNacimiento")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -389,6 +489,24 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Sala");
                 });
 
+            modelBuilder.Entity("Domain.AptosFisicos.AptoFisico", b =>
+                {
+                    b.HasOne("Domain.Clientes.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.User", "Evaluador")
+                        .WithMany()
+                        .HasForeignKey("EvaluadoPor")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Evaluador");
+                });
+
             modelBuilder.Entity("Domain.Clientes.Cliente", b =>
                 {
                     b.HasOne("Domain.User", "User")
@@ -397,7 +515,36 @@ namespace Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.OwnsOne("Domain.Clientes.SaldoAFavor", "SaldoAFavor", b1 =>
+                        {
+                            b1.Property<Guid>("ClienteUserId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<decimal>("MontoTotal")
+                                .HasColumnType("decimal(18, 2)")
+                                .HasColumnName("MontoTotal");
+
+                            b1.HasKey("ClienteUserId");
+
+                            b1.ToTable("Clientes");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ClienteUserId");
+                        });
+
+                    b.Navigation("SaldoAFavor")
+                        .IsRequired();
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Clientes.SuscripcionAbonado", b =>
+                {
+                    b.HasOne("Domain.Clientes.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Profesores.Profesor", b =>
@@ -428,6 +575,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.OwnsOne("Domain.Reservas.DetallePago", "DetallePago", b1 =>
                         {
                             b1.Property<Guid>("ReservaId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<decimal>("MontoDescuento")
                                 .HasColumnType("TEXT");
 
                             b1.Property<decimal>("MontoPagado")
