@@ -76,6 +76,16 @@ export function PerfilPage() {
     (v) => setPasswordData((prev) => ({ ...prev, confirmNewPassword: v })),
     INPUT_PRESETS.password(MAX_PASSWORD_LENGTH),
   );
+  const nombreFilter = useInputFilter(
+    formData.nombre,
+    (v) => setFormData((prev) => ({ ...prev, nombre: v })),
+    INPUT_PRESETS.name,
+  );
+  const apellidoFilter = useInputFilter(
+    formData.apellido,
+    (v) => setFormData((prev) => ({ ...prev, apellido: v })),
+    INPUT_PRESETS.name,
+  );
 
   const confirmPasswordReqs = useMemo<Requirement[]>(
     () => [
@@ -307,39 +317,27 @@ export function PerfilPage() {
                   label="Nombre"
                   value={formData.nombre}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      nombre: stripNonLetters(e.target.value),
-                    })
+                    setFormData((prev) => ({
+                      ...prev,
+                      nombre: e.target.value,
+                    }))
                   }
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
-                  }}
+                  onKeyDown={nombreFilter.handleKeyDown}
+                  onPaste={nombreFilter.handlePaste}
                 />
                 <Input
                   label="Apellido"
                   value={formData.apellido}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      apellido: stripNonLetters(e.target.value),
-                    })
+                    setFormData((prev) => ({
+                      ...prev,
+                      apellido: e.target.value,
+                    }))
                   }
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (stripNonLetters(pasted) !== pasted) e.preventDefault();
-                  }}
+                  onKeyDown={apellidoFilter.handleKeyDown}
+                  onPaste={apellidoFilter.handlePaste}
                 />
               </div>
-              <Input
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
               <Input
                 label="Teléfono"
                 type="tel"
