@@ -59,6 +59,7 @@ public class ProfesorService : IProfesorService
                 actividad.Estado,
                 actividad.CupoMaximo,
                 actividad.CupoDisponible,
+                actividad.Precio,
                 actividad.SalaId,
                 nombreSala,
                 actividad.ProfesorId,

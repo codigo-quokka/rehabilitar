@@ -77,7 +77,7 @@ public class ReservasController : ApiControllerBase
         var result = await _reservaService.ReservarActividadAsync(request, ct);
 
         return result.Match(
-            reserva => CreatedAtAction(nameof(GetAll), new { usuarioId = reserva.ClienteId }, reserva),
+            intencionId => Ok(new { IntencionId = intencionId }),
             errores => Problem(errores)
         );
     }
@@ -88,7 +88,7 @@ public class ReservasController : ApiControllerBase
         var result = await _reservaService.ReservarActividadesRecurrentes(request, ct);
 
         return result.Match(
-            success => Ok(),
+            success => Ok(new { IntencionId = success }),
             errores => Problem(errores)
         );
     }
