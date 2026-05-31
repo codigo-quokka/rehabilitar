@@ -6,11 +6,29 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class MagicMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "IntencionesPago",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ActividadesIds = table.Column<string>(type: "TEXT", nullable: false),
+                    MontoTotal = table.Column<decimal>(type: "TEXT", nullable: false),
+                    MontoAPagar = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Pagado = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Estado = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IntencionesPago", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
@@ -49,6 +67,7 @@ namespace Infrastructure.Persistence.Migrations
                     LastName = table.Column<string>(type: "TEXT", nullable: false),
                     Dni = table.Column<string>(type: "TEXT", maxLength: 8, nullable: false),
                     FechaNacimiento = table.Column<DateOnly>(type: "TEXT", nullable: false),
+                    SolicitoReactivacion = table.Column<bool>(type: "INTEGER", nullable: false),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -250,28 +269,6 @@ namespace Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SuscripcionesAbonado",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    SerieId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    FechaInicio = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    FechaFin = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Estado = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SuscripcionesAbonado", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SuscripcionesAbonado_Clientes_ClienteId",
-                        column: x => x.ClienteId,
-                        principalTable: "Clientes",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Actividades",
                 columns: table => new
                 {
@@ -389,11 +386,6 @@ namespace Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_SuscripcionesAbonado_ClienteId",
-                table: "SuscripcionesAbonado",
-                column: "ClienteId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserClaims_UserId",
                 table: "UserClaims",
                 column: "UserId");
@@ -427,13 +419,13 @@ namespace Infrastructure.Persistence.Migrations
                 name: "AptosFisicos");
 
             migrationBuilder.DropTable(
+                name: "IntencionesPago");
+
+            migrationBuilder.DropTable(
                 name: "Reservas");
 
             migrationBuilder.DropTable(
                 name: "RoleClaims");
-
-            migrationBuilder.DropTable(
-                name: "SuscripcionesAbonado");
 
             migrationBuilder.DropTable(
                 name: "UserClaims");
