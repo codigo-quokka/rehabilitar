@@ -144,7 +144,7 @@ export function LoginPage() {
                 label="Email"
                 type=""
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value.replace(INPUT_PRESETS.email.cleanPasteRegex, ''))}
                 onKeyDown={emailFilter.handleKeyDown}
                 onPaste={emailFilter.handlePaste}
                 placeholder="tu@email.com"
@@ -155,7 +155,7 @@ export function LoginPage() {
                   label="Contraseña"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.replace(INPUT_PRESETS.password().cleanPasteRegex, ''))}
                   onKeyDown={passwordFilter.handleKeyDown}
                   onPaste={passwordFilter.handlePaste}
                   placeholder="••••••••"
