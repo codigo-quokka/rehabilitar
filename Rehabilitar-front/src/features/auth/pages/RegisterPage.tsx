@@ -60,6 +60,16 @@ export function RegisterPage() {
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
 
+  const fieldCleaners: Partial<Record<keyof typeof formData, RegExp>> = {
+    firstName: INPUT_PRESETS.name.cleanPasteRegex,
+    lastName: INPUT_PRESETS.name.cleanPasteRegex,
+    email: INPUT_PRESETS.email.cleanPasteRegex,
+    telefono: INPUT_PRESETS.digits(12).cleanPasteRegex,
+    dni: INPUT_PRESETS.digits(MAX_DNI_LENGTH).cleanPasteRegex,
+    password: INPUT_PRESETS.password(MAX_PASSWORD_LENGTH).cleanPasteRegex,
+    confirmPassword: INPUT_PRESETS.password(MAX_PASSWORD_LENGTH).cleanPasteRegex,
+  };
+
   const handleCloseToast = useCallback(() => setShowToast(false), []);
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
@@ -98,7 +108,10 @@ export function RegisterPage() {
 
   // Manejador estándar para cambios de texto regulares
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const name = e.target.name as keyof typeof formData;
+    const clean = fieldCleaners[name];
+    const value = clean ? e.target.value.replace(clean, '') : e.target.value;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Helper para el onPaste del custom hook
