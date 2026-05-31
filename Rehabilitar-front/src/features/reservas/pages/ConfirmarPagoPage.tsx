@@ -146,6 +146,24 @@ export function ConfirmarPagoPage() {
       return;
     }
 
+    if (isIntent) {
+      setLoading(true);
+      try {
+        await apiClient.post(`/pagos/intencion/${intencionId}/pago-rehabilicoins`);
+        addNotification('¡Pago con RehabiliCoins exitoso! Tu lugar está asegurado.', 'success');
+        setTimeout(() => {
+          navigate('/reservas', { replace: true });
+        }, 1500);
+      } catch (err) {
+        const apiError = (err as any)?.response?.data;
+        const msg = apiError?.errorCode ?? apiError?.error ?? apiError?.title ?? 'Error al procesar el pago con RehabiliCoins';
+        addNotification(msg, 'error');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     efectuarPago(amountToPay);
   };
 
@@ -235,7 +253,7 @@ export function ConfirmarPagoPage() {
                   setMonto(montoMinimoMP);
                 }
               }}
-              options={isIntent ? metodoPagoOptions.filter(o => o.value === 'MercadoPago') : metodoPagoOptions}
+              options={metodoPagoOptions}
               required
             />
 
