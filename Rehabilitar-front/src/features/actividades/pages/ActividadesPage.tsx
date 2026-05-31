@@ -174,11 +174,34 @@ export function ActividadesPage() {
 
   const hasActiveFilters = useMemo(() => {
     return (
-      searchTerm !== '' ||
       dateFilterApplied ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [searchTerm, dateFilterApplied, filters]);
+  }, [dateFilterApplied, filters]);
+
+  const hasActiveSearchFilter = useMemo(() => {
+    return (
+      searchTerm !== ''
+    );
+  }, [searchTerm]);
+
+  const getEmptyStateMessage = () => {
+    if (hasActiveSearchFilter && hasActiveFilters) {
+      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveSearchFilter) {
+      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveFilters) {
+      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
+    }
+    return (hasRole(['Cliente Registrado'])) ? 'No hay actividades disponibles' : 'No hay actividades registradas.';
+  }
+
+  const cleanFilters = () => {
+    setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' });
+    setSearchTerm('');
+  };
 
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
@@ -263,7 +286,7 @@ export function ActividadesPage() {
               ]}
               values={filters}
               onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
-              onApply={() => setFilters({ frecuencia: 'all', tipo: 'all', profesor: 'all', sala: 'all', estado: 'all' })}
+              onApply={() => cleanFilters()}
               onOpenChange={setFilterOpen}
             />
             <div className="flex items-stretch gap-2 pl-4 pr-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-dark dark:text-gray-100 text-base h-12">
@@ -372,12 +395,21 @@ export function ActividadesPage() {
         ) : filteredActividades.length === 0 ? (
           <Card>
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              {hasActiveFilters
-                ? 'No se encontraron coincidencias'
-                : hasRole(['Cliente Registrado'])
-                  ? 'No hay actividades disponibles'
-                  : 'No hay actividades registradas'}
+              {getEmptyStateMessage()}
             </p>
+            {(hasActiveFilters || hasActiveSearchFilter) && (
+              <div className="flex justify-center mt-4">
+                <Button
+                  variant="ghost"
+                  className="px-4 py-2 justify-center whitespace-nowrap h-10 hover:bg-primary/20 dark:hover:bg-gray-700 transition-colors"
+                  onClick={() => {
+                  cleanFilters();
+                }}
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
