@@ -31,55 +31,29 @@ public class ReservaService : IReservaService
         _uow = uow;
     }
 
-    public async Task<ErrorOr<ReservaResponse>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<Guid>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
     {
-        int maxRetries = 3; // Límite de reintentos para evitar loops infinitos
-        int delayPerRetry = 100; // Milisegundos opcionales
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
+        if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
 
-        for (int i = 0; i < maxRetries; i++)
-        {
-            try
-            {
-                var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(request.ActividadId, ct);
-                    
-                if (reservas.Any(r => r.ClienteId == request.ClienteId && r.EstadoDeReserva != EstadoDeReserva.Cancelada))
-                    return Error.Conflict("Reserva.Conflict", "Ya tiene una reserva para esta actividad");
-                
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
-                if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
+        var reservas = await _reservaRepo.GetReservasDeActividadPorIdAsync(request.ActividadId, ct);
+            
+        if (reservas.Any(r => r.ClienteId == request.ClienteId && r.EstadoDeReserva != EstadoDeReserva.Cancelada))
+            return Error.Conflict("Reserva.Conflict", "Ya tiene una reserva para esta actividad");
 
-                var tipoCliente = TipoCliente.noAbonado;
+        if (await _reservaRepo.ExisteReservaParaClienteEnHorarioAsync(request.ClienteId, actividad.FechaYHora, ct))
+            return Error.Conflict("Reserva.HorarioOcupado", "Ya tiene otra reserva para este mismo horario");
+        
+        var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
+        if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
 
-                var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
-                if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
+        if (!cliente.AptoFisicoAprobado)
+            return Error.Forbidden("Reserva.AptoFisicoNoAprobado", "Debe tener apto físico aprobado");
 
-                if (!cliente.AptoFisicoAprobado)
-                    return Error.Forbidden("Reserva.AptoFisicoNoAprobado", "Debe tener apto físico aprobado");
-
-                Reserva reserva = actividad.IniciarReserva(cliente, tipoCliente);
-                _reservaRepo.Add(reserva);
-
-                await _uow.SaveChangesAsync(ct);
-
-                var reservaCompleta = await _reservaRepo.GetByIdAsync(reserva.Id, ct);
-                if (reservaCompleta == null)
-                    return Error.NotFound("Reserva.NotFound", "Error al recuperar la reserva después de crearla.");
-
-                return await MapToReservaResponse(reservaCompleta, actividad, ct);
-            }
-            catch (ConcurrencyException ex)
-            {
-                System.Console.WriteLine($"ReservaService: ConcurrencyException en intento {i + 1}/{maxRetries}: {ex.InnerException?.Message}");
-
-                if (i == maxRetries - 1)
-                    return Error.Conflict("Sistema.Ocupado", "El sistema está muy ocupado. Por favor, intenta de nuevo en unos segundos.");
-
-                _uow.ClearChangeTracker();
-                await Task.Delay(new Random().Next(10, delayPerRetry), ct);
-            }
-        }
-
-        return Error.NotFound("Error inesperado al procesar la reserva.");
+        var intencion = IntencionPago.Create(request.ClienteId, new List<Guid> { actividad.Id }, actividad.Precio);
+        await _intencionPagoRepo.AddAsync(intencion, ct);
+        await _uow.SaveChangesAsync(ct);
+        return intencion.Id;
     }
 
     public async Task<ErrorOr<Guid>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default)
@@ -100,6 +74,48 @@ public class ReservaService : IReservaService
         await _uow.SaveChangesAsync(ct);
 
         return intencion.Id;
+    }
+
+    public async Task<ErrorOr<Success>> PagarIntencionConRehabilicoinsAsync(Guid intencionId)
+    {
+        var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+        if (intencion == null) return Error.NotFound("Intencion.NotFound", "Intención de pago no encontrada.");
+        if (intencion.Estado == Domain.Enums.EstadoDelPago.Pagado) return Error.Conflict("Intencion.Pagada", "La intención ya está pagada.");
+
+        var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
+        if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado.");
+
+        int cantidadClases = intencion.ActividadesIds.Count;
+        if (cliente.RehabiliCoins < cantidadClases)
+        {
+            return Error.Validation("Cliente.SinRehabiliCoins", $"No tienes suficientes RehabiliCoins. Necesitas {cantidadClases}.");
+        }
+
+        // Descontar coins
+        for (int i = 0; i < cantidadClases; i++)
+        {
+            cliente.CanjearRehabilicoin();
+        }
+        _clienteRepo.Update(cliente);
+
+        intencion.MarcarPagado();
+        _intencionPagoRepo.Update(intencion);
+
+        var tipoCliente = cantidadClases >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
+        foreach (var actId in intencion.ActividadesIds)
+        {
+            var actividad = await _actividadRepo.ObtenerPorIdAsync(actId);
+            if (actividad != null)
+            {
+                var reserva = actividad.IniciarReserva(cliente, tipoCliente);
+                actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                _actividadRepo.Update(actividad);
+            }
+        }
+
+        await _uow.SaveChangesAsync();
+        return Result.Success;
     }
 
     public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(RegistrarPagoRequest request, Guid reservaId, CancellationToken ct = default)
