@@ -24,6 +24,11 @@ public class IntencionPagoRepository : IIntencionPagoRepository
         _context.IntencionesPago.Update(intencionPago);
     }
 
+    public void Remove(IntencionPago intencionPago)
+    {
+        _context.IntencionesPago.Remove(intencionPago);
+    }
+
     public async Task<IntencionPago?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.IntencionesPago.FindAsync(new object[] { id }, ct);
