@@ -15,4 +15,5 @@ public interface IReservaService
     Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeActividadPorId(Guid id, CancellationToken ct = default);
     Task<ErrorOr<Guid>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default);
     Task<ErrorOr<Success>> PagarIntencionConRehabilicoinsAsync(Guid intencionId);
+    Task<ErrorOr<Success>> PagarIntencionConMercadoPagoAsync(Guid intencionId, CancellationToken ct = default);
 }

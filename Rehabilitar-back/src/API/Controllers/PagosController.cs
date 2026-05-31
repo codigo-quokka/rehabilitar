@@ -2,11 +2,8 @@ using Application.Common.Interfaces;
 using Application.Pagos;
 using Application.Pagos.Requests;
 using Application.Reservas;
-using Application.Actividades;
-using Application.Clientes;
 using Domain.Enums;
 using Domain.Pagos;
-using Domain.Reservas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -22,21 +19,17 @@ public class PagosController : ApiControllerBase
     private readonly IMercadoPagoService _mercadoPagoService;
     private readonly IReservaService _reservaService;
     private readonly IIntencionPagoRepository _intencionPagoRepo;
-    private readonly IActividadRepository _actividadRepo;
-    private readonly IClienteRepository _clienteRepo;
     private readonly IUnitOfWork _uow;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, 
-                           IIntencionPagoRepository intencionPagoRepo, IActividadRepository actividadRepo, 
-                           IClienteRepository clienteRepo, IUnitOfWork uow, IConfiguration configuration)
+                           IIntencionPagoRepository intencionPagoRepo,
+                           IUnitOfWork uow, IConfiguration configuration)
     {
         _mercadoPagoService = mercadoPagoService;
         _reservaService = reservaService;
         _intencionPagoRepo = intencionPagoRepo;
-        _actividadRepo = actividadRepo;
-        _clienteRepo = clienteRepo;
         _uow = uow;
         _configuration = configuration;
     }
@@ -170,36 +163,12 @@ public class PagosController : ApiControllerBase
                 return BadRequest("Invalid IntencionId format");
             }
 
-            var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
-            if (intencion == null) return NotFound("Intencion de pago no encontrada");
-
-            intencion.MarcarPagado(); // Need to add this method to IntencionPago
-
-            var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
-            if (cliente == null) return NotFound("Cliente no encontrado");
-
-            var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
-
-            foreach (var actividadId in intencion.ActividadesIds)
-            {
-                var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId);
-                if (actividad == null) continue;
-
-                actividad.IniciarReserva(cliente, tipoCliente);
-                
-                // Find the newly created Reserva
-                var reserva = actividad.Reservas.FirstOrDefault(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago && r.DetallePago.MontoPagado == 0);
-                if (reserva != null)
-                {
-                    actividad.ProcesarPagoReserva(reserva.Id, intencion.MontoAPagar);
-                }
-                
-                _actividadRepo.Update(actividad);
-            }
+            var pagoResult = await _reservaService.PagarIntencionConMercadoPagoAsync(intencionId);
             
-            await _uow.SaveChangesAsync();
-            
-            return Ok();
+            return pagoResult.Match(
+                _ => Ok(),
+                errors => Problem(errors)
+            );
         }
         
         return BadRequest("Unknown external reference format");
