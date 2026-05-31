@@ -169,11 +169,41 @@ export function ReservasPage() {
 
   const hasActiveFilters = useMemo(() => {
     return (
-      searchTerm !== '' ||
       dateFilterApplied ||
       Object.values(filters).some(v => v !== 'all')
     );
-  }, [searchTerm, dateFilterApplied, filters]);
+  }, [dateFilterApplied, filters]);
+
+  const hasActiveSearchFilter = useMemo(() => {
+    return (
+      searchTerm !== ''
+    );
+  }, [searchTerm]);
+
+  const getEmptyStateMessage = () => {
+    if (hasActiveSearchFilter && hasActiveFilters) {
+      return `No se encontraron coincidencias con los filtros de búsqueda seleccionados y la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveSearchFilter) {
+      return `No se encontraron coincidencias con la búsqueda "${searchTerm}".`
+    }
+    if (hasActiveFilters) {
+      return 'No se encontraron coincidencias con los filtros de búsqueda seleccionados.'
+    }
+    return 'No se realizaron reservas.'
+  }
+
+  const cleanFilters = () => {
+    setFilters({
+      estadoDeReserva: 'all',
+      pagado: 'all',
+    });
+    setDateFrom('');
+    setDateTo('');
+    setDateFilterApplied(false);
+    setSearchTerm('');
+  };
+
 
   return (
     <MainLayout title={targetName ? `Reservas de ${targetName}` : 'Mis reservas'}>
@@ -294,8 +324,21 @@ export function ReservasPage() {
 ) : filteredReservas.length === 0 ? (
   <Card>
     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-      {hasActiveFilters ? 'No se encontraron coincidencias' : 'No tienes reservas'}
+      {getEmptyStateMessage()}
     </p>
+    {(hasActiveFilters || hasActiveSearchFilter) && (
+      <div className="flex justify-center mt-4">
+        <Button
+          variant="ghost"
+          className="px-4 py-2 justify-center whitespace-nowrap h-10 hover:bg-primary/20 dark:hover:bg-gray-700 transition-colors"
+          onClick={() => {
+          cleanFilters();
+        }}
+        >
+          Limpiar filtros
+        </Button>
+      </div>
+    )}
   </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
