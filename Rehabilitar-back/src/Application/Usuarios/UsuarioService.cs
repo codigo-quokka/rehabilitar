@@ -64,7 +64,18 @@ public class UsuarioService : IUsuarioService
 
     public async Task<ErrorOr<UsuarioResponse>> CreateAsync(CrearUsuarioRequest request)
     {
+        if (await _userManager.FindByEmailAsync(request.Email) != null)
+        {
+            return Error.Conflict("Usuario.EmailExistente", "Ya existe un usuario registrado con el email ingresado.");
+        }
+
         var user = User.Create(request.Nombre, request.Apellido, request.Email, request.Dni, request.FechaNacimiento);
+
+        if (await _usuarioRepo.ExistsByDniAndRoleAsync(request.Dni, request.Rol))
+        {
+            return Error.Conflict("Usuario.DniExistenteEnRol", 
+                $"El DNI '{request.Dni}' ya se encuentra registrado con el rol '{request.Rol}'.");
+        }
 
         var password = GenerateRandomPassword();
         var result = await _userManager.CreateAsync(user, password);
@@ -192,6 +203,22 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.SetLockoutEndDateAsync(user, null);
         await _userManager.SetLockoutEnabledAsync(user, false);
+        
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> SolicitarReactivacionAsync(Guid id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null)
+            return Error.NotFound("Usuario.NoEncontrado", "Usuario no encontrado.");
+
+        user.SolicitarReactivacion();
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            return Error.Validation("Usuario.SolicitudReactivacionFallida", string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
         
         return Result.Success;
     }

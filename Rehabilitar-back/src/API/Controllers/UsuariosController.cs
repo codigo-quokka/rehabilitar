@@ -82,4 +82,15 @@ public class UsuariosController : ApiControllerBase
             errors => Problem(errors)
         );
     }
+
+    [HttpPut("{id:guid}/solicitar-reactivacion")]
+    [Authorize(Roles = "Recepción")]
+    public async Task<IActionResult> SolicitarReactivacion(Guid id)
+    {
+        var result = await _usuarioService.SolicitarReactivacionAsync(id);
+        return result.Match(
+            _ => Ok(new { Message = "Solicitud de reactivación enviada exitosamente." }),
+            errors => Problem(errors)
+        );
+    }
 }
