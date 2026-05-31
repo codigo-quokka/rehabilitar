@@ -67,19 +67,6 @@ export function Header({ title }: HeaderProps) {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-primary/10 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-            <img
-              src={coinIcon}
-              alt=""
-              className="h-5 w-auto"
-              aria-hidden="true"
-            />
-            <span className=" relative bottom-0.5 mx-1.5  text-gray-300 dark:text-gray-600">
-              |
-            </span>
-            <span className="text-sm font-medium">{coins}</span>
-          </div>
-          <NotificationTray />
           <button
             type="button"
             onClick={toggleTheme}
@@ -120,6 +107,22 @@ export function Header({ title }: HeaderProps) {
               </svg>
             )}
           </button>
+          {user?.rol === "Cliente Registrado" && (
+            <div className="flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-primary/10 dark:bg-gray-950 text-gray-500 dark:text-gray-400">
+              <img
+                src={coinIcon}
+                alt=""
+                className="h-5 w-auto"
+                aria-hidden="true"
+              />
+              <span className=" relative bottom-0.5 mx-1.5  text-gray-300 dark:text-gray-600">
+                |
+              </span>
+              <span className="text-sm font-medium">{coins}</span>
+            </div>
+          )}
+          {/*<NotificationTray /> Descomentarlo para mostrar la campana y la bandeja de notificaciones*/} 
+          
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-full bg-linear-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm"
