@@ -161,12 +161,12 @@ export function LoginPage() {
               </div>
 
               <div className="flex justify-end">
-                <Link
-                  to="/recover"
-                  className="text-sm text-primary hover:underline font-medium"
+                <span
+                  onClick={() => navigate("/recover")}
+                  className="text-sm text-dark-green dark:text-primary hover:underline font-medium cursor-pointer"
                 >
                   ¿Olvidaste tu contraseña?
-                </Link>
+                </span>
               </div>
 
               <Button
@@ -180,13 +180,13 @@ export function LoginPage() {
 
             <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
               <p>
-                <span className="text-gray-500">¿No tienes cuenta? </span>
-                <Link
-                  to="/register"
-                  className="inline text-black hover:underline font-medium cursor-pointer"
+                <span className="text-gray-500 dark:text-gray-400">¿No tienes cuenta? </span>
+                <span
+                  onClick={() => navigate("/register")}
+                  className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer"
                 >
                   Regístrate
-                </Link>
+                </span>
               </p>
             </div>
           </div>
