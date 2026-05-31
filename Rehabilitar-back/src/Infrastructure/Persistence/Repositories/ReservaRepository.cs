@@ -45,4 +45,13 @@ public class ReservaRepository : RepositoryBase<Reserva>, IReservaRepository
                         && r.PorcentajeDescuentoAplicado > 0 
                         && r.EstadoDeReserva == EstadoDeReserva.PendienteDePago, ct);
     }
+
+    public async Task<bool> ExisteReservaParaClienteEnHorarioAsync(Guid clienteId, DateTime fechaHora, CancellationToken ct = default)
+    {
+        return await _context.Reservas
+            .Include(r => r.Actividad)
+            .AnyAsync(r => r.ClienteId == clienteId 
+                        && r.EstadoDeReserva != EstadoDeReserva.Cancelada 
+                        && r.Actividad.FechaYHora == fechaHora, ct);
+    }
 }
