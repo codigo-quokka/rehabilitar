@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MainLayout } from "../../../components/layout";
 import {
@@ -592,7 +592,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           serieId: actividad.serieId && actividad.serieId !== '00000000-0000-0000-0000-000000000000' ? actividad.serieId : undefined,
         }
       : {
-          nombre: "Sin nombre",
+          nombre: "",
           descripcion: "",
           tipo: "TrenSuperior" as CreateActividadRequest['tipo'],
           frecuencia: "Esporadica",
@@ -675,16 +675,14 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           setLoading(false);
           return;
         }
-        if (new Date(fechaFinRecurrente) <= new Date(formData.fechaYHora)) {
+        if (new Date(fechaFinRecurrente) <= new Date(formData.fechaYHora.split('T')[0])) {
           onError('La fecha de fin de recurrencia debe ser posterior a la fecha de inicio');
           setLoading(false);
           return;
         }
         const recurrentePayload: CreateActividadRecurrenteRequest = {
           actividadBase: payload,
-          fechaFinRecurrente: fechaFinRecurrente.includes(':') && !fechaFinRecurrente.endsWith(':00')
-            ? fechaFinRecurrente + ':00'
-            : fechaFinRecurrente,
+          fechaFinRecurrente,
         };
         await actividadesApi.createRecurrente(recurrentePayload);
       } else {
@@ -708,7 +706,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">Seleccione el tipo de frecuencia para la actividad:</p>
+          <p className="text-sm text-dark-green dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
           <Select
             label="Frecuencia"
             value=""
@@ -733,6 +731,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
             label="Nombre"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            placeholder="Sin nombre"
             required
           />
           <div>
@@ -767,29 +766,48 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               }}
               min={todayStr}
             />
-            <Input
-              label="Hora"
-              type="time"
-              value={formData.fechaYHora.split('T')[1] || ''}
-              onChange={(e) => {
-                const fecha = formData.fechaYHora.split('T')[0] || '';
-                setFormData({ ...formData, fechaYHora: `${fecha}T${e.target.value}` });
-              }}
-              onBlur={(e) => {
-                const val = e.target.value;
-                if (!val) return;
-                const [hh, mm] = val.split(':').map(Number);
-                if (hh < 8) {
-                  const nueva = `08:00`;
-                  const fecha = formData.fechaYHora.split('T')[0] || '';
-                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
-                } else if (hh > 19 || (hh === 19 && mm > 0)) {
-                  const nueva = `19:00`;
-                  const fecha = formData.fechaYHora.split('T')[0] || '';
-                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
-                }
-              }}
-            />
+            <div className="relative">
+              <label className="block text-base font-medium text-dark dark:text-gray-100 mb-2.5">
+                Hora
+              </label>
+              <div className="flex gap-2 items-start">
+                <TimeSelect
+                  value={formData.fechaYHora.split('T')[1]?.split(':')[0] || ''}
+                  placeholder="HH"
+                  options={Array.from({ length: 12 }, (_, i) => {
+                    const h = String(i + 8).padStart(2, '0');
+                    return { value: h, label: h };
+                  })}
+                  onChange={(hh) => {
+                    const fecha = formData.fechaYHora.split('T')[0] || '';
+                    const currentMm = formData.fechaYHora.split('T')[1]?.split(':')[1] || '';
+                    const mm = hh === '19' ? '00' : (currentMm || '00');
+                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
+                  }}
+                />
+                <span className="text-dark dark:text-gray-100 text-lg font-medium pt-3">:</span>
+                <TimeSelect
+                  value={
+                    formData.fechaYHora.split('T')[1]?.split(':')[0] === '19'
+                      ? '00'
+                      : formData.fechaYHora.split('T')[1]?.split(':')[1] || ''
+                  }
+                  placeholder="MM"
+                  options={Array.from(
+                    { length: formData.fechaYHora.split('T')[1]?.split(':')[0] === '19' ? 1 : 60 },
+                    (_, i) => {
+                      const m = String(i).padStart(2, '0');
+                      return { value: m, label: m };
+                    },
+                  )}
+                  onChange={(mm) => {
+                    const fecha = formData.fechaYHora.split('T')[0] || '';
+                    const hh = formData.fechaYHora.split('T')[1]?.split(':')[0] || '08';
+                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
+                  }}
+                />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select
@@ -870,9 +888,10 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           {formData.frecuencia === 'Recurrente' && !isEditing && (
             <Input
               label="Fecha fin de recurrencia"
-              type="datetime-local"
+              type="date"
               value={fechaFinRecurrente}
               onChange={(e) => setFechaFinRecurrente(e.target.value)}
+              min={formData.fechaYHora.split('T')[0] || todayStr}
               required
             />
           )}
@@ -930,9 +949,11 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           <Button variant="ghost" type="button" className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700" onClick={onClose}>
             Cancelar
           </Button>
+          {(stepFrecuencia || isEditing) && (
           <Button type="submit" loading={loading}>
             {isEditing ? "Guardar" : "Crear"}
           </Button>
+          )}
         </div>
       </div>
       </form>
@@ -946,5 +967,64 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
         onCancel={() => setShowConfirmDeleteModal(false)}
       />
     </>
+  );
+}
+
+function TimeSelect({
+  value,
+  placeholder,
+  options,
+  onChange,
+}: {
+  value: string;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (ref.current && !ref.current.contains(e.target as Node)) {
+      setOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [handleClickOutside]);
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        className="w-full px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-600 text-dark dark:text-gray-100 text-base text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+        onClick={() => setOpen(!open)}
+      >
+        {value || placeholder}
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-36 overflow-y-auto">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`w-full px-4 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                value === opt.value
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-dark dark:text-gray-100"
+              }`}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

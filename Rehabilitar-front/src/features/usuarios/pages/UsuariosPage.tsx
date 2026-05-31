@@ -877,6 +877,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={nombreFilter.handleKeyDown}
           onPaste={nombreFilter.handlePaste}
+          placeholder="Sin nombre"
         />
         <Input
           label="Apellido"
@@ -885,6 +886,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={apellidoFilter.handleKeyDown}
           onPaste={apellidoFilter.handlePaste}
+          placeholder="Sin apellido"
         />
       </div>
       <Input
