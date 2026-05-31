@@ -173,13 +173,27 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad, ct);
     }
 
-    public async Task<ErrorOr<Deleted>> EliminarActividad(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> CancelarActividad(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         actividad.CancelarActividad();
-        _actividadRepo.Remove(actividad);
+        await _uow.SaveChangesAsync(ct);
+        return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<Deleted>> CancelarSerie(Guid serieId, CancellationToken ct = default)
+    {
+        var actividades = await _actividadRepo.ListarPorSerieIdAsync(serieId, ct);
+        if (!actividades.Any()) return Error.NotFound("No se encontraron actividades para esta serie.");
+
+        foreach (var actividad in actividades)
+        {
+            if (actividad.FechaYHora > DateTime.Now)
+            actividad.CancelarActividad();
+        }
+        
         await _uow.SaveChangesAsync(ct);
         return Result.Deleted;
     }
@@ -313,6 +327,7 @@ public class ActividadService : IActividadService
             actividad.Estado,
             actividad.CupoMaximo,
             actividad.CupoDisponible,
+            actividad.Precio,
             actividad.SalaId,
             nombreSala,
             actividad.ProfesorId,

@@ -7,4 +7,5 @@ public interface IUnitOfWork
     Task CommitTransactionAsync(CancellationToken ct = default);
     Task RollbackTransactionAsync(CancellationToken ct = default);
     void ClearChangeTracker();
+    void MarkAsAdded<T>(T entity) where T : class;
 }
