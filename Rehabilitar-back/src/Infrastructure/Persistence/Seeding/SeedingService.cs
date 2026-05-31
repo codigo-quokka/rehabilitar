@@ -73,12 +73,12 @@ public class SeedingService : ISeedingService
         await SeedClienteAsync("Gandalf", "Gris", "gandalf@gris.com", "22233444", "542217778899");
         await SeedClienteAsync("Leia", "Organa", "leia@organa.com", "33344555");
 
-        await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
-        await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
-        await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
-        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", TipoEspecialidad.TrenSuperior);
-        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", TipoEspecialidad.TrenMedio);
-        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", "44455666", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", "55566777", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", "66677888", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", "77788999", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", "88899000", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", "99900111", TipoEspecialidad.TrenInferior);
 
         var salaA = Sala.Create("Sala A", 10);
         var salaB = Sala.Create("Sala B", 20);
@@ -125,7 +125,9 @@ public class SeedingService : ISeedingService
         adminUser = User.Create(
             firstName: adminFirstName,
             lastName: adminLastName,
-            email: adminEmail
+            email: adminEmail,
+            dni: "00000000",
+            fechaNacimiento: DateOnly.FromDateTime(new DateTime(1990, 1, 1))
         );
 
         adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, "admin");
@@ -152,7 +154,9 @@ public class SeedingService : ISeedingService
         receptionUser = User.Create(
             firstName: receptionFirstName,
             lastName: receptionLastName,
-            email: receptionEmail
+            email: receptionEmail,
+            dni: "11111111",
+            fechaNacimiento: DateOnly.FromDateTime(new DateTime(1990, 1, 1))
         );
 
         receptionUser.PasswordHash = _passwordHasher.HashPassword(receptionUser, "recepcion");
@@ -181,7 +185,9 @@ public class SeedingService : ISeedingService
             clientUser = User.Create(
                 firstName: clientFirstName,
                 lastName: clientLastName,
-                email: clientEmail
+                email: clientEmail,
+                dni: clientDni,
+                fechaNacimiento: DateOnly.FromDateTime(new DateTime(2000, 1, 1))
             );
 
             clientUser.PasswordHash = _passwordHasher.HashPassword(clientUser, password ?? "cliente");
@@ -212,7 +218,7 @@ public class SeedingService : ISeedingService
         });
     }
 
-    private async Task SeedProfesorAsync(string profesorFirstName, string profesorLastName, string profesorEmail, TipoEspecialidad profesorEspecialidad)
+    private async Task SeedProfesorAsync(string profesorFirstName, string profesorLastName, string profesorEmail, string profesorDni, TipoEspecialidad profesorEspecialidad)
     {
         User? profesorUser = await _userManager.FindByEmailAsync(profesorEmail);
         if (profesorUser != null)
@@ -224,7 +230,9 @@ public class SeedingService : ISeedingService
             profesorUser = User.Create(
                 firstName: profesorFirstName,
                 lastName: profesorLastName,
-                email: profesorEmail
+                email: profesorEmail,
+                dni: profesorDni,
+                fechaNacimiento: DateOnly.FromDateTime(new DateTime(1990, 1, 1))
             );
             
             profesorUser.PasswordHash = _passwordHasher.HashPassword(profesorUser, "profesor");

@@ -27,7 +27,18 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<User>().ToTable("Users");
+        builder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.Property(c => c.Dni)
+                .HasConversion(
+                    dniObjeto => dniObjeto.Valor,
+                    dniString => new Dni(dniString)
+                )
+            .HasColumnName("Dni")
+            .HasMaxLength(8)
+            .IsRequired();
+        });
         builder.Entity<Role>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
         builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
@@ -51,14 +62,6 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
             {
                 s.Property(d => d.MontoTotal).HasColumnName("MontoTotal").HasColumnType("decimal(18, 2)");
             });
-            entity.Property(c => c.Dni)
-                .HasConversion(
-                    dniObjeto => dniObjeto.Valor,
-                    dniString => new Dni(dniString)
-                )
-                .HasColumnName("Dni")
-                .HasMaxLength(8)
-                .IsRequired();
         });
 
         builder.Entity<Profesor>(entity =>
