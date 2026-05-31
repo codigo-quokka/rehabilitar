@@ -323,6 +323,18 @@ public class ReservaService : IReservaService
         return (await Task.WhenAll(tasks)).ToList();
     }
 
+    public async Task<ErrorOr<Deleted>> EliminarIntencionPagoAsync(Guid intencionId)
+    {
+        var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+        if (intencion == null) return Error.NotFound("Intencion.NotFound", "Intención de pago no encontrada.");
+        if (intencion.Estado != Domain.Enums.EstadoDelPago.Pendiente)
+            return Error.Conflict("Intencion.NoPendiente", "Solo se pueden cancelar intenciones pendientes.");
+
+        _intencionPagoRepo.Remove(intencion);
+        await _uow.SaveChangesAsync();
+        return Result.Deleted;
+    }
+
     private async Task<ReservaResponse> MapToReservaResponse(Reserva reserva, Actividad actividad, CancellationToken ct = default)
     {
         string nombreCliente = reserva.Cliente.User.FirstName + " " + reserva.Cliente.User.LastName;

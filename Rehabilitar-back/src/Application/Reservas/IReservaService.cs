@@ -16,4 +16,5 @@ public interface IReservaService
     Task<ErrorOr<Guid>> ReservarActividadesRecurrentes(ReservaRecurrenteRequest request, CancellationToken ct = default);
     Task<ErrorOr<Success>> PagarIntencionConRehabilicoinsAsync(Guid intencionId);
     Task<ErrorOr<Success>> PagarIntencionConMercadoPagoAsync(Guid intencionId, CancellationToken ct = default);
+    Task<ErrorOr<Deleted>> EliminarIntencionPagoAsync(Guid intencionId);
 }
