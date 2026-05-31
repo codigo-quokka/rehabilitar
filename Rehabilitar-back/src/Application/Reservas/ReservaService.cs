@@ -43,7 +43,12 @@ public class ReservaService : IReservaService
 
         if (await _reservaRepo.ExisteReservaParaClienteEnHorarioAsync(request.ClienteId, actividad.FechaYHora, ct))
             return Error.Conflict("Reserva.HorarioOcupado", "Ya tiene otra reserva para este mismo horario");
-        
+
+        // Verificar si ya tiene una intención de pago pendiente para esta actividad
+        bool tieneIntencionPendiente = await _intencionPagoRepo.ExisteIntencionPendienteAsync(request.ClienteId, request.ActividadId, ct);
+        if (tieneIntencionPendiente)
+            return Error.Conflict("Reserva.IntencionPendiente", "Ya tiene una intención de pago pendiente para esta actividad. Complete o cancele la existente.");
+
         var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
         if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
 
@@ -78,44 +83,110 @@ public class ReservaService : IReservaService
 
     public async Task<ErrorOr<Success>> PagarIntencionConRehabilicoinsAsync(Guid intencionId)
     {
-        var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
-        if (intencion == null) return Error.NotFound("Intencion.NotFound", "Intención de pago no encontrada.");
-        if (intencion.Estado == Domain.Enums.EstadoDelPago.Pagado) return Error.Conflict("Intencion.Pagada", "La intención ya está pagada.");
-
-        var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
-        if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado.");
-
-        int cantidadClases = intencion.ActividadesIds.Count;
-        if (cliente.RehabiliCoins < cantidadClases)
+        int maxIntentos = 3;
+        for (int i = 0; i < maxIntentos; i++)
         {
-            return Error.Validation("Cliente.SinRehabiliCoins", $"No tienes suficientes RehabiliCoins. Necesitas {cantidadClases}.");
-        }
-
-        // Descontar coins
-        for (int i = 0; i < cantidadClases; i++)
-        {
-            cliente.CanjearRehabilicoin();
-        }
-        _clienteRepo.Update(cliente);
-
-        intencion.MarcarPagado();
-        _intencionPagoRepo.Update(intencion);
-
-        var tipoCliente = cantidadClases >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
-
-        foreach (var actId in intencion.ActividadesIds)
-        {
-            var actividad = await _actividadRepo.ObtenerPorIdAsync(actId);
-            if (actividad != null)
+            try
             {
-                var reserva = actividad.IniciarReserva(cliente, tipoCliente);
-                actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
-                _actividadRepo.Update(actividad);
+                var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+                if (intencion == null) return Error.NotFound("Intencion.NotFound", "Intención de pago no encontrada.");
+                if (intencion.Estado == EstadoDelPago.Pagado) return Error.Conflict("Intencion.Pagada", "La intención ya está pagada.");
+
+                var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId);
+                if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado.");
+
+                int cantidadClases = intencion.ActividadesIds.Count;
+                if (cliente.RehabiliCoins < cantidadClases)
+                {
+                    return Error.Validation("Cliente.SinRehabiliCoins", $"No tienes suficientes RehabiliCoins. Necesitas {cantidadClases}.");
+                }
+
+                // Descontar coins
+                for (int j = 0; j < cantidadClases; j++)
+                {
+                    cliente.CanjearRehabilicoin();
+                }
+
+                intencion.MarcarPagado();
+
+                var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
+                foreach (var actId in intencion.ActividadesIds)
+                {
+                    var actividad = await _actividadRepo.ObtenerPorIdAsync(actId);
+                    if (actividad != null)
+                    {
+                        var reserva = actividad.IniciarReserva(cliente, tipoCliente);
+                        _uow.MarkAsAdded(reserva);
+                        actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                    }
+                }
+
+                // Resetear cancelaciones del cliente al pagar
+                cliente.ResetearCancelaciones();
+
+                await _uow.SaveChangesAsync();
+                return Result.Success;
+            }
+            catch (ConcurrencyException)
+            {
+                if (i == maxIntentos - 1)
+                {
+                    return Error.Conflict("Sistema.Ocupado", "El sistema se encuentra procesando muchas solicitudes. Por favor, reintente en unos segundos.");
+                }
+                _uow.ClearChangeTracker();
+                await Task.Delay(new Random().Next(10, 100));
             }
         }
+        return Error.Conflict("Sistema.Ocupado", "El sistema se encuentra procesando muchas solicitudes. Por favor, reintente en unos segundos.");
+    }
 
-        await _uow.SaveChangesAsync();
-        return Result.Success;
+    public async Task<ErrorOr<Success>> PagarIntencionConMercadoPagoAsync(Guid intencionId, CancellationToken ct = default)
+    {
+        int maxIntentos = 3;
+        for (int i = 0; i < maxIntentos; i++)
+        {
+            try
+            {
+                var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId, ct);
+                if (intencion == null) return Error.NotFound("Intencion.NotFound", "Intención de pago no encontrada.");
+                if (intencion.Estado == EstadoDelPago.Pagado) return Error.Conflict("Intencion.Pagada", "La intención ya está pagada.");
+
+                var cliente = await _clienteRepo.GetByIdAsync(intencion.ClienteId, ct);
+                if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado.");
+
+                intencion.MarcarPagado();
+                _intencionPagoRepo.Update(intencion);
+
+                var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
+
+                foreach (var actId in intencion.ActividadesIds)
+                {
+                    var actividad = await _actividadRepo.ObtenerPorIdAsync(actId, ct);
+                    if (actividad == null) continue;
+
+                    var reserva = actividad.IniciarReserva(cliente, tipoCliente);
+                    actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                }
+
+                // Resetear cancelaciones del cliente al pagar (consistente con ConfirmarPagoReservaAsync)
+                cliente.ResetearCancelaciones();
+                _clienteRepo.Update(cliente);
+
+                await _uow.SaveChangesAsync(ct);
+                return Result.Success;
+            }
+            catch (ConcurrencyException)
+            {
+                if (i == maxIntentos - 1)
+                {
+                    return Error.Conflict("Sistema.Ocupado", "El sistema se encuentra procesando muchas solicitudes. Por favor, reintente en unos segundos.");
+                }
+                _uow.ClearChangeTracker();
+                await Task.Delay(50 * (i + 1), ct);
+            }
+        }
+        return Error.Conflict("Sistema.Ocupado", "El sistema se encuentra procesando muchas solicitudes. Por favor, reintente en unos segundos.");
     }
 
     public async Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(RegistrarPagoRequest request, Guid reservaId, CancellationToken ct = default)
@@ -161,7 +232,7 @@ public class ReservaService : IReservaService
             } catch (ConcurrencyException) {
                 if (i == 2) return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
                 _uow.ClearChangeTracker();
-                await Task.Delay(new Random().Next(10, 100), ct);
+                await Task.Delay(50 * (i + 1), ct);
             }
         }
         return Error.Failure();
