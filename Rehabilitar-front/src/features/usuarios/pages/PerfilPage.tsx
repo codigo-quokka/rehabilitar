@@ -86,6 +86,11 @@ export function PerfilPage() {
     (v) => setFormData((prev) => ({ ...prev, apellido: v })),
     INPUT_PRESETS.name,
   );
+  const phoneFilter = useInputFilter(
+    formData.telefono,
+    (v) => setFormData((prev) => ({ ...prev, telefono: v })),
+    INPUT_PRESETS.digits(12),
+  );
 
   const confirmPasswordReqs = useMemo<Requirement[]>(
     () => [
@@ -343,15 +348,14 @@ export function PerfilPage() {
                 type="tel"
                 value={formData.telefono}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    telefono: stripNonDigits(e.target.value),
-                  })
+                  setFormData((prev) => ({
+                    ...prev,
+                    telefono: e.target.value,
+                  }))
                 }
-                onPaste={(e) => {
-                  const pasted = e.clipboardData.getData("text");
-                  if (stripNonDigits(pasted) !== pasted) e.preventDefault();
-                }}
+                onKeyDown={phoneFilter.handleKeyDown}
+                onPaste={phoneFilter.handlePaste}
+                maxLength={12}
               />
               <div className="flex gap-3 pt-4">
                 <Button onClick={handleSave} loading={loading}>
