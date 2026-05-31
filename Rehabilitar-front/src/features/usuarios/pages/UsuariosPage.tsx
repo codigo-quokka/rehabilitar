@@ -447,7 +447,7 @@ export function UsuariosPage() {
               className="min-w-125"
             />
             <Button
-              variant="verde"
+              variant="primary"
               type="button"
               onClick={() => setFilterOpen(!filterOpen)}
               className="border-none gap-2"
