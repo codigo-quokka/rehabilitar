@@ -38,7 +38,7 @@ export function RecurrenteGroup({
 
   const NULL_GUID = '00000000-0000-0000-0000-000000000000';
   const unassignedCount = actividades.filter(
-    (act) => !act.profesorId || act.profesorId === NULL_GUID
+    (act) => (!act.profesorId || act.profesorId === NULL_GUID) && (!user || act.tipo === user.especialidad)
   ).length;
 
   const monthNames = [
@@ -177,7 +177,7 @@ export function RecurrenteGroup({
       return;
     }
     const unassigned = actividades.filter(
-      (act) => !act.profesorId || act.profesorId === NULL_GUID
+      (act) => (!act.profesorId || act.profesorId === NULL_GUID) && act.tipo === user.especialidad
     );
     if (unassigned.length === 0) return;
     const results = await Promise.allSettled(unassigned.map((act) => actividadesApi.asignarProfesor(act.id, user.id)));

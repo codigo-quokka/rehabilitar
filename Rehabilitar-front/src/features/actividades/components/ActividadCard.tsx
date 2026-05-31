@@ -1,6 +1,7 @@
 import { Card, Badge, Button } from "../../../components/ui";
 import { Actividad, Role } from "../../../types";
 import { formatDate, formatTime, tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
+import { useAuth } from "../../../hooks/useAuth";
 
 interface ActividadCardProps {
   actividad: Actividad;
@@ -19,6 +20,7 @@ export function ActividadCard({
   onTomarActividad,
   onVerReservas,
 }: ActividadCardProps) {
+  const { user } = useAuth();
   return (
     <Card className="flex flex-col">
       <div className="flex items-start justify-between mb-3">
@@ -131,7 +133,7 @@ export function ActividadCard({
             Ver reservas
           </Button>
         )}
-        {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && (
+        {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && user?.especialidad === act.tipo && (
           <Button
             variant="verde"
             className="w-full"

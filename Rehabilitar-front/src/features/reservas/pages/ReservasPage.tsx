@@ -227,8 +227,9 @@ export function ReservasPage() {
             <Input
               placeholder="Buscar por actividad..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125 h-12"
+              maxLength={40}
             />
             <Button
               variant="primary"

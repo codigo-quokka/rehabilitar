@@ -444,8 +444,9 @@ export function UsuariosPage() {
             <Input
               placeholder="Buscar por nombre, email o DNI..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125"
+              maxLength={40}
             />
             <Button
               variant="primary"
