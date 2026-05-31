@@ -1,5 +1,6 @@
 using Application.Usuarios;
 using Domain;
+using Domain.Clientes; // Added for Dni class
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,4 +19,21 @@ public class UsuarioRepository : IUsuarioRepository
 
     public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
         => await _userManager.Users.ToListAsync(ct);
+
+    public async Task<bool> ExistsByDniAndRoleAsync(string dni, string role, CancellationToken ct = default)
+    {
+        var dniValue = new Dni(dni);
+        var usersWithDni = await _userManager.Users
+            .Where(u => u.Dni.Equals(dniValue))
+            .ToListAsync(ct);
+
+        foreach (var user in usersWithDni)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Contains(role))
+                return true;
+        }
+
+        return false;
+    }
 }
