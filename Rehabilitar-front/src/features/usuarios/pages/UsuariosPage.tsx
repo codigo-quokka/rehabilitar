@@ -97,7 +97,7 @@ export function UsuariosPage() {
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
+        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term) && !u.documento?.toLowerCase().includes(term)) return false;
       }
       return true;
     })
@@ -351,6 +351,7 @@ export function UsuariosPage() {
 
   const columns = [
     { key: 'nombre', header: 'Nombre', render: (u: User) => `${u.nombre} ${u.apellido}` },
+    { key: 'dni', header: 'DNI', render: (u: User) =>`${u.documento}`},
     { key: 'email', header: 'Email' },
     {
       key: 'rol',
@@ -441,7 +442,7 @@ export function UsuariosPage() {
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             <Input
-              placeholder="Buscar por nombre o email..."
+              placeholder="Buscar por nombre, email o DNI..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="min-w-125"
