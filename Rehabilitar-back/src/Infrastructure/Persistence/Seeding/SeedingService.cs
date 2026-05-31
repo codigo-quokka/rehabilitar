@@ -73,12 +73,12 @@ public class SeedingService : ISeedingService
         await SeedClienteAsync("Gandalf", "Gris", "gandalf@gris.com", "22233444", "542217778899");
         await SeedClienteAsync("Leia", "Organa", "leia@organa.com", "33344555");
 
-        await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", TipoEspecialidad.TrenSuperior);
-        await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", TipoEspecialidad.TrenMedio);
-        await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", TipoEspecialidad.TrenInferior);
-        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", TipoEspecialidad.TrenSuperior);
-        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", TipoEspecialidad.TrenMedio);
-        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Peter", "Parker", "peter@parker.com", "44455666", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Bruce", "Wayne", "bruce@wayne.com", "55566777", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Clark", "Kent", "clark@kent.com", "66677888", TipoEspecialidad.TrenInferior);
+        await SeedProfesorAsync("Diana", "Prince", "diana@prince.com", "77788999", TipoEspecialidad.TrenSuperior);
+        await SeedProfesorAsync("Steve", "Rogers", "steve@rogers.com", "88899000", TipoEspecialidad.TrenMedio);
+        await SeedProfesorAsync("Natasha", "Romanoff", "natasha@romanoff.com", "99900111", TipoEspecialidad.TrenInferior);
 
         var salaA = Sala.Create("Sala A", 10);
         var salaB = Sala.Create("Sala B", 20);
