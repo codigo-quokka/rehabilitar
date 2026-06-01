@@ -10,4 +10,5 @@ public interface IIntencionPagoRepository
     Task<IntencionPago?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<int> ContarIntencionesPendientesRecientesAsync(Guid actividadId, TimeSpan ventanaTiempo);
     Task<bool> ExisteIntencionPendienteAsync(Guid clienteId, Guid actividadId, CancellationToken ct = default);
+    Task<List<IntencionPago>> GetPendientesPorClienteAsync(Guid clienteId, CancellationToken ct = default);
 }
