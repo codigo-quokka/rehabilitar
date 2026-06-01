@@ -44,10 +44,17 @@ public class ReservaService : IReservaService
         if (await _reservaRepo.ExisteReservaParaClienteEnHorarioAsync(request.ClienteId, actividad.FechaYHora, ct))
             return Error.Conflict("Reserva.HorarioOcupado", "Ya tiene otra reserva para este mismo horario");
 
-        // Verificar si ya tiene una intención de pago pendiente para esta actividad
-        bool tieneIntencionPendiente = await _intencionPagoRepo.ExisteIntencionPendienteAsync(request.ClienteId, request.ActividadId, ct);
-        if (tieneIntencionPendiente)
-            return Error.Conflict("Reserva.IntencionPendiente", "Ya tiene una intención de pago pendiente para esta actividad. Complete o cancele la existente.");
+        // Verificar intenciones pendientes: auto-rechazar expiradas y redirigir a vigentes
+        var pendientes = await _intencionPagoRepo.GetPendientesPorClienteAsync(request.ClienteId, ct);
+        var expiradas = pendientes.Where(i => i.EstaExpirada()).ToList();
+        foreach (var exp in expiradas)
+            exp.MarcarRechazado();
+        if (expiradas.Count != 0)
+            await _uow.SaveChangesAsync(ct);
+
+        var vigente = pendientes.Except(expiradas).FirstOrDefault(i => i.ActividadesIds.Contains(request.ActividadId));
+        if (vigente != null)
+            return vigente.Id; // Redirigir al pago existente
 
         var cliente = await _clienteRepo.GetByIdAsync(request.ClienteId, ct);
         if (cliente == null) return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado");
