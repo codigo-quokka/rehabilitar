@@ -84,7 +84,11 @@ export function ConfirmarPagoPage() {
   };
 
   const esMercadoPago = metodoPago === 'MercadoPago';
-  const montoMinimoMP = isPackage ? montoTotal : montoTotal / 2;
+  // El mínimo a pagar por MP es lo necesario para alcanzar el depósito del 50%.
+  // Si ya se pagó el 50% o más, el mínimo es 0 (cualquier monto es válido).
+  const montoMinimoMP = isPackage
+    ? montoTotal
+    : Math.max(0, (montoTotal / 2) - montoPagado);
 
   const efectuarPago = async (amount: number) => {
     if (processingRef.current) return;
@@ -129,7 +133,12 @@ export function ConfirmarPagoPage() {
 
     if (esMercadoPago) {
       if (monto < montoMinimoMP) {
-        addNotification(isPackage ? 'El monto debe ser el total del paquete.' : 'El monto mínimo para pagar con Mercado Pago es el 50% del valor de la actividad.', 'error');
+        const msg = isPackage
+          ? 'El monto debe ser el total del paquete.'
+          : montoPagado >= montoTotal / 2
+            ? 'Ya has cubierto el depósito mínimo. Puedes pagar cualquier monto pendiente.'
+            : `El monto mínimo para pagar con Mercado Pago es $${montoMinimoMP.toFixed(2)}.`;
+        addNotification(msg, 'error');
         return;
       }
       if (monto > montoPendiente) {
@@ -140,7 +149,7 @@ export function ConfirmarPagoPage() {
       setLoading(true);
       try {
         const url = isIntent ? '/pagos/mercadopago/preferencia-paquete/' + intencionId : '/pagos/mercadopago/preferencia';
-        const body = isIntent ? { monto } : { reservaId };
+        const body = isIntent ? { monto } : { reservaId, monto };
         const response = await apiClient.post(url, body);
         window.location.href = response.data.initPoint;
       } catch {
@@ -242,7 +251,9 @@ export function ConfirmarPagoPage() {
               <p className="text-sm text-blue-800 dark:text-blue-300">
                 {confirmaReserva
                   ? 'Este pago confirmará tu reserva y asegurará tu lugar.'
-                  : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
+                  : montoPagado >= depositoMinimo
+                    ? 'Ya cubriste el depósito mínimo. Debes saldar el resto antes de que inicie la clase.'
+                    : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
                 }
               </p>
             </div>
@@ -278,7 +289,12 @@ export function ConfirmarPagoPage() {
                   disabled={isPackage}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {isPackage ? 'Monto total del paquete' : `Monto mínimo: $${montoMinimoMP.toFixed(2)} — Monto máximo: $${montoPendiente.toFixed(2)}`}
+                  {isPackage
+                    ? 'Monto total del paquete'
+                    : montoPagado >= montoTotal / 2
+                      ? `Ya cubriste el depósito mínimo. Monto máximo: $${montoPendiente.toFixed(2)}`
+                      : `Monto mínimo para alcanzar el depósito: $${montoMinimoMP.toFixed(2)} — Monto máximo: $${montoPendiente.toFixed(2)}`
+                  }
                 </p>
               </>
             ) : (
@@ -301,7 +317,7 @@ export function ConfirmarPagoPage() {
             type="button"
             variant="danger"
             className="flex-1"
-            onClick={() => navigate('/reservas')}
+            onClick={() => navigate('/actividades')}
           >
             Volver
           </Button>
