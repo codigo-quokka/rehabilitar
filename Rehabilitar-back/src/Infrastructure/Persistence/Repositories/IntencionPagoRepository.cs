@@ -43,6 +43,13 @@ public class IntencionPagoRepository : IIntencionPagoRepository
         return intenciones.Any(i => i.ActividadesIds.Contains(actividadId));
     }
 
+    public async Task<List<IntencionPago>> GetPendientesPorClienteAsync(Guid clienteId, CancellationToken ct = default)
+    {
+        return await _context.IntencionesPago
+            .Where(i => i.ClienteId == clienteId && i.Estado == Domain.Enums.EstadoDelPago.Pendiente)
+            .ToListAsync(ct);
+    }
+
     public async Task<int> ContarIntencionesPendientesRecientesAsync(Guid actividadId, TimeSpan ventanaTiempo)
     {
         var limite = DateTime.UtcNow.Subtract(ventanaTiempo);
