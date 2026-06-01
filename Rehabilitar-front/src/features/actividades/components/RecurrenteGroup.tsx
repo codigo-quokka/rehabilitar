@@ -389,7 +389,7 @@ export function RecurrenteGroup({
           <div className="flex-1" />
 
           <div className="flex flex-col gap-2">
-            {hasRole(["Administrador"]) && (
+            {hasRole(["Administrador"]) && first.estado !== 'Cancelada' && (
               <div className="flex gap-2">
                 <Button
                   variant="primary"
