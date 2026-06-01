@@ -9,7 +9,7 @@ import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 const estadoLabel: Record<string, string> = {
-  PendienteDePago: 'Señada (Debe 50%)',
+  PendienteDePago: 'Señada',
   Activa: 'Activa',
   EnEspera: 'En espera',
   Cancelada: 'Cancelada',
