@@ -430,7 +430,7 @@ export function RecurrenteGroup({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">
                 {first.nombre}
               </h2>
               <div className="flex items-center justify-center gap-3 mt-3">
@@ -448,7 +448,7 @@ export function RecurrenteGroup({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-base font-semibold text-dark dark:text-gray-100 min-w-36 text-center">
+                <span className="text-base font-bold text-gray-800/90 dark:text-gray-100 min-w-36 text-center">
                   {monthNames[verMonth.getMonth()]} {verMonth.getFullYear()}
                 </span>
                 <button
@@ -466,7 +466,7 @@ export function RecurrenteGroup({
                   </svg>
                 </button>
               </div>
-              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
+              <p className="text-sm font-semibold text-gray-200 dark:text-gray-400 mt-4">
                 {filteredByMonth.length} {filteredByMonth.length === 1 ? 'actividad' : 'actividades'} en {monthNames[verMonth.getMonth()]}
               </p>
             </div>

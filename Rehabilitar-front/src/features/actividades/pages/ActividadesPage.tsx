@@ -726,7 +726,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
-          <p className="text-sm text-dark-green dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
+          <p className="text-sm text-dark-green font-semibold  dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
           <Select
             label="Frecuencia"
             value=""

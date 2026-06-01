@@ -101,7 +101,7 @@ export function DashboardPage() {
             <h1 className="text-3xl font-bold text-dark dark:text-gray-100">
               ¡Bienvenido, {user?.nombre}!
             </h1>
-            <p className="text-dark dark:text-gray-400 mt-1 text-lg">Aquí está el resumen de tu día</p>
+            <p className="text-dark font-semibold dark:text-gray-400 mt-1 text-lg">Aquí está el resumen de tu día</p>
           </div>
         </div>
 
@@ -144,10 +144,10 @@ export function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {actividades.map((act) => (
-                  <div key={act.id} className="flex items-center justify-between p-3 bg-primary/10 dark:bg-gray-800/50 rounded-lg">
+                  <div key={act.id} className="flex items-center justify-between p-3 bg-primary/20 dark:bg-gray-800/50 rounded-lg">
                     <div>
-                      <p className="font-medium text-dark dark:text-gray-100">{act.nombre}</p>
-                      <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="font-semibold text-gray-700 dark:text-gray-100">{act.nombre}</p>
+                      <p className="text-sm font-semibold text-dark-green dark:text-primary">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
                       {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
@@ -168,10 +168,10 @@ export function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {profesorActividades.map((act) => (
-                    <div key={act.id} className="flex items-center justify-between p-3 bg-secondary/10 dark:bg-gray-800/50 rounded-lg">
+                    <div key={act.id} className="flex items-center justify-between p-3 bg-primary/20 dark:bg-gray-800/50 rounded-lg">
                       <div>
-                        <p className="font-medium text-dark dark:text-gray-100">{act.nombre}</p>
-                        <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="font-semibold text-700 dark:text-gray-100">{act.nombre}</p>
+                        <p className="text-sm font-semibold text-dark-green dark:text-primary">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                       <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
                         {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}

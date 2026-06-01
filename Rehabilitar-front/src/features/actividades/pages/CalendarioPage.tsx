@@ -412,7 +412,7 @@ export function CalendarioPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">{selectedActividad.nombre}</h2>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">{selectedActividad.nombre}</h2>
             </div>
             <div className="max-w-lg mx-auto">
               <ActividadCard
