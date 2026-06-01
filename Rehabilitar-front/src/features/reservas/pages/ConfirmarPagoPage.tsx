@@ -377,13 +377,15 @@ export function ConfirmarPagoPage() {
             ) : (
               <div className="py-2 space-y-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Se utilizará 1 RehabiliCoin para saldar esta actividad.
+                  {isPackage
+                    ? `Se utilizarán ${actividades?.length} RehabiliCoins (1 por cada clase del paquete).`
+                    : 'Se utilizará 1 RehabiliCoin para saldar esta actividad.'}
                 </p>
                 {montoPagado > 0 && (
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                     <p className="text-sm text-green-800 dark:text-green-300">
                       <strong>Importante:</strong> Como ya realizaste un pago de <strong>${montoPagado.toFixed(2)}</strong>,
-                      ese monto será reembolsado a tu saldo a favor y el RehabiliCoin cubrirá el total de la actividad.
+                      ese monto será reembolsado a tu saldo a favor y {isPackage ? 'los RehabiliCoins cubrirán el total del paquete' : 'el RehabiliCoin cubrirá el total de la actividad'}.
                     </p>
                   </div>
                 )}
@@ -398,7 +400,7 @@ export function ConfirmarPagoPage() {
                 </span>
               ) : (
                 <span className="text-lg font-bold text-primary">
-                  1 RehabiliCoin
+                  {isPackage ? `${actividades?.length} RehabiliCoins` : '1 RehabiliCoin'}
                 </span>
               )}
             </div>
