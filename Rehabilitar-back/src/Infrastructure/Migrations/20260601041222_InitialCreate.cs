@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Infrastructure.Persistence.Migrations
+namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class MagicMigration : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,6 +21,7 @@ namespace Infrastructure.Persistence.Migrations
                     MontoTotal = table.Column<decimal>(type: "TEXT", nullable: false),
                     MontoAPagar = table.Column<decimal>(type: "decimal(18, 2)", nullable: false),
                     FechaCreacion = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FechaExpiracion = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Pagado = table.Column<bool>(type: "INTEGER", nullable: false),
                     Estado = table.Column<int>(type: "INTEGER", nullable: false)
                 },
