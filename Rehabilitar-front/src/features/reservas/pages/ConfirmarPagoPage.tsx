@@ -86,9 +86,13 @@ export function ConfirmarPagoPage() {
   const esMercadoPago = metodoPago === 'MercadoPago';
   // El mínimo a pagar por MP es lo necesario para alcanzar el depósito del 50%.
   // Si ya se pagó el 50% o más, el mínimo es 0 (cualquier monto es válido).
+  // Si ya señaló, solo puede pagar el total restante.
+  // Si es primera vez, mínimo 50% del total.
   const montoMinimoMP = isPackage
     ? montoTotal
-    : Math.max(0, (montoTotal / 2) - montoPagado);
+    : montoPagado > 0
+      ? montoPendiente
+      : montoTotal / 2;
 
   const efectuarPago = async (amount: number) => {
     if (processingRef.current) return;
@@ -106,7 +110,10 @@ export function ConfirmarPagoPage() {
       const completado = reservaActualizada.montoPendiente === 0;
 
       if (completado) {
-        addNotification('¡Pago completo! Tu reserva está totalmente saldada.', 'success');
+        const msg = metodoPago === 'RehabiliCoins' && montoPagado > 0
+          ? '¡Pago completo! El depósito fue reembolsado a tu saldo a favor y la reserva está totalmente saldada.'
+          : '¡Pago completo! Tu reserva está totalmente saldada.';
+        addNotification(msg, 'success');
       } else if (nuevoEstado === 'Activa') {
         addNotification('¡Reserva confirmada! Tu lugar está asegurado.', 'success');
       } else if (nuevoEstado === 'EnEspera') {
@@ -135,9 +142,9 @@ export function ConfirmarPagoPage() {
       if (monto < montoMinimoMP) {
         const msg = isPackage
           ? 'El monto debe ser el total del paquete.'
-          : montoPagado >= montoTotal / 2
-            ? 'Ya has cubierto el depósito mínimo. Puedes pagar cualquier monto pendiente.'
-            : `El monto mínimo para pagar con Mercado Pago es $${montoMinimoMP.toFixed(2)}.`;
+          : montoPagado > 0
+            ? 'Debes saldar el total restante de una vez.'
+            : `El monto mínimo para señar es $${montoMinimoMP.toFixed(2)}.`;
         addNotification(msg, 'error');
         return;
       }
@@ -249,11 +256,13 @@ export function ConfirmarPagoPage() {
           {!isPackage && (
             <div className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-800 dark:text-blue-300">
-                {confirmaReserva
-                  ? 'Este pago confirmará tu reserva y asegurará tu lugar.'
-                  : montoPagado >= depositoMinimo
-                    ? 'Ya cubriste el depósito mínimo. Debes saldar el resto antes de que inicie la clase.'
-                    : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
+                {!esMercadoPago && montoPagado > 0
+                  ? 'Al pagar con RehabiliCoins se reembolsará tu depósito a saldo a favor y la actividad quedará totalmente saldada.'
+                  : confirmaReserva
+                    ? 'Este pago confirmará tu reserva y asegurará tu lugar.'
+                    : montoPagado > 0
+                      ? 'Ya señaste esta reserva. Debes saldar el total restante antes de que inicie la clase.'
+                      : 'Para confirmar la reserva se requiere pagar al menos el 50% del total ($' + depositoMinimo.toFixed(2) + ').'
                 }
               </p>
             </div>
@@ -286,28 +295,44 @@ export function ConfirmarPagoPage() {
                   value={monto}
                   onChange={(e) => setMonto(parseFloat(e.target.value) || 0)}
                   required
-                  disabled={isPackage}
+                  disabled={isPackage || montoPagado > 0}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {isPackage
                     ? 'Monto total del paquete'
-                    : montoPagado >= montoTotal / 2
-                      ? `Ya cubriste el depósito mínimo. Monto máximo: $${montoPendiente.toFixed(2)}`
-                      : `Monto mínimo para alcanzar el depósito: $${montoMinimoMP.toFixed(2)} — Monto máximo: $${montoPendiente.toFixed(2)}`
+                    : montoPagado > 0
+                      ? `Debes saldar el total restante: $${montoPendiente.toFixed(2)}`
+                      : `Monto mínimo para señar: $${montoMinimoMP.toFixed(2)} — Monto máximo: $${montoPendiente.toFixed(2)}`
                   }
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
-                Se utilizará 1 RehabiliCoin completo por esta actividad.
-              </p>
+              <div className="py-2 space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Se utilizará 1 RehabiliCoin para saldar esta actividad.
+                </p>
+                {montoPagado > 0 && (
+                  <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-800 dark:text-green-300">
+                      <strong>Importante:</strong> Como ya realizaste un pago de <strong>${montoPagado.toFixed(2)}</strong>,
+                      ese monto será reembolsado a tu saldo a favor y el RehabiliCoin cubrirá el total de la actividad.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="flex justify-between items-center text-sm pt-2">
               <span className="text-gray-500 dark:text-gray-400">Total a pagar ahora</span>
-              <span className="text-lg font-bold text-primary">
-                ${(esMercadoPago ? monto : montoPendiente).toFixed(2)}
-              </span>
+              {esMercadoPago ? (
+                <span className="text-lg font-bold text-primary">
+                  ${monto.toFixed(2)}
+                </span>
+              ) : (
+                <span className="text-lg font-bold text-primary">
+                  1 RehabiliCoin
+                </span>
+              )}
             </div>
           </div>
         </Card>
@@ -329,7 +354,7 @@ export function ConfirmarPagoPage() {
             disabled={esMercadoPago ? (monto < montoMinimoMP || monto > montoPendiente) : false}
             onClick={handleRealizarPago}
           >
-            {esMercadoPago ? 'Mercado Pago' : 'Realizar Pago'}
+            {esMercadoPago ? 'Ir a Mercado Pago' : 'Realizar Pago'}
           </Button>
         </div>
       </div>

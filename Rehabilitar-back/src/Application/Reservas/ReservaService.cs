@@ -220,6 +220,13 @@ public class ReservaService : IReservaService
                     if (cliente.RehabiliCoins <= 0)
                         return Error.Validation("Cliente.SinRehabiliCoins", "No tiene RehabiliCoins suficientes.");
                     
+                    // Si la reserva ya tiene un pago parcial (seña en dinero), se reembolsa
+                    // porque el RehabiliCoin cubre el total de la actividad
+                    if (reserva.DetallePago.MontoPagado > 0)
+                    {
+                        cliente.Reembolsar(reserva.DetallePago.MontoPagado);
+                    }
+                    
                     cliente.CanjearRehabilicoin();
                     _clienteRepo.Update(cliente);
                 }
@@ -227,7 +234,7 @@ public class ReservaService : IReservaService
                 var actividad = await _actividadRepo.ObtenerPorIdAsync(request.ActividadId, ct);
                 if (actividad == null) return Error.NotFound("Reserva.ActividadNoEncontrada", "Actividad no encontrada");
                 
-                decimal montoAPagar = request.MetodoPago == MetodoPago.RehabiliCoins ? actividad.Precio : request.Monto;
+                decimal montoAPagar = request.Monto;
                 
                 actividad.ProcesarPagoReserva(reservaId, montoAPagar); // Lógica de dominio actualizada
                 
