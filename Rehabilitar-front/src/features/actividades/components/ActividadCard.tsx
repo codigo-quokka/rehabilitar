@@ -26,7 +26,7 @@ export function ActividadCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex gap-2">
           <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
-          <Badge className={act.frecuencia === 'Recurrente' ? 'bg-purple-200 text-purple-500 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}>{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
+          <Badge variant={act.frecuencia === 'Recurrente' ? 'recurrente' : 'esporadica'}>{frecuenciaLabel[act.frecuencia] || act.frecuencia}</Badge>
           {hasRole(["Administrador", "Profesor", "Recepción"]) && (
             <Badge variant={
               act.estado === 'Cancelada' ? 'warning' :
@@ -89,7 +89,7 @@ export function ActividadCard({
       <div className="flex flex-col gap-2">
         {hasRole(["Cliente Registrado"]) && (
           <Button
-            variant={act.cupoDisponible <= 0 ? "outline" : "verde"}
+            variant={act.cupoDisponible <= 0 ? "danger" : "primary"}
             className="w-full"
             disabled={act.cupoDisponible <= 0}
             onClick={() => onReservar(act)}
@@ -100,7 +100,7 @@ export function ActividadCard({
         {hasRole(["Administrador"]) && onVerReservas && (
           <div className="flex gap-2">
             <Button
-              variant="verde"
+              variant="primary"
               className="flex-1"
               onClick={() => onModificar(act)}
             >
@@ -117,7 +117,7 @@ export function ActividadCard({
         )}
         {hasRole(["Administrador"]) && !onVerReservas && (
           <Button
-            variant="verde"
+            variant="primary"
             className="w-full"
             onClick={() => onModificar(act)}
           >
@@ -135,7 +135,7 @@ export function ActividadCard({
         )}
         {hasRole(["Profesor"]) && (!act.profesorId || act.profesorId === '00000000-0000-0000-0000-000000000000') && user?.especialidad === act.tipo && (
           <Button
-            variant="verde"
+            variant="primary"
             className="w-full"
             onClick={() => onTomarActividad(act)}
           >

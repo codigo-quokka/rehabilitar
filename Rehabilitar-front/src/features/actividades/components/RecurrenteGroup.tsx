@@ -6,6 +6,7 @@ import { Actividad, Role, Sala, User } from "../../../types";
 import { actividadesApi, reservasApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
 import { ActividadCard } from "./ActividadCard";
+import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { formatDate, tipoLabel } from "../constants";
 
 interface RecurrenteGroupProps {
@@ -76,6 +77,8 @@ export function RecurrenteGroup({
     salaId: first.salaId,
     estado: first.estado,
   });
+
+  const [showTomarTodasConfirm, setShowTomarTodasConfirm] = useState(false);
 
   const availableMonthKeys = useMemo(() => {
     const months = new Set<string>();
@@ -297,6 +300,15 @@ export function RecurrenteGroup({
       (act) => (!act.profesorId || act.profesorId === NULL_GUID) && act.tipo === user.especialidad
     );
     if (unassigned.length === 0) return;
+    setShowTomarTodasConfirm(true);
+  };
+
+  const handleConfirmarTomarTodas = async () => {
+    if (!user) return;
+    const unassigned = actividades.filter(
+      (act) => (!act.profesorId || act.profesorId === NULL_GUID) && act.tipo === user.especialidad
+    );
+    setShowTomarTodasConfirm(false);
     const results = await Promise.allSettled(unassigned.map((act) => actividadesApi.asignarProfesor(act.id, user.id)));
     const failed = results.filter(r => r.status === 'rejected');
     if (failed.length > 0) {
@@ -335,7 +347,7 @@ export function RecurrenteGroup({
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
-              <Badge className="bg-purple-200 text-purple-500 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
+              <Badge variant="recurrente">Recurrente</Badge>
             </div>
             <Badge variant="info">
               {count} actividades
@@ -378,7 +390,7 @@ export function RecurrenteGroup({
             {hasRole(["Administrador"]) && (
               <div className="flex gap-2">
                 <Button
-                  variant="verde"
+                  variant="primary"
                   className="flex-1"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -413,7 +425,7 @@ export function RecurrenteGroup({
             )}
             {hasRole(["Cliente Registrado"]) && (
               <Button
-                variant="verde"
+                variant="primary"
                 className="w-full"
                 loading={fetchingMonths || subscribeLoading}
                 onClick={(e) => {
@@ -426,7 +438,7 @@ export function RecurrenteGroup({
             )}
             {hasRole(["Profesor"]) && unassignedCount > 0 && (
               <Button
-                variant="verde"
+                variant="primary"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -742,6 +754,15 @@ export function RecurrenteGroup({
         </div>,
         document.body
       )}
+
+      <ConfirmActionModalVerde
+        isOpen={showTomarTodasConfirm}
+        title="Tomar todas las actividades"
+        body={`¿Estás seguro de que querés tomar todas las actividades disponibles (${unassignedCount}) de esta serie recurrente?`}
+        confirmLabel="Tomar todas"
+        onConfirm={handleConfirmarTomarTodas}
+        onCancel={() => setShowTomarTodasConfirm(false)}
+      />
     </>
   );
 }

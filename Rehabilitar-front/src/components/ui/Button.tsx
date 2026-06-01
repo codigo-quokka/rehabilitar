@@ -29,7 +29,7 @@ export function Button({
     outline:
       "border-2 border-primary text-primary hover:bg-primary/70 hover:text-white focus:ring-primary",
     ghost: "border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100",
-    violeta:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-violet-300 hover:bg-violet-400 text-violet-700 dark:bg-violet-900 dark:hover:bg-violet-950",
+    violeta:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-violet-400 hover:bg-violet-700 text-gray-100 dark:bg-violet-900 dark:hover:bg-violet-950",
     verde:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-primary/50 hover:bg-primary/80 text-dark-green dark:hover:bg-darkest-green dark:bg-dark-green",
     naranja:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-orange-200 hover:bg-orange-300 text-amber-800 dark:hover:text-gray-200 dark:bg-orange-500 dark:hover:bg-orange-600",
     rojo:"border border-gray-300 dark:border-gray-600 focus:ring-gray-300 dark:text-gray-100 bg-red-300 hover:bg-red-300 text-red-800 dark:bg-red-800 dark:hover:bg-red-900",

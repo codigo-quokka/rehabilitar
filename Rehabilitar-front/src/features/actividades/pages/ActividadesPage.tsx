@@ -16,6 +16,7 @@ import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api
 import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
+import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { ActividadCard } from "../components/ActividadCard";
 import { RecurrenteGroup } from "../components/RecurrenteGroup";
 import { tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
@@ -56,6 +57,9 @@ export function ActividadesPage() {
   const [suscriptoresGrupoNombre, setSuscriptoresGrupoNombre] = useState('');
   const [suscriptoresData, setSuscriptoresData] = useState<Reserva[]>([]);
   const [suscriptoresLoading, setSuscriptoresLoading] = useState(false);
+
+  const [showTomarConfirm, setShowTomarConfirm] = useState(false);
+  const [tomarConfirmActividad, setTomarConfirmActividad] = useState<Actividad | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -99,6 +103,15 @@ export function ActividadesPage() {
     };
   }, [showReservasModal]);
 
+  useEffect(() => {
+    if (!showSuscriptoresModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSuscriptoresModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showSuscriptoresModal]);
+
   const handleVerReservas = async (actividad: Actividad) => {
     setReservasActNombre(actividad.nombre);
     setReservasLoading(true);
@@ -118,6 +131,25 @@ export function ActividadesPage() {
     }
   };
 
+  const handleConfirmarTomar = async () => {
+    if (!tomarConfirmActividad || !user) return;
+    try {
+      await actividadesApi.asignarProfesor(tomarConfirmActividad.id, user.id);
+      setShowTomarConfirm(false);
+      setTomarConfirmActividad(null);
+      fetchData();
+      setToastType('success');
+      setToastMessage('Te has asignado a la actividad exitosamente');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Error al tomar la actividad', err);
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
   const handleVerSuscriptores = async (actividadesGrupo: Actividad[]) => {
     setSuscriptoresGrupoNombre(actividadesGrupo[0]?.nombre || 'Grupo recurrente');
     setSuscriptoresLoading(true);
@@ -130,7 +162,7 @@ export function ActividadesPage() {
       const todas = results.flat().filter(
         (r, i, arr) => arr.findIndex(x => x.id === r.id) === i
       );
-      setSuscriptoresData(todas.filter(r => r.tipoCliente === 'Abonado' || r.tipoCliente === '1'));
+      setSuscriptoresData(todas.filter(r => r.tipoCliente === 'Abonado'));
     } catch (err) {
       console.error('Error al obtener suscriptores:', err);
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al cargar suscriptores';
@@ -439,20 +471,9 @@ export function ActividadesPage() {
                   setEditingActividad(act);
                   setShowModal(true);
                 }}
-                onTomarActividad={async (act) => {
-                  try {
-                    await actividadesApi.asignarProfesor(act.id, user!.id);
-                    fetchData();
-                    setToastType('success');
-                    setToastMessage('Te has asignado a la actividad exitosamente');
-                    setShowToast(true);
-                  } catch (err) {
-                    console.error('Error al tomar la actividad', err);
-                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
-                    setToastType('error');
-                    setToastMessage(msg);
-                    setShowToast(true);
-                  }
+                onTomarActividad={(act) => {
+                  setTomarConfirmActividad(act);
+                  setShowTomarConfirm(true);
                 }}
                 onVerReservas={handleVerReservas}
                 onVerSuscriptores={handleVerSuscriptores}
@@ -478,20 +499,9 @@ export function ActividadesPage() {
                   setEditingActividad(act);
                   setShowModal(true);
                 }}
-                onTomarActividad={async (act) => {
-                  try {
-                    await actividadesApi.asignarProfesor(act.id, user!.id);
-                    fetchData();
-                    setToastType('success');
-                    setToastMessage('Te has asignado a la actividad exitosamente');
-                    setShowToast(true);
-                  } catch (err) {
-                    console.error('Error al tomar la actividad', err);
-                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
-                    setToastType('error');
-                    setToastMessage(msg);
-                    setShowToast(true);
-                  }
+                onTomarActividad={(act) => {
+                  setTomarConfirmActividad(act);
+                  setShowTomarConfirm(true);
                 }}
                 onVerReservas={handleVerReservas}
               />
@@ -558,30 +568,24 @@ export function ActividadesPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(() => {
-                  const map = new Map<string, { nombre: string; cantidad: number; estados: Set<string>; todoPagado: boolean }>();
+                  const formatFecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  });
+                  const map = new Map<string, { nombre: string; cantidad: number; fechas: string[] }>();
                   for (const r of suscriptoresData) {
                     const key = r.clienteId;
                     if (!map.has(key)) {
-                      map.set(key, { nombre: r.nombreCliente || 'Cliente desconocido', cantidad: 0, estados: new Set(), todoPagado: true });
+                      map.set(key, { nombre: r.nombreCliente || 'Cliente desconocido', cantidad: 0, fechas: [] });
                     }
                     const entry = map.get(key)!;
                     entry.cantidad++;
-                    entry.estados.add(r.estadoDeReserva);
-                    if (r.montoPendiente !== 0) { entry.todoPagado = false; }
+                    const act = actividades.find(a => a.id === r.actividadId);
+                    if (act) entry.fechas.push(formatFecha(act.fechaYHora));
                   }
                   return Array.from(map.values());
                 })().map((item) => {
                   const iniciales = item.nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
-                  const estadoUnico = item.estados.size === 1 ? item.estados.values().next().value : null;
-                  const estadoLabel = estadoUnico === 'PendienteDePago' ? 'Pendiente de pago' :
-                                     estadoUnico === 'Activa' ? 'Activa' :
-                                     estadoUnico === 'EnEspera' ? 'En espera' :
-                                     estadoUnico === 'Cancelada' ? 'Cancelada' :
-                                     estadoUnico ?? 'Múltiples estados';
-                  const estadoVariant: 'default' | 'success' | 'warning' | 'danger' | 'info' = estadoUnico === 'Activa' ? 'success' :
-                                        estadoUnico === 'Cancelada' ? 'danger' :
-                                        estadoUnico === 'EnEspera' ? 'info' :
-                                        estadoUnico === 'PendienteDePago' ? 'warning' : 'default';
                   return (
                     <Card key={item.nombre} className="flex flex-col relative">
                       <div className="absolute top-3 right-3 bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
@@ -600,16 +604,11 @@ export function ActividadesPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         {item.cantidad} {item.cantidad === 1 ? 'clase' : 'clases'}
                       </div>
-                      <div className="flex items-center gap-2 mt-auto">
-                        <Badge variant={estadoVariant} className="text-xs">
-                          {estadoLabel}
-                        </Badge>
-                        {item.todoPagado && (
-                          <Badge variant="success" className="text-xs">Pagado</Badge>
-                        )}
+                      <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        {item.fechas.map((f, i) => <p key={i}>{f}</p>)}
                       </div>
                     </Card>
                   );
@@ -632,7 +631,7 @@ export function ActividadesPage() {
                 </svg>
               </button>
               <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasActNombre}</h2>
-              <p className="text-sm text-dark-green font-bold dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+              <p className="text-sm text-gray-600 font-bold dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
             </div>
             {reservasLoading ? (
               <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
@@ -688,6 +687,15 @@ export function ActividadesPage() {
         </div>,
         document.body
       )}
+
+      <ConfirmActionModalVerde
+        isOpen={showTomarConfirm}
+        title="Tomar actividad"
+        body={`¿Estás seguro de que querés tomar la actividad "${tomarConfirmActividad?.nombre}"?`}
+        confirmLabel="Tomar"
+        onConfirm={handleConfirmarTomar}
+        onCancel={() => { setShowTomarConfirm(false); setTomarConfirmActividad(null); }}
+      />
     </MainLayout>
   );
 }
