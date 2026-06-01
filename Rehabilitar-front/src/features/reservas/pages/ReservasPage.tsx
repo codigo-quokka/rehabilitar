@@ -104,6 +104,15 @@ export function ReservasPage() {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    if (!showGroupModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowGroupModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showGroupModal]);
+
   const handlePagar = (reserva: Reserva) => {
     const montoPagado = reserva.montoTotal - reserva.montoPendiente;
     navigate(`/reservas/confirmar/${reserva.id}`, {
@@ -149,7 +158,7 @@ export function ReservasPage() {
 
   const montoPagado = (r: Reserva) => r.montoTotal - r.montoPendiente;
   const estaCompletado = (r: Reserva) => r.montoPendiente === 0;
-  const esSuscripto = (r: Reserva) => r.tipoCliente === 'Abonado' || r.tipoCliente === '1';
+  const esSuscripto = (r: Reserva) => r.tipoCliente === 'Abonado';
 
   const filteredReservas = reservas.filter(r => {
     if (filters.estadoDeReserva !== 'all' && r.estadoDeReserva !== filters.estadoDeReserva) return false;
@@ -237,7 +246,13 @@ export function ReservasPage() {
       reservas.sort(sortByFecha);
     }
     ind.sort(sortByFecha);
-    return { grupos: Array.from(gruposMap.entries()), individuales: ind };
+    const gruposArr = Array.from(gruposMap.entries());
+    gruposArr.sort(([, a], [, b]) => {
+      const aSus = a.length >= 4 ? 0 : 1;
+      const bSus = b.length >= 4 ? 0 : 1;
+      return aSus - bSus;
+    });
+    return { grupos: gruposArr, individuales: ind };
   }, [displayReservas, actividades]);
 
   const cleanFilters = () => {
@@ -460,7 +475,7 @@ export function ReservasPage() {
                     <Card className="flex flex-col flex-1 transition-shadow hover:shadow-dark-green hover:bg-green-50 dark:hover:bg-gray-900 dark:hover:shadow-gray-500">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex gap-1.5 flex-wrap">
-                          <Badge className="bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                          <Badge variant="recurrente">
                             Recurrente
                           </Badge>
                           {reservas.length > 0 && reservas.every(r => r.estadoDeReserva === 'Cancelada') && (

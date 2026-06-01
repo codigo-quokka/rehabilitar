@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'amber';
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'amber' | 'recurrente' | 'esporadica';
   className?: string;
 }
 
@@ -14,6 +14,8 @@ export function Badge({ children, variant = 'default', className = '' }: BadgePr
     danger: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-400',
     info: 'bg-primary/20 dark:bg-primary/10 text-primary-dark dark:text-primary',
     amber: 'bg-amber-200 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400',
+    recurrente: 'bg-purple-300/80 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    esporadica: 'bg-gray-300/80 text-gray-800 dark:bg-gray-600 dark:text-gray-300',
   };
 
   return (

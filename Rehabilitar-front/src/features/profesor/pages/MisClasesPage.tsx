@@ -155,6 +155,7 @@ export function MisClasesPage() {
                 <thead>
                   <tr className="border-b border-border dark:border-gray-700">
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Actividad</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Frecuencia</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Fecha</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Horario</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Sala</th>
@@ -178,7 +179,7 @@ export function MisClasesPage() {
                       <>
                         <tr
                           key={serieId}
-                          className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                          className="border-b border-border/50 dark:border-gray-700/50 hover:bg-primary/10 dark:hover:bg-gray-800 cursor-pointer"
                           onClick={() => setExpandedGroup(isExpanded ? null : serieId)}
                         >
                           <td className="px-4 py-3">
@@ -189,12 +190,12 @@ export function MisClasesPage() {
                               >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
-                              <div className="flex items-center gap-2 min-w-0">
+                              <div className="min-w-0">
                                 <span className="text-sm font-medium text-dark dark:text-gray-100 truncate">{first.nombre}</span>
-                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs shrink-0">Recurrente</Badge>
                               </div>
                             </div>
                           </td>
+                          <td className="px-4 py-3"><Badge variant="recurrente" className="text-xs shrink-0">Recurrente</Badge></td>
                           <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">
                             {formatDateShort(first.fechaYHora)}{first.fechaYHora !== last.fechaYHora ? ` — ${formatDateShort(last.fechaYHora)}` : ''}
                           </td>
@@ -211,7 +212,7 @@ export function MisClasesPage() {
                           <td className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">—</td>
                           <td className="px-4 py-3">
                             <Button
-                              variant="rojo"
+                              variant="danger"
                               size="sm"
                               className="w-full"
                               onClick={(e) => {
@@ -224,8 +225,9 @@ export function MisClasesPage() {
                           </td>
                         </tr>
                         {isExpanded && sorted.map((act) => (
-                          <tr key={act.id} className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-border/30 dark:border-gray-700/30">
+                          <tr key={act.id} className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-border/30 dark:border-gray-700/30 hover:bg-primary/10 dark:hover:bg-gray-800">
                             <td className="px-4 py-2.5 pl-10 text-sm text-dark dark:text-gray-100">{act.nombre}</td>
+                            <td className="px-4 py-2.5 text-sm text-gray-400 dark:text-gray-500">—</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatDate(act.fechaYHora)}</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatTime(act.fechaYHora)}</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100">{act.salaNombre || 'Sin sala'}</td>
@@ -245,7 +247,7 @@ export function MisClasesPage() {
                             <td className="px-4 py-2.5">
                               {act.profesorId && act.profesorId !== NULL_GUID ? (
                                 <Button
-                                  variant="rojo"
+                                  variant="danger"
                                   size="sm"
                                   className="w-full"
                                   onClick={() => {
@@ -263,13 +265,14 @@ export function MisClasesPage() {
                     );
                   })}
                   {individuales.map((act) => (
-                    <tr key={act.id} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr key={act.id} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-primary/10 dark:hover:bg-gray-800">
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100">{act.nombre}</td>
+                      <td className="px-4 py-3"><Badge variant="esporadica" className="text-xs shrink-0">Esporádica</Badge></td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatDate(act.fechaYHora)}</td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatTime(act.fechaYHora)}</td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100">{act.salaNombre || 'Sin sala'}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="info">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                        <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={estadoVariant(act.estado)}>
@@ -284,7 +287,7 @@ export function MisClasesPage() {
                       <td className="px-4 py-3">
                         {act.profesorId && act.profesorId !== NULL_GUID ? (
                           <Button
-                            variant="rojo"
+                            variant="danger"
                             size="sm"
                             className="w-full"
                             onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
