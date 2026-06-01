@@ -377,9 +377,11 @@ export function ConfirmarPagoPage() {
             ) : (
               <div className="py-2 space-y-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Se utilizará 1 RehabiliCoin para saldar esta actividad.
+                  {isIntent
+                    ? `Se utilizarán ${actividades?.length} RehabiliCoins para saldar este paquete de actividades.`
+                    : 'Se utilizará 1 RehabiliCoin para saldar esta actividad.'}
                 </p>
-                {montoPagado > 0 && (
+                {!isIntent && montoPagado > 0 && (
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                     <p className="text-sm text-green-800 dark:text-green-300">
                       <strong>Importante:</strong> Como ya realizaste un pago de <strong>${montoPagado.toFixed(2)}</strong>,
@@ -398,7 +400,7 @@ export function ConfirmarPagoPage() {
                 </span>
               ) : (
                 <span className="text-lg font-bold text-primary">
-                  1 RehabiliCoin
+                  {isIntent ? actividades?.length : 1} RehabiliCoin{(isIntent && (actividades?.length ?? 0) !== 1) ? 's' : ''}
                 </span>
               )}
             </div>

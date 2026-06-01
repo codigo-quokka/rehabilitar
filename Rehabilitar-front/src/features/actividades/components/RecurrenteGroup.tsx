@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Card, Badge, Button, Modal, Input, Select } from "../../../components/ui";
@@ -15,6 +15,7 @@ interface RecurrenteGroupProps {
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
   onVerReservas?: (act: Actividad) => void;
+  onVerSuscriptores?: (actividadesGrupo: Actividad[]) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
@@ -28,6 +29,7 @@ export function RecurrenteGroup({
   onError,
   onSuccess,
   onVerReservas,
+  onVerSuscriptores,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
@@ -35,6 +37,11 @@ export function RecurrenteGroup({
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const [selectedMonths, setSelectedMonths] = useState(1);
+  const [futureByMonth, setFutureByMonth] = useState<Record<string, Actividad[]>>({});
+  const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
+  const [fetchingMonths, setFetchingMonths] = useState(false);
   const { hasRole } = cardProps;
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -133,44 +140,115 @@ export function RecurrenteGroup({
     setShowEditGroup(true);
   };
 
-  const handleComprarPaquete = async () => {
-    setSubscribeLoading(true);
+  const handleVerSuscriptores = () => {
+    onVerSuscriptores?.(actividades);
+  }
+
+  const handleAbrirSelectorMeses = async () => {
+    setFetchingMonths(true);
     try {
       const userReservas = await reservasApi.getAll({ usuarioId: user!.id });
-      const reservedIds = userReservas.map(r => r.actividadId);
-      
-      const availableActs = actividades
-        .filter(a => new Date(a.fechaYHora) > new Date() && !reservedIds.includes(a.id))
+      const userReservedIds = new Set(userReservas.map(r => r.actividadId));
+      setReservedIds(userReservedIds);
+
+      const allFuture = actividades
+        .filter(a => new Date(a.fechaYHora) > new Date())
         .sort((a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime());
 
-      const selectedActs = availableActs.slice(0, 4);
-
-      if (selectedActs.length < 4) {
-        onError?.('No hay suficientes clases futuras disponibles en esta serie para armar un paquete (mínimo 4).');
+      if (allFuture.length === 0 || allFuture.every(a => userReservedIds.has(a.id))) {
+        onError?.('Ya estás suscripto en esta actividad.');
         return;
       }
 
-      const res = await reservasApi.createRecurrente({ clienteId: user!.id, actividadesIds: selectedActs.map(a => a.id) });
-      
+      const disponibles = allFuture.filter(a => !userReservedIds.has(a.id));
+      if (disponibles.length < 4) {
+        onError?.(`Hay ${disponibles.length} clases disponibles. Se necesitan al menos 4 para comprar un paquete. Podés reservarlas individualmente.`);
+        return;
+      }
+
+      const byMonth: Record<string, Actividad[]> = {};
+      for (const act of allFuture) {
+        const d = new Date(act.fechaYHora);
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        if (!byMonth[key]) byMonth[key] = [];
+        byMonth[key].push(act);
+      }
+
+      setFutureByMonth(byMonth);
+      setSelectedMonths(1);
+      setShowMonthSelector(true);
+    } catch (err) {
+      console.error('Error al cargar disponibilidad', err);
+      onError?.('Error al cargar la disponibilidad de clases.');
+    } finally {
+      setFetchingMonths(false);
+    }
+  };
+
+  const getSelectedFromMonths = useCallback((months: number) => {
+    const monthKeys = Object.keys(futureByMonth).sort();
+    const selectedMonthKeys = monthKeys.slice(0, months);
+    const result: Actividad[] = [];
+    for (let i = 0; i < selectedMonthKeys.length; i++) {
+      const acts = futureByMonth[selectedMonthKeys[i]];
+      if (i < selectedMonthKeys.length - 1) {
+        result.push(...acts.slice(0, 4));
+      } else {
+        result.push(...acts);
+      }
+    }
+    return result.filter(a => !reservedIds.has(a.id));
+  }, [futureByMonth, reservedIds]);
+
+  const handleConfirmarCompra = async () => {
+    setSubscribeLoading(true);
+    try {
+      const selectedActs = getSelectedFromMonths(selectedMonths);
+
+      if (selectedActs.length < 1) {
+        onError?.('No hay clases disponibles para los meses seleccionados.');
+        return;
+      }
+
+      if (selectedActs.length < 4) {
+        onError?.('Debes seleccionar al menos 4 clases disponibles para comprar el paquete. Seleccioná más meses.');
+        return;
+      }
+
+      const res = await reservasApi.createRecurrente({
+        clienteId: user!.id,
+        actividadesIds: selectedActs.map(a => a.id),
+      });
+
+      setShowMonthSelector(false);
       navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
         state: {
           intencionId: res.intencionId,
           actividades: selectedActs,
-          montoTotal: selectedActs.reduce((sum, a) => sum + a.precio, 0)
-        }
+          montoTotal: selectedActs.reduce((sum, a) => sum + a.precio, 0),
+        },
       });
     } catch (err) {
       console.error('Error al comprar paquete', err);
-      onError?.('Error al iniciar la compra del paquete.');
+      const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
+      const data = axiosErr?.response?.data;
+      const msg = typeof data?.error === 'string'
+        ? data.error
+        : typeof data?.errorCode === 'string'
+          ? data.errorCode
+          : typeof data?.title === 'string'
+            ? data.title
+            : typeof data?.message === 'string'
+              ? data.message
+              : axiosErr?.message ?? 'Error al realizar la compra';
+      onError?.(msg);
     } finally {
       setSubscribeLoading(false);
     }
   };
 
-  const handleVerSuscriptores = () => {
-      onError?.('Falta implementar ver suscriptores');
-      return;
-    }
+  const monthKeys = useMemo(() => Object.keys(futureByMonth).sort(), [futureByMonth]);
+  const totalMonthsDisponibles = monthKeys.length;
 
   const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -337,10 +415,10 @@ export function RecurrenteGroup({
               <Button
                 variant="verde"
                 className="w-full"
-                loading={subscribeLoading}
+                loading={fetchingMonths || subscribeLoading}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleComprarPaquete();
+                  handleAbrirSelectorMeses();
                 }}
               >
                 Comprar Paquete
@@ -446,6 +524,134 @@ export function RecurrenteGroup({
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={showMonthSelector}
+        onClose={() => setShowMonthSelector(false)}
+        title="Seleccioná los meses de suscripción"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Cada mes incluye hasta 4 clases. El último mes se cobran solo las clases disponibles si son menos de 4.
+          </p>
+
+          {totalMonthsDisponibles === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+              No hay clases futuras disponibles para esta serie.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {Array.from({ length: totalMonthsDisponibles }, (_, i) => i + 1).map((m) => {
+                const selectedMonthKeys = monthKeys.slice(0, m);
+                const allActs = selectedMonthKeys.flatMap((key, idx) => {
+                  const acts = futureByMonth[key];
+                  return idx < selectedMonthKeys.length - 1 ? acts.slice(0, 4) : acts;
+                });
+                const totalClases = allActs.length;
+                const disponibles = allActs.filter(a => !reservedIds.has(a.id)).length;
+
+                const lastMonthKey = selectedMonthKeys[selectedMonthKeys.length - 1];
+                const lastActs = futureByMonth[lastMonthKey];
+                const lastMonthHasLess = lastActs && lastActs.length < 4;
+
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setSelectedMonths(m)}
+                    className={`w-full p-3 rounded-xl border text-left transition-colors ${
+                      selectedMonths === m
+                        ? 'border-primary bg-primary/10 dark:bg-primary/20 ring-1 ring-primary'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-primary/50 dark:hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-dark dark:text-gray-100">
+                        {m} {m === 1 ? 'mes' : 'meses'}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {totalClases} clases
+                        {disponibles < totalClases && (
+                          <span className="text-primary font-medium"> ({disponibles} a comprar)</span>
+                        )}
+                      </span>
+                    </div>
+                    {lastMonthHasLess && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        * Último mes: {lastActs.length} {lastActs.length === 1 ? 'clase disponible' : 'clases disponibles'}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Clases a comprar</span>
+              <span className="font-semibold text-dark dark:text-gray-100">
+                {getSelectedFromMonths(selectedMonths).length}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Meses</span>
+              <span className="font-semibold text-dark dark:text-gray-100">
+                {selectedMonths} {selectedMonths === 1 ? 'mes' : 'meses'}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Total estimado</span>
+              <span className="font-semibold text-primary">
+                ${getSelectedFromMonths(selectedMonths).reduce((s, a) => s + a.precio, 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fechas seleccionadas</p>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {(() => {
+                const months = Object.keys(futureByMonth).sort().slice(0, selectedMonths);
+                const allSelected = months.flatMap((key, idx) => {
+                  const acts = futureByMonth[key];
+                  return (idx < months.length - 1 ? acts.slice(0, 4) : acts).filter(a => !reservedIds.has(a.id));
+                });
+                return allSelected.length > 0 ? allSelected.map(a => (
+                  <div key={a.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>{formatDate(a.fechaYHora)} — {new Date(a.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                )) : (
+                  <p className="text-xs text-gray-400 dark:text-gray-500">No hay clases disponibles en los meses seleccionados.</p>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <Button
+              variant="ghost"
+              type="button"
+              className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={() => setShowMonthSelector(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              loading={subscribeLoading}
+              disabled={totalMonthsDisponibles === 0}
+              onClick={handleConfirmarCompra}
+            >
+              Confirmar compra
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {expanded && createPortal(

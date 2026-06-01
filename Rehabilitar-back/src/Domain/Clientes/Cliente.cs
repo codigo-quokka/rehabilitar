@@ -36,6 +36,13 @@ public class Cliente
         RehabiliCoins++;
     }
 
+    public void AgregarRehabiliCoins(int cantidad)
+    {
+        if (cantidad < 0)
+            throw new DomainException("La cantidad debe ser positiva.");
+        RehabiliCoins += cantidad;
+    }
+
     public void CanjearRehabilicoin()
     {
         if (RehabiliCoins <= 0)
