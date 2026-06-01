@@ -281,6 +281,57 @@ public class ReservaService : IReservaService
         return Error.Failure();
     }
 
+    public async Task<ErrorOr<Deleted>> CancelarSerieReservasAsync(Guid clienteId, Guid serieId, CancellationToken ct = default)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            try
+            {
+                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                if (cliente == null)
+                    return Error.NotFound("Reserva.ClienteNoEncontrado", "Cliente no encontrado.");
+
+                var actividades = await _actividadRepo.ListarPorSerieIdConReservasAsync(serieId, ct);
+
+                var futuras = actividades
+                    .Where(a => a.FechaYHora > DateTime.UtcNow)
+                    .OrderBy(a => a.FechaYHora)
+                    .ToList();
+
+                if (!futuras.Any())
+                    return Error.NotFound("Reserva.SerieSinActividadesFuturas", "No se encontraron actividades futuras en esta serie.");
+
+                bool algunaCancelada = false;
+                foreach (var actividad in futuras)
+                {
+                    var reserva = actividad.Reservas.FirstOrDefault(r =>
+                        r.ClienteId == clienteId &&
+                        r.EstadoDeReserva != EstadoDeReserva.Cancelada);
+
+                    if (reserva != null)
+                    {
+                        actividad.CancelarReserva(reserva.Id);
+                        algunaCancelada = true;
+                    }
+                }
+
+                if (!algunaCancelada)
+                    return Error.NotFound("Reserva.NoActivas", "No se encontraron reservas activas para cancelar en esta serie.");
+
+                await _uow.SaveChangesAsync(ct);
+                return Result.Deleted;
+            }
+            catch (ConcurrencyException)
+            {
+                if (i == 2)
+                    return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
+                _uow.ClearChangeTracker();
+                await Task.Delay(new Random().Next(10, 100), ct);
+            }
+        }
+        return Error.Failure();
+    }
+
     public async Task<ErrorOr<ReservaResponse>> ObtenerReservaPorId(Guid id, CancellationToken ct = default)
     {
         var reserva = await _reservaRepo.GetByIdAsync(id, ct);

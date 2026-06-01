@@ -27,6 +27,11 @@ export const reservasApi = {
     return response.data;
   },
 
+  cancelarSerie: async (serieId: string, clienteId: string) => {
+    const response = await apiClient.put(`/reservas/serie/${serieId}/cancelar`, null, { params: { clienteId } });
+    return response.data;
+  },
+
   registrarPago: async (reservaId: string, data: { actividadId: string; metodoPago: string; monto: number }) => {
     const response = await apiClient.post(`/reservas/${reservaId}/pago`, data);
     return response.data;

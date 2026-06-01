@@ -9,6 +9,7 @@ public interface IReservaService
     Task<ErrorOr<Guid>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default);
     Task<ErrorOr<Success>> ConfirmarPagoReservaAsync(RegistrarPagoRequest request, Guid reservaId, CancellationToken ct = default);
     Task<ErrorOr<Deleted>> CancelarReservaAsync(Guid actividadId, Guid reservaId, CancellationToken ct = default);
+    Task<ErrorOr<Deleted>> CancelarSerieReservasAsync(Guid clienteId, Guid serieId, CancellationToken ct = default);
     Task<ErrorOr<ReservaResponse>> ObtenerReservaPorId(Guid id, CancellationToken ct = default);
     Task<ErrorOr<ReservaResponse>> PrepararPagoAsync(Guid id, CancellationToken ct = default);
     Task<ErrorOr<IEnumerable<ReservaResponse>>> ObtenerReservasDeClientePorId(Guid id, CancellationToken ct = default);
