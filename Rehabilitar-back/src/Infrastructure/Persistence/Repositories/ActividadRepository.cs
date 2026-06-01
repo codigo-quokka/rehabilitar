@@ -17,7 +17,8 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                 a => a.ProfesorId == profesorId  &&
                 a.FechaYHora < FinEstimado &&
                 nuevaFechaYHora < a.FechaYHora.AddHours(1) &&
-                a.Id != actividadId,
+                a.Id != actividadId &&
+                a.Estado != EstadoActividad.Cancelada,
                  ct); // chequear lógica
     }
 
@@ -29,7 +30,8 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                 a => a.SalaId == salaId  &&
                 a.FechaYHora < FinEstimado &&
                 nuevaFechaYHora < a.FechaYHora.AddHours(1) &&
-                a.Id != actividadId,
+                a.Id != actividadId &&
+                a.Estado != EstadoActividad.Cancelada,
                  ct); // chequear lógica
     }
     
