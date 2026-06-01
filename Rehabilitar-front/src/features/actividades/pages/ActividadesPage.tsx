@@ -758,7 +758,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId) {
+    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId || !formData.cupoMaximo) {
       onError('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -799,7 +799,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
         await actividadesApi.update(actividad.id, payload);
       } else if (formData.frecuencia === 'Recurrente') {
         if (!fechaFinRecurrente) {
-          onError('Debe seleccionar una fecha fin para la recurrencia');
+          onError('Por favor, completa todos los campos obligatorios.'); // reemplazar por esto en caso de que Ana quiera notis especializadas: onError('Debe seleccionar una fecha fin para la recurrencia'); 
           setLoading(false);
           return;
         }
@@ -850,7 +850,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               { value: "Esporadica", label: "Esporádica" },
               { value: "Recurrente", label: "Recurrente" },
             ]}
-            required
           />
         </div>
       ) : (
@@ -860,7 +859,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             placeholder="Sin nombre"
-            required
           />
           <div>
             <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
@@ -952,7 +950,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                 { value: "", label: "Seleccione una sala..." },
                 ...salas.map((s) => ({ value: s.id, label: `${s.nombre} (Cap. ${s.capacidad})` })),
               ]}
-              required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1009,7 +1006,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                     cupoMaximo: parseInt(e.target.value),
                   })
                 }
-                required
               />
             )}
           </div>
@@ -1020,7 +1016,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               value={fechaFinRecurrente}
               onChange={(e) => setFechaFinRecurrente(e.target.value)}
               min={formData.fechaYHora.split('T')[0] || todayStr}
-              required
             />
           )}
           {isAdmin && (
@@ -1037,7 +1032,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                     cupoMaximo: parseInt(e.target.value),
                   })
                 }
-                required
               />
               <Select
                 label="Profesor (opcional)"
