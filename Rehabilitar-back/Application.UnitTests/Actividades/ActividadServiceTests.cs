@@ -139,7 +139,7 @@ public class ActividadServiceTests
     }
 
     [Fact]
-    public async Task EliminarActividad_CuandoExiste_DebeRetornarDeleted()
+    public async Task CancelarActividad_CuandoExiste_DebeRetornarDeleted()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -149,12 +149,11 @@ public class ActividadServiceTests
         _actividadRepoMock.Setup(x => x.ObtenerPorIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(actividad);
 
         // Act
-        var result = await _sut.EliminarActividad(id);
+        var result = await _sut.CancelarActividad(id);
 
         // Assert
         result.IsError.Should().BeFalse();
         result.Value.Should().Be(Result.Deleted);
-        _actividadRepoMock.Verify(x => x.Remove(actividad), Times.Once);
         _uowMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
