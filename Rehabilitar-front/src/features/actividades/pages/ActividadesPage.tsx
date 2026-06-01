@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MainLayout } from "../../../components/layout";
 import {
@@ -244,8 +244,9 @@ export function ActividadesPage() {
             <Input
               placeholder="Buscar por nombre..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125 h-12"
+              maxLength={40}
             />
             <Button
               variant="primary"
