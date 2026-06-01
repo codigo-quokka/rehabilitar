@@ -99,13 +99,15 @@ export function ActividadCard({
         )}
         {hasRole(["Administrador"]) && onVerReservas && (
           <div className="flex gap-2">
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={() => onModificar(act)}
-            >
-              Modificar
-            </Button>
+            {act.estado !== 'Cancelada' && (
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={() => onModificar(act)}
+              >
+                Modificar
+              </Button>
+            )}
             <Button
               variant="violeta"
               className="flex-1"
@@ -115,7 +117,7 @@ export function ActividadCard({
             </Button>
           </div>
         )}
-        {hasRole(["Administrador"]) && !onVerReservas && (
+        {hasRole(["Administrador"]) && !onVerReservas && act.estado !== 'Cancelada' && (
           <Button
             variant="primary"
             className="w-full"
