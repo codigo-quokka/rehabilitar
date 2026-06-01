@@ -9,7 +9,6 @@ export interface User {
   email: string;
   nombre: string;
   apellido: string;
-  dni: number;
   rol: Role;
   telefono?: string;
   fechaNacimiento?: string;
@@ -83,7 +82,6 @@ export interface Reserva {
   estadoDeReserva: EstadoDeReserva;
   montoTotal: number;
   montoPendiente: number;
-  probabilidadListaEspera?: boolean;
 }
 
 export interface Sala {

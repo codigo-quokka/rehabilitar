@@ -229,8 +229,9 @@ export function AdminAptosFisicosPage() {
             <Input
               placeholder="Buscar por cliente..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125"
+              maxLength={40}
             />
             <Button
               variant="primary"

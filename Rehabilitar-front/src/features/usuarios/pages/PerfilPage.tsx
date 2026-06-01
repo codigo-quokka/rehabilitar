@@ -344,7 +344,7 @@ export function PerfilPage() {
                 />
               </div>
               <Input
-                label="Teléfono"
+                label="Teléfono (opcional)"
                 type="tel"
                 value={formData.telefono}
                 onChange={(e) =>

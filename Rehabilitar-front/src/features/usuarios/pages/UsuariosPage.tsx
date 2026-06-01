@@ -97,7 +97,7 @@ export function UsuariosPage() {
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term)) return false;
+        if (!fullName.includes(term) && !u.email.toLowerCase().includes(term) && !u.documento?.toLowerCase().includes(term)) return false;
       }
       return true;
     })
@@ -402,23 +402,23 @@ export function UsuariosPage() {
           </Button>
           */}
           {u.rol === 'Cliente Registrado' ? (
-            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenReservas(u)}>
+            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenReservas(u)}>
               Reservas
             </Button>
           ) : u.rol === 'Profesor' ? (
-            <Button variant="verde" size="sm" className="min-w-[90px]" onClick={() => handleOpenClases(u)}>
+            <Button variant="verde" size="sm" className="min-w-22.5" onClick={() => handleOpenClases(u)}>
               Clases
             </Button>
           ) : (
-            <span className="min-w-[90px] inline-block" />
+            <span className="min-w-22.5 inline-block" />
           )}
           {!isReception && (
            u.activo ? (
-            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => setUserToSuspend(u)}>
+            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => setUserToSuspend(u)}>
               Suspender
             </Button>
           ) : (
-            <Button variant="naranja" size="sm" className="min-w-[100px]" onClick={() => handleReactivar(u)}>
+            <Button variant="naranja" size="sm" className="min-w-25" onClick={() => handleReactivar(u)}>
               Reactivar
             </Button>
           )
@@ -428,7 +428,7 @@ export function UsuariosPage() {
               Eliminar
             </Button>
           ) : (
-            <span className="min-w-[70px] inline-block" />
+            <span className="min-w-17.5 inline-block" />
           )}
           
         </div>
@@ -442,10 +442,11 @@ export function UsuariosPage() {
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             <Input
-              placeholder="Buscar por nombre o email..."
+              placeholder="Buscar por nombre, email o DNI..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
               className="min-w-125"
+              maxLength={40}
             />
             <Button
               variant="primary"
@@ -877,6 +878,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={nombreFilter.handleKeyDown}
           onPaste={nombreFilter.handlePaste}
+          placeholder="Sin nombre"
         />
         <Input
           label="Apellido"
@@ -885,6 +887,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
           onChange={handleChange}
           onKeyDown={apellidoFilter.handleKeyDown}
           onPaste={apellidoFilter.handlePaste}
+          placeholder="Sin apellido"
         />
       </div>
       <Input

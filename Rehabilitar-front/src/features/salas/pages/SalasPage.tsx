@@ -48,12 +48,6 @@ export function SalasPage() {
     setSalaIdAEliminar(id);
   };
   const HandleDesactivarClick = (s: Sala) => {
-    if (s.activo && tieneActividadesPendientes(s.id)) {
-      setToastType('error');
-      setToastMessage('No se puede desactivar una sala con actividades pendientes.');
-      setShowToast(true);
-      return;
-    }
     setShowDesactivarConfirm(true);
     setSalaADesactivar(s);
   };
@@ -300,6 +294,7 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
         label="Nombre"
         value={formData.nombre}
         onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+        placeholder="Sin nombre"
       />
       <Input
         label="Capacidad"
