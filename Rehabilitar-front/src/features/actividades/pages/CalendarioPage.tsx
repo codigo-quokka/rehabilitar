@@ -123,28 +123,37 @@ export function CalendarioPage() {
   const handleReservar = async (actividad: Actividad) => {
     if (!user) return;
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      navigate(`/reservas/confirmar/${reserva.id}`, {
-        state: {
-          reservaId: reserva.id,
-          actividadId: reserva.actividadId,
-          montoTotal: reserva.montoTotal,
-          montoPagado: 0,
-          montoPendiente: reserva.montoPendiente,
-        },
+      const res = await reservasApi.create({
+        actividadId: actividad.id,
+        clienteId: user.id,
+        tipoCliente: "noAbonado"
       });
+      actividad.probabilidadListaEspera = res.probabilidadListaEspera;
+      if (res.probabilidadListaEspera) {
+        setToastType('error');
+        setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
+        setShowToast(true);
+        setTimeout(() => {
+          navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
+            state: {
+              intencionId: res.intencionId,
+              actividades: [actividad],
+              montoTotal: actividad.precio
+            }
+          });
+        }, 2000);
+      } else {
+        navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
+          state: {
+            intencionId: res.intencionId,
+            actividades: [actividad],
+            montoTotal: actividad.precio
+          }
+        });
+      }
     } catch (err) {
-      const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
-      const data = axiosErr?.response?.data;
-      const msg = typeof data?.error === 'string'
-        ? data.error
-        : typeof data?.errorCode === 'string'
-          ? data.errorCode
-          : typeof data?.title === 'string'
-            ? data.title
-            : typeof data?.message === 'string'
-              ? data.message
-              : axiosErr?.message ?? 'Error al realizar la reserva';
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al crear la reserva';
       setToastType('error');
       setToastMessage(msg);
       setShowToast(true);
@@ -446,7 +455,7 @@ export function CalendarioPage() {
               <h2 className="text-xl font-bold text-dark dark:text-gray-100">
                 {selectedDayNumber ? `${selectedDayNumber} de ${monthNames[currentDate.getMonth()]}` : ''}
               </h2>
-              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                 {selectedDayActividades.length} {selectedDayActividades.length === 1 ? 'actividad' : 'actividades'}
               </p>
             </div>

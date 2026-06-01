@@ -31,7 +31,7 @@ export const AptoFisicoViewer: React.FC<AptoFisicoViewerProps> = ({ aptoFisico }
       setLoading(true);
       setError(null);
       try {
-        const { blob } = await aptosFisicosApi.getArchivo(aptoFisico.id);
+        const { blob, contentType, nombreArchivo } = await aptosFisicosApi.getArchivo(aptoFisico.id);
         if (!cancelled) {
           const url = URL.createObjectURL(blob);
           setFileUrl(url);

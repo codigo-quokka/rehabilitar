@@ -9,7 +9,7 @@ import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 const estadoLabel: Record<string, string> = {
-  PendienteDePago: 'Pendiente de pago',
+  PendienteDePago: 'Señada',
   Activa: 'Activa',
   EnEspera: 'En espera',
   Cancelada: 'Cancelada',
@@ -218,6 +218,28 @@ export function ReservasPage() {
     setSearchTerm('');
   };
 
+  const getRefundMessage = (reserva: Reserva | null) => {
+    if (!reserva) return '';
+    const act = actividades[reserva.actividadId];
+    if (!act) return '';
+
+    const diffHours = (new Date(act.fechaYHora).getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+    if (reserva.tipoCliente === 'Abonado') {
+      if (diffHours >= 48) {
+        return 'Se te devolverá 1 RehabiliCoin.';
+      } else {
+        return 'No se te devolverá el RehabiliCoin por cancelar con menos de 48hs de anticipación.';
+      }
+    } else {
+      if (diffHours >= 24) {
+        return 'Se te reembolsará el dinero pagado.';
+      } else {
+        return 'No se te reembolsará el dinero por cancelar con menos de 24hs de anticipación.';
+      }
+    }
+  };
+
 
   return (
     <MainLayout title={targetName ? `Reservas de ${targetName}` : 'Mis reservas'}>
@@ -227,9 +249,8 @@ export function ReservasPage() {
             <Input
               placeholder="Buscar por actividad..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="min-w-125 h-12"
-              maxLength={40}
             />
             <Button
               variant="primary"
@@ -414,7 +435,7 @@ export function ReservasPage() {
       <ConfirmActionModal
         isOpen={showConfirmCancel}
         title="Cancelar reserva"
-        body="¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer."
+        body={`¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer. ${getRefundMessage(selectedReserva)}`}
         confirmLabel="Cancelar reserva"
         onConfirm={handleConfirmCancel}
         onCancel={() => {

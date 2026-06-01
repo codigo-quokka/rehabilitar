@@ -10,6 +10,7 @@ using Application.Reservas.DTOs;
 using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
+using Application.Pagos;
 
 namespace Application.Actividades;
 
@@ -20,18 +21,21 @@ public class ActividadService : IActividadService
     public readonly ISalaRepository _salaRepo;
     public readonly IProfesorRepository _profesorRepo;
     public readonly IClienteRepository _clienteRepo;
+    private readonly IIntencionPagoRepository _intencionPagoRepository;
     private readonly IUnitOfWork _uow;
 
     public ActividadService(IActividadRepository actividadRepo,
                             ISalaRepository salaRepo,
                             IProfesorRepository profesorRepo,
                             IClienteRepository clienteRepo,
+                            IIntencionPagoRepository intencionPagoRepository,
                             IUnitOfWork uow)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
         _profesorRepo = profesorRepo;
         _clienteRepo = clienteRepo;
+        _intencionPagoRepository = intencionPagoRepository;
         _uow = uow;
     }
 
@@ -169,13 +173,27 @@ public class ActividadService : IActividadService
         return await MapToDto(actividad, ct);
     }
 
-    public async Task<ErrorOr<Deleted>> EliminarActividad(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> CancelarActividad(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         actividad.CancelarActividad();
-        _actividadRepo.Remove(actividad);
+        await _uow.SaveChangesAsync(ct);
+        return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<Deleted>> CancelarSerie(Guid serieId, CancellationToken ct = default)
+    {
+        var actividades = await _actividadRepo.ListarPorSerieIdAsync(serieId, ct);
+        if (!actividades.Any()) return Error.NotFound("No se encontraron actividades para esta serie.");
+
+        foreach (var actividad in actividades)
+        {
+            if (actividad.FechaYHora > DateTime.Now)
+            actividad.CancelarActividad();
+        }
+        
         await _uow.SaveChangesAsync(ct);
         return Result.Deleted;
     }
@@ -296,6 +314,9 @@ public class ActividadService : IActividadService
         string nombreSala = actividad.Sala?.Nombre ?? string.Empty;
         string? nombreProfesor = actividad.Profesor?.User?.FirstName != null ? $"{actividad.Profesor.User.FirstName} {actividad.Profesor.User.LastName}" : string.Empty;
 
+        int intencionesPendientes = await _intencionPagoRepository.ContarIntencionesPendientesRecientesAsync(actividad.Id, TimeSpan.FromMinutes(15));
+        bool probabilidad = actividad.CupoMaximo > 0 && (actividad.CupoOcupado + intencionesPendientes) >= actividad.CupoMaximo;
+
         return new ActividadResponse(
             actividad.Id,
             actividad.Nombre,
@@ -306,12 +327,13 @@ public class ActividadService : IActividadService
             actividad.Estado,
             actividad.CupoMaximo,
             actividad.CupoDisponible,
+            actividad.Precio,
             actividad.SalaId,
             nombreSala,
             actividad.ProfesorId,
             nombreProfesor,
             actividad.SerieId,
-            actividad.ProbabilidadListaEspera
+            probabilidad
         );
     }
 

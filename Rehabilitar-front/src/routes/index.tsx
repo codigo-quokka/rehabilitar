@@ -90,6 +90,10 @@ export const routes = [
             element: <ConfirmarPagoPage />,
           },
           {
+            path: 'confirmar-paquete/:intencionId',
+            element: <ConfirmarPagoPage />
+          },
+          {
             path: "pago/exito",
             element: <PaymentSuccess />,
           },

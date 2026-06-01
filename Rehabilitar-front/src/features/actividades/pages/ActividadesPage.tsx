@@ -117,31 +117,27 @@ export function ActividadesPage() {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      if (reserva.probabilidadListaEspera) {
+      const res = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      if (res.probabilidadListaEspera) {
         setToastType('error');
         setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
         setShowToast(true);
         setTimeout(() => {
-          navigate(`/reservas/confirmar/${reserva.id}`, {
+          navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
             state: {
-              reservaId: reserva.id,
-              actividadId: reserva.actividadId,
-              montoTotal: reserva.montoTotal,
-              montoPagado: 0,
-              montoPendiente: reserva.montoPendiente,
-            },
+              intencionId: res.intencionId,
+              actividades: [actividad],
+              montoTotal: actividad.precio
+            }
           });
         }, 2000);
       } else {
-        navigate(`/reservas/confirmar/${reserva.id}`, {
+        navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
           state: {
-            reservaId: reserva.id,
-            actividadId: reserva.actividadId,
-            montoTotal: reserva.montoTotal,
-            montoPagado: 0,
-            montoPendiente: reserva.montoPendiente,
-          },
+            intencionId: res.intencionId,
+            actividades: [actividad],
+            montoTotal: actividad.precio
+          }
         });
       }
     } catch (err) {

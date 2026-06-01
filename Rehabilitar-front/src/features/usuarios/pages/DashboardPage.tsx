@@ -67,7 +67,7 @@ export function DashboardPage() {
             setActividadMap(aMap);
 
             const proximas = [...allReservas]
-              .filter(r => aMap[r.actividadId]?.fechaYHora >= todayStr)
+              .filter(r => aMap[r.actividadId]?.fechaYHora >= todayStr && (r.estadoDeReserva === 'Activa' || r.estadoDeReserva === 'PendienteDePago'))
               .sort((a, b) => (aMap[a.actividadId]?.fechaYHora ?? '').localeCompare(aMap[b.actividadId]?.fechaYHora ?? ''))
               .slice(0, 5);
             setReservasCliente(proximas);
@@ -216,7 +216,7 @@ export function DashboardPage() {
                           res.estadoDeReserva === 'PendienteDePago' ? 'warning' : 'default'
                         }
                       >
-                        {res.estadoDeReserva === 'PendienteDePago' ? 'Pendiente' :
+                        {res.estadoDeReserva === 'PendienteDePago' ? 'Señada' :
                          res.estadoDeReserva === 'Activa' ? 'Activa' :
                          res.estadoDeReserva === 'EnEspera' ? 'En espera' :
                          res.estadoDeReserva === 'Cancelada' ? 'Cancelada' : res.estadoDeReserva}

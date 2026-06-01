@@ -9,4 +9,5 @@ public interface IReservaRepository : IRepositoryBase<Reserva>
     Task<IEnumerable<Reserva>> GetReservasDeActividadPorIdAsync(Guid id, CancellationToken ct);
     Task<IEnumerable<Reserva>> GetReservasDeClientePorIdAsync(Guid userId, CancellationToken ct = default);
     Task<bool> TieneReservaActivaConDescuentoAsync(Guid clienteId, Guid reservaIdAExcluir, CancellationToken ct = default);
+    Task<bool> ExisteReservaParaClienteEnHorarioAsync(Guid clienteId, DateTime fechaHora, CancellationToken ct = default);
 }

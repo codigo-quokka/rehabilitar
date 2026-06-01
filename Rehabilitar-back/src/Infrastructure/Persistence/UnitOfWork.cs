@@ -1,3 +1,4 @@
+using System.Linq;
 using Application.Common.Interfaces;
 using Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -20,19 +21,23 @@ public class UnitOfWork : IUnitOfWork
         }
         catch (DbUpdateConcurrencyException e)
         {
-            System.Console.WriteLine("=== CONCURRENCY CONFLICT DETECTED ===");
+            System.Console.WriteLine("=== DIAG: CONCURRENCIA DETECTADA ===");
+            System.Console.WriteLine($"Mensaje: {e.Message}");
+            System.Console.WriteLine($"StackTrace: {e.StackTrace}");
             foreach (var entry in e.Entries)
             {
-                System.Console.WriteLine($"Entity: {entry.Entity.GetType().Name}, State: {entry.State}");
+                System.Console.WriteLine($"  Entidad: {entry.Entity.GetType().Name}, State: {entry.State}");
                 foreach (var prop in entry.Properties)
                 {
-                    if (prop.IsModified || prop.Metadata.IsConcurrencyToken)
-                    {
-                        System.Console.WriteLine($"  Property: {prop.Metadata.Name}, Original: {prop.OriginalValue}, Current: {prop.CurrentValue}");
-                    }
+                    System.Console.WriteLine($"    Prop: {prop.Metadata.Name}, Original: {prop.OriginalValue}, Current: {prop.CurrentValue}, IsModified: {prop.IsModified}, IsConcurrencyToken: {prop.Metadata.IsConcurrencyToken}");
                 }
             }
-            System.Console.WriteLine("======================================");
+            if (e.InnerException != null)
+            {
+                System.Console.WriteLine($"InnerException: {e.InnerException.GetType().Name}: {e.InnerException.Message}");
+                System.Console.WriteLine($"InnerStackTrace: {e.InnerException.StackTrace}");
+            }
+            System.Console.WriteLine("=== DIAG: FIN CONCURRENCIA ===");
             throw new ConcurrencyException("Error de concurrencia", e);
         }
     }
@@ -67,6 +72,11 @@ public class UnitOfWork : IUnitOfWork
     public void ClearChangeTracker()
     {
         _context.ChangeTracker.Clear();
+    }
+
+    public void MarkAsAdded<T>(T entity) where T : class
+    {
+        _context.Entry(entity).State = EntityState.Added;
     }
 
     public async Task RollbackTransactionAsync(CancellationToken ct = default)
