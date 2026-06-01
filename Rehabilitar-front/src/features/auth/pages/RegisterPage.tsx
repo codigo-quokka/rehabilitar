@@ -440,7 +440,7 @@ export function RegisterPage() {
 
                       <div className="pt-6 border-t border-border text-center">
                         <p>
-                          <span className="text-gray-600 dark:text-gray-400">¿Ya tienes cuenta? </span>
+                          <span className="text-gray-600 font-semibold dark:text-gray-400">¿Ya tienes cuenta? </span>
                           <span onClick={() => (window.location.href = '/login')}  className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer">
                             Iniciar sesión
                           </span>
