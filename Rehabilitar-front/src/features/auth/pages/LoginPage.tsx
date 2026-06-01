@@ -187,7 +187,7 @@ export function LoginPage() {
 
             <div className="mt-8 pt-6 border-t border-border dark:border-gray-700 text-center">
               <p>
-                <span className="text-gray-500 dark:text-gray-400">¿No tienes cuenta? </span>
+                <span className="text-gray-600 font-semibold dark:text-gray-400">¿No tienes cuenta? </span>
                 <span
                   onClick={() => navigate("/register")}
                   className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer"
@@ -199,7 +199,7 @@ export function LoginPage() {
           </div>
         </Card>
 
-        <p className="text-center text-gray-400 text-sm mt-8">
+        <p className="text-center font-bold text-gray-100 text-sm mt-8">
           © 2026 RehabilitAR
         </p>
       </div>

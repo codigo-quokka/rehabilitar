@@ -358,7 +358,7 @@ export function UsuariosPage() {
       header: 'Rol',
       render: (u: User) => (
         <div className="flex items-center gap-2">
-          <Badge variant={u.rol === 'Administrador' ? 'danger' : u.rol === 'Profesor' ? 'info' : u.rol === 'Recepción' ? 'amber' : 'default'}>
+          <Badge variant={u.rol === 'Administrador' ? 'danger' : u.rol === 'Profesor' ? 'verde' : u.rol === 'Recepción' ? 'amber' : 'default'}>
             {rolLabel[u.rol] || u.rol.replace('_', ' ')}
           </Badge>
           {u.rol === 'Profesor' && u.especialidad && (
