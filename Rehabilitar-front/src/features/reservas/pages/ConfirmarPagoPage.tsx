@@ -16,7 +16,7 @@ export function ConfirmarPagoPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const state = location.state as {
+  const locationState = location.state as {
     reservaId?: string;
     actividadId?: string;
     montoTotal: number;
@@ -26,31 +26,96 @@ export function ConfirmarPagoPage() {
     actividades?: Actividad[];
   } | null;
 
+  // Safe state accessors - return defaults if state is null
+  const stateMontoTotal = locationState?.montoTotal ?? 0;
+  const stateMontoPagado = locationState?.montoPagado ?? 0;
+  const stateMontoPendiente = locationState?.montoPendiente ?? 0;
+  const stateActividadId = locationState?.actividadId;
+  const actividades = locationState?.actividades;
+
   const isIntent = !!intencionId;
-  const isPackage = isIntent && (state?.actividades?.length ?? 0) > 1;
+  const isPackage = isIntent && (actividades?.length ?? 0) > 1;
 
   const [actividad, setActividad] = useState<Actividad | null>(null);
-  const [monto, setMonto] = useState<number>(state?.montoPendiente ?? state?.montoTotal ?? 0);
+  const [recoveredData, setRecoveredData] = useState<{
+    montoTotal: number;
+    montoPagado: number;
+    montoPendiente: number;
+    actividadId?: string;
+  } | null>(null);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [monto, setMonto] = useState<number>(stateMontoPendiente || stateMontoTotal || 0);
   const [metodoPago, setMetodoPago] = useState('MercadoPago');
   const [loading, setLoading] = useState(false);
   const processingRef = useRef(false);
 
   const { addNotification } = useNotifications();
 
+  // Recovery effect: if location.state is lost (e.g. page refresh), try to load from API
   useEffect(() => {
-    if (!state || isPackage) return;
+    if (locationState) return; // State available, no recovery needed
+    
+    const recoverFromApi = async () => {
+      setRecoveryLoading(true);
+      try {
+        if (reservaId) {
+          // For existing reservation: can fully recover from API
+          const reserva = await reservasApi.getById(reservaId);
+          const montoPagado = reserva.montoTotal - reserva.montoPendiente;
+          setRecoveredData({
+            montoTotal: reserva.montoTotal,
+            montoPagado,
+            montoPendiente: reserva.montoPendiente,
+            actividadId: reserva.actividadId,
+          });
+          setMonto(reserva.montoPendiente);
+          // Also load the actividad for display
+          try {
+            const act = await actividadesApi.getById(reserva.actividadId);
+            setActividad(act);
+          } catch { /* non-critical */ }
+        } else if (intencionId) {
+          // For intent flows: can't fully recover without backend support
+          // Show a message directing user to go back
+          setRecoveredData({ montoTotal: 0, montoPagado: 0, montoPendiente: 0 });
+        }
+      } catch {
+        setRecoveredData({ montoTotal: 0, montoPagado: 0, montoPendiente: 0 });
+      } finally {
+        setRecoveryLoading(false);
+      }
+    };
+    
+    recoverFromApi();
+  }, [reservaId, intencionId]); // Note: no locationState dependency - runs once
+
+  useEffect(() => {
+    if (!locationState || isPackage) return;
     const fetchActividad = async () => {
       try {
-        const act = await actividadesApi.getById(state.actividadId!);
+        const act = await actividadesApi.getById(stateActividadId!);
         setActividad(act);
       } catch {
         // Activity name not critical for payment flow
       }
     };
     fetchActividad();
-  }, [state, isPackage]);
+  }, [locationState, isPackage, stateActividadId]);
 
-  if (!state) {
+  if (!locationState && recoveryLoading) {
+    return (
+      <MainLayout title="Recuperando información...">
+        <Card>
+          <div className="flex flex-col items-center py-8 space-y-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent" />
+            <p className="text-gray-500 dark:text-gray-400">Recuperando información de tu reserva...</p>
+          </div>
+        </Card>
+      </MainLayout>
+    );
+  }
+
+  if (!locationState && !recoveredData) {
     return (
       <MainLayout title="Confirmar pago">
         <Card>
@@ -67,11 +132,10 @@ export function ConfirmarPagoPage() {
     );
   }
 
-  const montoTotal = state.montoTotal ?? 0;
-  const montoPagado = state.montoPagado ?? 0;
-  const montoPendiente = state.montoPendiente ?? montoTotal;
-  const depositoMinimo = montoTotal / 2;
-  const confirmaReserva = !isPackage && montoPagado < depositoMinimo && (montoPagado + monto) >= depositoMinimo;
+  const montoTotal = locationState?.montoTotal ?? recoveredData?.montoTotal ?? 0;
+  const montoPagado = locationState?.montoPagado ?? recoveredData?.montoPagado ?? 0;
+  const montoPendiente = locationState?.montoPendiente ?? recoveredData?.montoPendiente ?? montoTotal;
+  const actividadIdValue = locationState?.actividadId ?? recoveredData?.actividadId ?? '';
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -84,15 +148,19 @@ export function ConfirmarPagoPage() {
   };
 
   const esMercadoPago = metodoPago === 'MercadoPago';
-  // El mínimo a pagar por MP es lo necesario para alcanzar el depósito del 50%.
-  // Si ya se pagó el 50% o más, el mínimo es 0 (cualquier monto es válido).
-  // Si ya señaló, solo puede pagar el total restante.
-  // Si es primera vez, mínimo 50% del total.
-  const montoMinimoMP = isPackage
-    ? montoTotal
-    : montoPagado > 0
-      ? montoPendiente
-      : montoTotal / 2;
+
+  // Calcula el monto mínimo permitido para MercadoPago según el tipo de operación
+  const calcularMontoMinimoMP = (): number => {
+    if (isPackage) return montoTotal;            // Paquete: debe pagarse completo
+    if (montoPagado > 0) return montoPendiente;  // Pago parcial existente: debe saldar el resto
+    return montoTotal / 2;                       // Pago inicial: mínimo 50% (seña)
+  };
+
+  const montoMinimoMP = calcularMontoMinimoMP();
+  const depositoMinimo = montoTotal / 2;
+
+  // Indica si con este pago se alcanza el depósito mínimo (50%) para confirmar la reserva
+  const confirmaReserva = !isPackage && montoPagado < depositoMinimo && (montoPagado + monto) >= depositoMinimo;
 
   const efectuarPago = async (amount: number) => {
     if (processingRef.current) return;
@@ -100,7 +168,7 @@ export function ConfirmarPagoPage() {
     setLoading(true);
     try {
       await reservasApi.registrarPago(reservaId!, {
-        actividadId: state.actividadId!,
+        actividadId: actividadIdValue,
         metodoPago,
         monto: amount,
       });
@@ -190,7 +258,7 @@ export function ConfirmarPagoPage() {
     await efectuarPago(amountToPay);
   };
 
-  const hayListaEspera = isPackage && state.actividades?.some(a => a.probabilidadListaEspera === true);
+  const hayListaEspera = (actividades ?? [])?.some(a => a.probabilidadListaEspera === true) || actividad?.probabilidadListaEspera === true;
 
   return (
     <MainLayout title="Confirmar pago">
@@ -211,9 +279,9 @@ export function ConfirmarPagoPage() {
               <>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Actividad</span>
-                  <span className="font-medium text-dark dark:text-gray-100 text-right">{isPackage ? `Paquete de ${state?.actividades?.length} clases` : 'Reserva de clase'}</span>
+                  <span className="font-medium text-dark dark:text-gray-100 text-right">{isPackage ? `Paquete de ${actividades?.length} clases` : 'Reserva de clase'}</span>
                 </div>
-                {state.actividades?.map((act, i) => (
+                {actividades?.map((act, i) => (
                   <div key={i} className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{act.nombre}</span>
                     <span>{formatDate(act.fechaYHora)}</span>
