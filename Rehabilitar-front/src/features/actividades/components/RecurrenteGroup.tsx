@@ -201,9 +201,11 @@ export function RecurrenteGroup({
       setShowEditGroup(false);
       onUpdate();
     } catch (err) {
-      console.error('Error al modificar grupo', err);
-      const axiosErr = err as { response?: { data?: { error?: string; title?: string } }; message?: string };
-      const msg = axiosErr?.response?.data?.error || axiosErr?.response?.data?.title || axiosErr?.message || 'Error desconocido';
+      const axiosErr = err as { response?: { data?: { error?: string; title?: string ; fieldErrors?: Object} }; message?: string };
+      const fieldErrors = axiosErr?.response?.data?.fieldErrors;
+      const validationMessage = fieldErrors && Object.keys(fieldErrors).flat()[0];
+
+      const msg = validationMessage || axiosErr?.response?.data?.error || axiosErr?.response?.data?.title || axiosErr?.message || 'Error desconocido';
       onError?.(`Error al modificar la serie: ${msg}`);
     } finally {
       setEditLoading(false);
