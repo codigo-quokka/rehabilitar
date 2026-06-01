@@ -356,8 +356,8 @@ public class SeedingService : ISeedingService
         // Crear AptoFisico en distintos estados para los clientes que no tengan uno
         // Algunos quedarán sin cargar (sin registro), otros pendientes, rechazados, y la mayoría aprobados
         var adminUser = await _userManager.FindByEmailAsync("admin@rehabilitar.com");
-        var sinApto = new HashSet<string> { "mr@robot.com" };
-        var pendientes = new HashSet<string> { "sarah@connor.com" };
+        var sinApto = new HashSet<string> { "mr@robot.com", "sarah@connor.com" };
+        var pendientes = new HashSet<string> { }; // saqué "sarah@connor.com" porque salía el toast rojo de error al rechazarle el apto físico.
         var rechazados = new HashSet<string> { "gandalf@gris.com" };
         var existingAptos = await _dbContext.Set<AptoFisico>().Select(a => a.ClienteId).ToHashSetAsync();
         foreach (var c in clientes)
