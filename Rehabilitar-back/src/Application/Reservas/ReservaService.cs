@@ -163,7 +163,6 @@ public class ReservaService : IReservaService
                 if (cliente == null) return Error.NotFound("Cliente.NotFound", "Cliente no encontrado.");
 
                 intencion.MarcarPagado();
-                _intencionPagoRepo.Update(intencion);
 
                 var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
 
@@ -173,12 +172,21 @@ public class ReservaService : IReservaService
                     if (actividad == null) continue;
 
                     var reserva = actividad.IniciarReserva(cliente, tipoCliente);
-                    actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+                    _uow.MarkAsAdded(reserva);
+
+                    // Para intenciones de una sola actividad (reserva individual):
+                    // se usa el monto que el usuario eligió pagar (MontoAPagar).
+                    // Para paquetes (múltiples actividades) se paga el precio completo
+                    // ya que el frontend exige pago al 100% del total del paquete.
+                    var montoAPagar = intencion.ActividadesIds.Count == 1
+                        ? intencion.MontoAPagar
+                        : actividad.Precio;
+
+                    actividad.ProcesarPagoReserva(reserva.Id, montoAPagar);
                 }
 
                 // Resetear cancelaciones del cliente al pagar (consistente con ConfirmarPagoReservaAsync)
                 cliente.ResetearCancelaciones();
-                _clienteRepo.Update(cliente);
 
                 await _uow.SaveChangesAsync(ct);
                 return Result.Success;
