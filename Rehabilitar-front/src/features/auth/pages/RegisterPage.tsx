@@ -114,6 +114,16 @@ export function RegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (!raw) {
+      setFormData((prev) => ({ ...prev, fechaNacimiento: "" }));
+      return;
+    }
+    const clamped = raw < "1900-01-01" ? "1900-01-01" : raw > todayStr ? todayStr : raw;
+    setFormData((prev) => ({ ...prev, fechaNacimiento: clamped }));
+  };
+
   // Helper para el onPaste del custom hook
   const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -380,9 +390,7 @@ export function RegisterPage() {
                             type="date"
                             name="fechaNacimiento"
                             value={formData.fechaNacimiento}
-                            onChange={handleChange}
-                            min="1900-01-01"
-                            max={todayStr}
+                            onChange={handleFechaChange}
                           />
                           <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
                         </div>
