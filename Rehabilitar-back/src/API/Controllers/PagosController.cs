@@ -52,7 +52,7 @@ public class PagosController : ApiControllerBase
         );
     }
 
-    [HttpPost("preferencia-paquete/{intencionId}")]
+    [HttpPost("mercadopago/preferencia-paquete/{intencionId}")]
     public async Task<IActionResult> CrearPreferenciaPaquete(Guid intencionId, [FromBody] CrearPreferenciaPaqueteRequest request)
     {
         var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
