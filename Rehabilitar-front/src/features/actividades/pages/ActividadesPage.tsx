@@ -52,6 +52,11 @@ export function ActividadesPage() {
   const [reservasData, setReservasData] = useState<Reserva[]>([]);
   const [reservasLoading, setReservasLoading] = useState(false);
 
+  const [showSuscriptoresModal, setShowSuscriptoresModal] = useState(false);
+  const [suscriptoresGrupoNombre, setSuscriptoresGrupoNombre] = useState('');
+  const [suscriptoresData, setSuscriptoresData] = useState<Reserva[]>([]);
+  const [suscriptoresLoading, setSuscriptoresLoading] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -110,6 +115,30 @@ export function ActividadesPage() {
       setShowToast(true);
     } finally {
       setReservasLoading(false);
+    }
+  };
+
+  const handleVerSuscriptores = async (actividadesGrupo: Actividad[]) => {
+    setSuscriptoresGrupoNombre(actividadesGrupo[0]?.nombre || 'Grupo recurrente');
+    setSuscriptoresLoading(true);
+    setShowSuscriptoresModal(true);
+    setSuscriptoresData([]);
+    try {
+      const results = await Promise.all(
+        actividadesGrupo.map(a => reservasApi.getAll({ actividadId: a.id }))
+      );
+      const todas = results.flat().filter(
+        (r, i, arr) => arr.findIndex(x => x.id === r.id) === i
+      );
+      setSuscriptoresData(todas.filter(r => r.tipoCliente === 'Abonado' || r.tipoCliente === '1'));
+    } catch (err) {
+      console.error('Error al obtener suscriptores:', err);
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al cargar suscriptores';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setSuscriptoresLoading(false);
     }
   };
 
@@ -426,6 +455,7 @@ export function ActividadesPage() {
                   }
                 }}
                 onVerReservas={handleVerReservas}
+                onVerSuscriptores={handleVerSuscriptores}
                 onError={(msg) => {
                   setToastType('error');
                   setToastMessage(msg);
@@ -509,6 +539,88 @@ export function ActividadesPage() {
         />
       )}
 
+      {showSuscriptoresModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowSuscriptoresModal(false)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setShowSuscriptoresModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Suscriptores de {suscriptoresGrupoNombre}</h2>
+            </div>
+            {suscriptoresLoading ? (
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
+            ) : suscriptoresData.length === 0 ? (
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400 py-8">Sin suscriptores</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(() => {
+                  const map = new Map<string, { nombre: string; cantidad: number; estados: Set<string>; todoPagado: boolean }>();
+                  for (const r of suscriptoresData) {
+                    const key = r.clienteId;
+                    if (!map.has(key)) {
+                      map.set(key, { nombre: r.nombreCliente || 'Cliente desconocido', cantidad: 0, estados: new Set(), todoPagado: true });
+                    }
+                    const entry = map.get(key)!;
+                    entry.cantidad++;
+                    entry.estados.add(r.estadoDeReserva);
+                    if (r.montoPendiente !== 0) { entry.todoPagado = false; }
+                  }
+                  return Array.from(map.values());
+                })().map((item) => {
+                  const iniciales = item.nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                  const estadoUnico = item.estados.size === 1 ? item.estados.values().next().value : null;
+                  const estadoLabel = estadoUnico === 'PendienteDePago' ? 'Pendiente de pago' :
+                                     estadoUnico === 'Activa' ? 'Activa' :
+                                     estadoUnico === 'EnEspera' ? 'En espera' :
+                                     estadoUnico === 'Cancelada' ? 'Cancelada' :
+                                     estadoUnico ?? 'Múltiples estados';
+                  const estadoVariant: 'default' | 'success' | 'warning' | 'danger' | 'info' = estadoUnico === 'Activa' ? 'success' :
+                                        estadoUnico === 'Cancelada' ? 'danger' :
+                                        estadoUnico === 'EnEspera' ? 'info' :
+                                        estadoUnico === 'PendienteDePago' ? 'warning' : 'default';
+                  return (
+                    <Card key={item.nombre} className="flex flex-col relative">
+                      <div className="absolute top-3 right-3 bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l4 6 6-2-3 7H5l-3-7 6 2 4-6z" />
+                        </svg>
+                        Suscripto
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-dark font-bold text-sm shrink-0">
+                          {iniciales || '??'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-dark dark:text-gray-100 truncate">
+                            {item.nombre}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        {item.cantidad} {item.cantidad === 1 ? 'clase' : 'clases'}
+                      </div>
+                      <div className="flex items-center gap-2 mt-auto">
+                        <Badge variant={estadoVariant} className="text-xs">
+                          {estadoLabel}
+                        </Badge>
+                        {item.todoPagado && (
+                          <Badge variant="success" className="text-xs">Pagado</Badge>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showReservasModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
@@ -519,13 +631,13 @@ export function ActividadesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasActNombre}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasActNombre}</h2>
+              <p className="text-sm text-dark-green font-bold dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
             </div>
             {reservasLoading ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
             ) : reservasData.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400 py-8">Sin reservas</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {reservasData.map((res) => {
@@ -722,7 +834,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
-          <p className="text-sm text-dark-green dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
+          <p className="text-sm text-dark-green font-semibold  dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
           <Select
             label="Frecuencia"
             value=""

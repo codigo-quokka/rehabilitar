@@ -611,8 +611,8 @@ export function UsuariosPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasModalUser.nombre} {reservasModalUser.apellido}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasModalData.length} reserva(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasModalUser.nombre} {reservasModalUser.apellido}</h2>
+              <p className="text-sm text-gray-200 font-semibold dark:text-gray-400 mt-1">{reservasModalData.length} reserva(s)</p>
             </div>
             {reservasModalLoading ? (
               <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
@@ -639,7 +639,7 @@ export function UsuariosPage() {
                         </Badge>
                         {completado && <Badge variant="success">Pagado</Badge>}
                       </div>
-                      <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">{act?.nombre || 'Actividad'}</h3>
+                      <h3 className="text-lg font-bold text-dark dark:text-gray-100 mb-2">{act?.nombre || 'Actividad'}</h3>
                       {act && (
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                           <div className="flex items-center gap-2">
@@ -721,8 +721,8 @@ export function UsuariosPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Clases de {clasesModalUser.nombre} {clasesModalUser.apellido}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{clasesModalData.length} clase(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Clases de {clasesModalUser.nombre} {clasesModalUser.apellido}</h2>
+              <p className="text-sm text-gray-200 font-semibold dark:text-gray-400 mt-1">{clasesModalData.length} clase(s)</p>
             </div>
             {clasesModalLoading ? (
               <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
