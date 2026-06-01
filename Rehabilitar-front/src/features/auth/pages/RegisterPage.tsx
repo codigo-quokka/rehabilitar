@@ -120,7 +120,7 @@ export function RegisterPage() {
       setFormData((prev) => ({ ...prev, fechaNacimiento: "" }));
       return;
     }
-    const clamped = raw < "1900-01-01" ? "1900-01-01" : raw > todayStr ? todayStr : raw;
+    const clamped = raw > todayStr ? todayStr : raw;
     setFormData((prev) => ({ ...prev, fechaNacimiento: clamped }));
   };
 
@@ -391,6 +391,8 @@ export function RegisterPage() {
                             name="fechaNacimiento"
                             value={formData.fechaNacimiento}
                             onChange={handleFechaChange}
+                            min="1900-01-01"
+                            max={todayStr}
                           />
                           <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
                         </div>
