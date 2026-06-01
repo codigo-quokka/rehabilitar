@@ -523,13 +523,13 @@ export function ActividadesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasActNombre}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasActNombre}</h2>
+              <p className="text-sm text-dark-green font-bold dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
             </div>
             {reservasLoading ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
             ) : reservasData.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400 py-8">Sin reservas</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {reservasData.map((res) => {
