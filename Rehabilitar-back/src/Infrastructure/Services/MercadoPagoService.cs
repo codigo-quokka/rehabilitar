@@ -45,7 +45,7 @@ public class MercadoPagoService : IMercadoPagoService
                 // pending = $"{frontendUrl}/reservas/pago/pendiente"
             },
             auto_return = "approved",
-            notification_url = webhookUrl,
+            // notification_url = webhookUrl,
 
             payment_methods = new
             {
