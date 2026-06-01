@@ -82,6 +82,7 @@ export interface Reserva {
   estadoDeReserva: EstadoDeReserva;
   montoTotal: number;
   montoPendiente: number;
+  probabilidadListaEspera?: boolean;
 }
 
 export interface Sala {
