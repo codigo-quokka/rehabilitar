@@ -4,6 +4,7 @@ using Application.Pagos.Requests;
 using Application.Reservas;
 using Domain.Enums;
 using Domain.Pagos;
+using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -42,7 +43,13 @@ public class PagosController : ApiControllerBase
         return await reserva.MatchAsync(
             async r =>
             {
-                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", r.MontoPendiente, "Pago de reserva");
+                if (request.Monto <= 0)
+                    return Problem(new List<Error> { Error.Validation("Pago.MontoInvalido", "El monto debe ser mayor a cero.") });
+                
+                if (request.Monto > r.MontoPendiente)
+                    return Problem(new List<Error> { Error.Validation("Pago.MontoExcede", "El monto no puede exceder el saldo pendiente.") });
+                
+                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", request.Monto, "Pago de reserva");
                 return result.Match(
                     p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
                     errors => Problem(errors)
@@ -154,7 +161,8 @@ public class PagosController : ApiControllerBase
             return await reserva.MatchAsync(
                 async r =>
                 {
-                    var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, r.MontoTotal);
+                    var montoPagado = result.Value.TransactionAmount ?? r.MontoPendiente;
+                    var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, montoPagado);
                     var confirmResult = await _reservaService.ConfirmarPagoReservaAsync(pagoRequest, reservaId);
                     
                     return confirmResult.Match(
@@ -185,7 +193,7 @@ public class PagosController : ApiControllerBase
     }
 }
 
-public record CrearPreferenciaRequest(Guid ReservaId);
+public record CrearPreferenciaRequest(Guid ReservaId, decimal Monto);
 public record CrearPreferenciaPaqueteRequest(decimal Monto);
 public record WebhookPayload(string Topic, string Action, string Type, WebhookData Data);
 public record WebhookData(string Id);
