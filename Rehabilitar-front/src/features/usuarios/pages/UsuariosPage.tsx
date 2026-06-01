@@ -690,7 +690,6 @@ export function UsuariosPage() {
               max={pagoModal.montoPendiente}
               value={montoPago}
               onChange={(e) => setMontoPago(e.target.value)}
-              required
             />
             <Select
               label="Método de pago"
@@ -841,8 +840,23 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       onNotify?.('error', `Ingrese un DNI válido`);
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      onNotify?.('error', 'Ingrese un correo electrónico válido');
+      return;
+    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
+      return;
+    }
+    const fechaNac = new Date(formData.fechaNacimiento);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mesDiff = hoy.getMonth() - fechaNac.getMonth();
+    if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
+    }
+    if (edad < 18) {
+      onNotify?.('error', 'Debe ser mayor de edad para poder ser registrado en el sitio');
       return;
     }
     setLoading(true);
@@ -856,8 +870,15 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       }
       onClose();
     } catch (err) {
-      const apiMsg = (err as any)?.response?.data?.error;
-      const msg = apiMsg && apiMsg.includes("is already taken")
+      const data = (err as any)?.response?.data;
+      const errorMessages = [
+        data?.error,
+        data?.title,
+        data?.detail,
+        data?.message,
+      ].filter(Boolean);
+      const apiMsg = errorMessages[0];
+      const msg = apiMsg?.includes("is already taken")
         ? "El correo ingresado ya se encuentra en uso"
         : apiMsg || `Error al ${user ? 'actualizar' : 'crear'} usuario.`;
       onNotify?.('error', msg);
@@ -869,7 +890,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const roles: Role[] = ['Administrador', 'Recepción', 'Profesor'];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Nombre"
