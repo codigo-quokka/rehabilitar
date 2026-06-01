@@ -11,6 +11,7 @@ public class IntencionPago
     public decimal MontoTotal { get; private set; }
     public decimal MontoAPagar { get; private set; }
     public DateTime FechaCreacion { get; private set; }
+    public DateTime FechaExpiracion { get; private set; }
 
     public bool Pagado { get; private set; }
     public EstadoDelPago Estado { get; private set; }
@@ -27,11 +28,14 @@ public class IntencionPago
         MontoTotal = montoTotal;
         MontoAPagar = montoTotal;
         FechaCreacion = DateTime.UtcNow;
+        FechaExpiracion = FechaCreacion.AddMinutes(10);
         Pagado = false;
         Estado = EstadoDelPago.Pendiente;
     }
 
     public void SetMontoAPagar(decimal monto) { MontoAPagar = monto; }
+
+    public bool EstaExpirada() => DateTime.UtcNow > FechaExpiracion;
 
     public void MarcarPagado()
     {
