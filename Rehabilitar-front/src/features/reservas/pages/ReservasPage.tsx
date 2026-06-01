@@ -9,7 +9,7 @@ import { Notitoast } from '../../../components/Notitoast';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 const estadoLabel: Record<string, string> = {
-  PendienteDePago: 'Pendiente de pago',
+  PendienteDePago: 'Señada',
   Activa: 'Activa',
   EnEspera: 'En espera',
   Cancelada: 'Cancelada',
@@ -227,9 +227,8 @@ export function ReservasPage() {
             <Input
               placeholder="Buscar por actividad..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="min-w-125 h-12"
-              maxLength={40}
             />
             <Button
               variant="primary"

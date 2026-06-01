@@ -17,9 +17,9 @@ export const reservasApi = {
     return response.data as Reserva;
   },
 
-  create: async (data: { actividadId: string; clienteId: string; tipoCliente: TipoCliente }) => {
+  create: async (data: { actividadId: string; clienteId: string; tipoCliente: string }) => {
     const response = await apiClient.post('/reservas', data);
-    return response.data as Reserva;
+    return response.data as Reserva & { intencionId: string };
   },
 
   cancelar: async (reservaId: string, actividadId: string) => {
@@ -29,6 +29,16 @@ export const reservasApi = {
 
   registrarPago: async (reservaId: string, data: { actividadId: string; metodoPago: string; monto: number }) => {
     const response = await apiClient.post(`/reservas/${reservaId}/pago`, data);
+    return response.data;
+  },
+
+  createRecurrente: async (data: { clienteId: string; actividadesIds: string[] }) => {
+    const response = await apiClient.post('/reservas/recurrente', data);
+    return response.data; // Should return { intencionId: string }
+  },
+
+  eliminarIntencion: async (intencionId: string) => {
+    const response = await apiClient.delete(`/pagos/intencion/${intencionId}`);
     return response.data;
   },
 };

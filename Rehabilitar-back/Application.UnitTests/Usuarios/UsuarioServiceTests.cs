@@ -56,6 +56,7 @@ public class UsuarioServiceTests
             Nombre = "Nombre",
             Apellido = "Apellido",
             Email = "email@test.com",
+            Dni = "12345678",
             Rol = "Recepcionista",
             Especialidad = null
         };
@@ -86,6 +87,7 @@ public class UsuarioServiceTests
             Nombre = "Nombre",
             Apellido = "Apellido",
             Email = "email@test.com",
+            Dni = "12345678",
             Rol = "Profesor",
             Especialidad = "TrenSuperior"
         };
@@ -117,6 +119,7 @@ public class UsuarioServiceTests
             Nombre = "Nombre",
             Apellido = "Apellido",
             Email = "email@test.com",
+            Dni = "12345678",
             Rol = "Recepcionista",
             Especialidad = null
         };

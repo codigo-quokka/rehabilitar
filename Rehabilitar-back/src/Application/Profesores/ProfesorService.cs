@@ -2,6 +2,7 @@ namespace Application.Profesores;
 
 using Application.Actividades;
 using Application.Actividades.DTOs;
+using Application.Pagos;
 using Application.Salas;
 using ErrorOr;
 using Domain.Salas;
@@ -11,15 +12,18 @@ public class ProfesorService : IProfesorService
     private readonly IActividadRepository _actividadRepo;
     private readonly ISalaRepository _salaRepo;
     private readonly IProfesorRepository _profesorRepo;
+    private readonly IIntencionPagoRepository _intencionPagoRepository;
 
     public ProfesorService(
         IActividadRepository actividadRepo,
         ISalaRepository salaRepo,
-        IProfesorRepository profesorRepo)
+        IProfesorRepository profesorRepo,
+        IIntencionPagoRepository intencionPagoRepository)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
         _profesorRepo = profesorRepo;
+        _intencionPagoRepository = intencionPagoRepository;
     }
 
     public async Task<ErrorOr<List<ActividadResponse>>> ObtenerMisClases(Guid profesorId, CancellationToken ct = default)
@@ -42,6 +46,9 @@ public class ProfesorService : IProfesorService
                     nombreProfesor = prof.User.FirstName + " " + prof.User.LastName;
             }
 
+            int intencionesPendientes = await _intencionPagoRepository.ContarIntencionesPendientesRecientesAsync(actividad.Id, TimeSpan.FromMinutes(15));
+            bool probabilidad = actividad.CupoMaximo > 0 && (actividad.CupoOcupado + intencionesPendientes) >= actividad.CupoMaximo;
+
             responses.Add(new ActividadResponse(
                 actividad.Id,
                 actividad.Nombre,
@@ -52,12 +59,13 @@ public class ProfesorService : IProfesorService
                 actividad.Estado,
                 actividad.CupoMaximo,
                 actividad.CupoDisponible,
+                actividad.Precio,
                 actividad.SalaId,
                 nombreSala,
                 actividad.ProfesorId,
                 nombreProfesor,
                 actividad.SerieId,
-                actividad.ProbabilidadListaEspera
+                probabilidad
             ));
         }
 

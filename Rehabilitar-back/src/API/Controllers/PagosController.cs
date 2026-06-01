@@ -1,8 +1,10 @@
 using Application.Common.Interfaces;
+using Application.Pagos;
 using Application.Pagos.Requests;
 using Application.Reservas;
-using Application.Suscripciones;
 using Domain.Enums;
+using Domain.Pagos;
+using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -17,15 +19,19 @@ public class PagosController : ApiControllerBase
 {
     private readonly IMercadoPagoService _mercadoPagoService;
     private readonly IReservaService _reservaService;
-    private readonly ISuscripcionService _suscripcionService;
+    private readonly IIntencionPagoRepository _intencionPagoRepo;
+    private readonly IUnitOfWork _uow;
     private readonly IConfiguration _configuration;
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, ISuscripcionService suscripcionService, IConfiguration configuration)
+    public PagosController(IMercadoPagoService mercadoPagoService, IReservaService reservaService, 
+                           IIntencionPagoRepository intencionPagoRepo,
+                           IUnitOfWork uow, IConfiguration configuration)
     {
         _mercadoPagoService = mercadoPagoService;
         _reservaService = reservaService;
-        _suscripcionService = suscripcionService;
+        _intencionPagoRepo = intencionPagoRepo;
+        _uow = uow;
         _configuration = configuration;
     }
 
@@ -37,7 +43,13 @@ public class PagosController : ApiControllerBase
         return await reserva.MatchAsync(
             async r =>
             {
-                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", r.MontoPendiente, "Pago de reserva");
+                if (request.Monto <= 0)
+                    return Problem(new List<Error> { Error.Validation("Pago.MontoInvalido", "El monto debe ser mayor a cero.") });
+                
+                if (request.Monto > r.MontoPendiente)
+                    return Problem(new List<Error> { Error.Validation("Pago.MontoExcede", "El monto no puede exceder el saldo pendiente.") });
+                
+                var result = await _mercadoPagoService.CreatePreferenceAsync($"RES_{request.ReservaId}", request.Monto, "Pago de reserva");
                 return result.Match(
                     p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
                     errors => Problem(errors)
@@ -47,12 +59,39 @@ public class PagosController : ApiControllerBase
         );
     }
 
-    [HttpPost("mercadopago/preferencia-suscripcion")]
-    public async Task<IActionResult> CrearPreferenciaSuscripcion([FromBody] CrearPreferenciaSuscripcionRequest request)
+    [HttpPost("mercadopago/preferencia-paquete/{intencionId}")]
+    public async Task<IActionResult> CrearPreferenciaPaquete(Guid intencionId, [FromBody] CrearPreferenciaPaqueteRequest request)
     {
-        var result = await _mercadoPagoService.CreatePreferenceAsync($"SUSC_{request.ClienteId}_{request.SerieId}", 10000, "Suscripción Mensual");
+        var intencion = await _intencionPagoRepo.GetByIdAsync(intencionId);
+        if (intencion == null) return NotFound();
+
+        intencion.SetMontoAPagar(request.Monto);
+        await _uow.SaveChangesAsync();
+
+        var result = await _mercadoPagoService.CreatePreferenceAsync($"INT_{intencionId}", request.Monto, "Paquete de clases");
+        
         return result.Match(
             p => Ok(new { preferenceId = p.PreferenceId, initPoint = p.InitPoint }),
+            errors => Problem(errors)
+        );
+    }
+
+    [HttpPost("intencion/{intencionId}/pago-rehabilicoins")]
+    public async Task<IActionResult> PagarIntencionConRehabilicoins(Guid intencionId)
+    {
+        var result = await _reservaService.PagarIntencionConRehabilicoinsAsync(intencionId);
+        return result.Match(
+            success => Ok(),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpDelete("intencion/{intencionId}")]
+    public async Task<IActionResult> EliminarIntencionPago(Guid intencionId)
+    {
+        var result = await _reservaService.EliminarIntencionPagoAsync(intencionId);
+        return result.Match(
+            _ => NoContent(),
             errors => Problem(errors)
         );
     }
@@ -122,7 +161,8 @@ public class PagosController : ApiControllerBase
             return await reserva.MatchAsync(
                 async r =>
                 {
-                    var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, r.MontoTotal);
+                    var montoPagado = result.Value.TransactionAmount ?? r.MontoPendiente;
+                    var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, montoPagado);
                     var confirmResult = await _reservaService.ConfirmarPagoReservaAsync(pagoRequest, reservaId);
                     
                     return confirmResult.Match(
@@ -133,17 +173,17 @@ public class PagosController : ApiControllerBase
                 errors => Task.FromResult(Problem(errors))
             );
         }
-        else if (externalReference.StartsWith("SUSC_"))
+        else if (externalReference.StartsWith("INT_"))
         {
-            var parts = externalReference.Substring(5).Split('_');
-            if (parts.Length != 2 || !Guid.TryParse(parts[0], out var clienteId) || !Guid.TryParse(parts[1], out var serieId))
+            var intencionIdString = externalReference.Substring(4);
+            if (!Guid.TryParse(intencionIdString, out var intencionId))
             {
-                return BadRequest("Invalid Suscripcion format");
+                return BadRequest("Invalid IntencionId format");
             }
+
+            var pagoResult = await _reservaService.PagarIntencionConMercadoPagoAsync(intencionId);
             
-            var suscripcionResult = await _suscripcionService.SuscribirAsync(clienteId, serieId);
-            
-            return suscripcionResult.Match(
+            return pagoResult.Match(
                 _ => Ok(),
                 errors => Problem(errors)
             );
@@ -153,7 +193,7 @@ public class PagosController : ApiControllerBase
     }
 }
 
-public record CrearPreferenciaRequest(Guid ReservaId);
-public record CrearPreferenciaSuscripcionRequest(Guid ClienteId, Guid SerieId);
+public record CrearPreferenciaRequest(Guid ReservaId, decimal Monto);
+public record CrearPreferenciaPaqueteRequest(decimal Monto);
 public record WebhookPayload(string Topic, string Action, string Type, WebhookData Data);
 public record WebhookData(string Id);

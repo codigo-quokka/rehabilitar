@@ -117,33 +117,20 @@ export function ActividadesPage() {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      if (reserva.probabilidadListaEspera) {
-        setToastType('error');
-        setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
-        setShowToast(true);
-        setTimeout(() => {
-          navigate(`/reservas/confirmar/${reserva.id}`, {
-            state: {
-              reservaId: reserva.id,
-              actividadId: reserva.actividadId,
-              montoTotal: reserva.montoTotal,
-              montoPagado: 0,
-              montoPendiente: reserva.montoPendiente,
-            },
-          });
-        }, 2000);
-      } else {
-        navigate(`/reservas/confirmar/${reserva.id}`, {
-          state: {
-            reservaId: reserva.id,
-            actividadId: reserva.actividadId,
-            montoTotal: reserva.montoTotal,
-            montoPagado: 0,
-            montoPendiente: reserva.montoPendiente,
-          },
-        });
-      }
+      const res = await reservasApi.create({
+        actividadId: actividad.id,
+        clienteId: user.id,
+        tipoCliente: 'noAbonado',
+      });
+      
+      // Navigate using the unified package flow!
+      navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
+        state: {
+          intencionId: res.intencionId,
+          actividades: [actividad],
+          montoTotal: actividad.precio
+        }
+      });
     } catch (err) {
       const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
       console.error('Error al reservar:', axiosErr?.response?.status, axiosErr?.response?.data, axiosErr?.message);
@@ -447,7 +434,7 @@ export function ActividadesPage() {
                 key={act.id}
                 actividad={act}
                 hasRole={hasRole}
-                onReservar={handleReservar}
+                onReservar={() => handleReservar(act)}
                 onModificar={(act) => {
                   setEditingActividad(act);
                   setShowModal(true);
@@ -786,48 +773,29 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               }}
               min={todayStr}
             />
-            <div className="relative">
-              <label className="block text-base font-medium text-dark dark:text-gray-100 mb-2.5">
-                Hora
-              </label>
-              <div className="flex gap-2 items-start">
-                <TimeSelect
-                  value={formData.fechaYHora.split('T')[1]?.split(':')[0] || ''}
-                  placeholder="HH"
-                  options={Array.from({ length: 12 }, (_, i) => {
-                    const h = String(i + 8).padStart(2, '0');
-                    return { value: h, label: h };
-                  })}
-                  onChange={(hh) => {
-                    const fecha = formData.fechaYHora.split('T')[0] || '';
-                    const currentMm = formData.fechaYHora.split('T')[1]?.split(':')[1] || '';
-                    const mm = hh === '19' ? '00' : (currentMm || '00');
-                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
-                  }}
-                />
-                <span className="text-dark dark:text-gray-100 text-lg font-medium pt-3">:</span>
-                <TimeSelect
-                  value={
-                    formData.fechaYHora.split('T')[1]?.split(':')[0] === '19'
-                      ? '00'
-                      : formData.fechaYHora.split('T')[1]?.split(':')[1] || ''
-                  }
-                  placeholder="MM"
-                  options={Array.from(
-                    { length: formData.fechaYHora.split('T')[1]?.split(':')[0] === '19' ? 1 : 60 },
-                    (_, i) => {
-                      const m = String(i).padStart(2, '0');
-                      return { value: m, label: m };
-                    },
-                  )}
-                  onChange={(mm) => {
-                    const fecha = formData.fechaYHora.split('T')[0] || '';
-                    const hh = formData.fechaYHora.split('T')[1]?.split(':')[0] || '08';
-                    setFormData({ ...formData, fechaYHora: `${fecha}T${hh}:${mm}` });
-                  }}
-                />
-              </div>
-            </div>
+            <Input
+              label="Hora"
+              type="time"
+              value={formData.fechaYHora.split('T')[1] || ''}
+              onChange={(e) => {
+                const fecha = formData.fechaYHora.split('T')[0] || '';
+                setFormData({ ...formData, fechaYHora: `${fecha}T${e.target.value}` });
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (!val) return;
+                const [hh, mm] = val.split(':').map(Number);
+                if (hh < 8) {
+                  const nueva = `08:00`;
+                  const fecha = formData.fechaYHora.split('T')[0] || '';
+                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
+                } else if (hh > 19 || (hh === 19 && mm > 0)) {
+                  const nueva = `19:00`;
+                  const fecha = formData.fechaYHora.split('T')[0] || '';
+                  setFormData({ ...formData, fechaYHora: `${fecha}T${nueva}` });
+                }
+              }}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select

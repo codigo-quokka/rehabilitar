@@ -7,7 +7,7 @@ public class ReservaRecurrenteRequestValidator : AbstractValidator<ReservaRecurr
 {
     public ReservaRecurrenteRequestValidator()
     {
-        RuleFor(x => x.Actividades).NotEmpty();
+        RuleFor(x => x.ActividadesIds).NotEmpty();
         RuleFor(x => x.ClienteId).NotEmpty();
     }
 }
