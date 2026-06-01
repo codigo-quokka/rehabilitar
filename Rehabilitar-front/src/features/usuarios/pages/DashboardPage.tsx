@@ -13,10 +13,12 @@ export function DashboardPage() {
   const [actividadMap, setActividadMap] = useState<Record<string, Actividad>>({});
   const [saldoAFavor, setSaldoAFavor] = useState<SaldoAFavor | null>(null);
   const [InasistenciasConsecutivas, setInasistenciasConsecutivas] = useState(0);
+  const [profesorActividades, setProfesorActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
   const isCliente = hasRole(['Cliente Registrado']);
 
   const isAdmin = hasRole(['Administrador']);
+  const isProfesor = hasRole(['Profesor']);
 
   const fetchData = useCallback(async () => {
     try {
@@ -34,6 +36,18 @@ export function DashboardPage() {
           setActividades(data.slice(0, 5))
         )
       );
+
+      if (isProfesor && user) {
+        fetchPromises.push(
+          actividadesApi.getAll({ profesorId: user.id }).then((data) => {
+            const hoy = new Date().toLocaleDateString('en-CA');
+            const delDia = (data as Actividad[]).filter(
+              (act) => act.fechaYHora.startsWith(hoy)
+            );
+            setProfesorActividades(delDia);
+          })
+        );
+      }
 
       if (isCliente && user) {
         fetchPromises.push(
@@ -73,7 +87,7 @@ export function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [isCliente, user, isAdmin]);
+  }, [isCliente, user, isAdmin, isProfesor]);
 
   useEffect(() => {
     fetchData();
@@ -143,6 +157,30 @@ export function DashboardPage() {
               </div>
             )}
           </Card>
+          )}
+          {isProfesor && (
+            <Card>
+              <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-4">Mis clases hoy</h3>
+              {loading ? (
+                <p className="text-gray-500">Cargando...</p>
+              ) : profesorActividades.length === 0 ? (
+                <p className="text-gray-500">No tenés clases hoy</p>
+              ) : (
+                <div className="space-y-3">
+                  {profesorActividades.map((act) => (
+                    <div key={act.id} className="flex items-center justify-between p-3 bg-secondary/10 dark:bg-gray-800/50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-dark dark:text-gray-100">{act.nombre}</p>
+                        <p className="text-sm text-gray-500">{new Date(act.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <Badge variant={act.cupoDisponible <= 0 ? 'warning' : 'success'}>
+                        {act.cupoMaximo - act.cupoDisponible}/{act.cupoMaximo}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
           )}
           {hasRole(['Cliente Registrado']) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:col-span-2 items-start">
