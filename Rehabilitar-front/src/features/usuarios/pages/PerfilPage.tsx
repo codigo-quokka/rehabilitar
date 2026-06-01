@@ -454,17 +454,19 @@ export function PerfilPage() {
                           >
                             Ver archivo
                           </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => setSubiendo(true)}
-                          >
+                          {aptoActual.estado !== "Aprobado" && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => setSubiendo(true)}
+                            >
                             {aptoActual.estado === "Pendiente"
                               ? "Cargar de nuevo"
                               : aptoActual.estado === "Rechazado"
                                 ? "Reintentar"
                                 : "Actualizar"}
-                          </Button>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ) : (

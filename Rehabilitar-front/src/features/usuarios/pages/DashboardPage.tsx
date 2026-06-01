@@ -233,11 +233,11 @@ export function DashboardPage() {
                   ${saldoAFavor?.montoTotal.toLocaleString() ?? '0'}
                 </p>
               </Card>
-              <Card className="flex flex-col items-center text-center space-y-2">
+              {/* <Card className="flex flex-col items-center text-center space-y-2">
                 <p className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-1 whitespace-nowrap">Inasistencias consecutivas</p>
                 <p className="text-2xl justify-center font-bold text-dark dark:text-gray-100">{InasistenciasConsecutivas}</p>
                 <p className="text-lg font-semibold text-red-400 dark:text-red-700 mb-1 whitespace-nowrap">Maximo 3</p>
-              </Card>
+              </Card> */}
             </div>
           </div>
           )}
