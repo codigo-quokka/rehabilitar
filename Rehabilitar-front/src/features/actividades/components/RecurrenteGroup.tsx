@@ -504,7 +504,7 @@ export function RecurrenteGroup({
                   </svg>
                 </button>
               </div>
-              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                 {filteredByMonth.length} {filteredByMonth.length === 1 ? 'actividad' : 'actividades'} en {monthNames[verMonth.getMonth()]}
               </p>
             </div>

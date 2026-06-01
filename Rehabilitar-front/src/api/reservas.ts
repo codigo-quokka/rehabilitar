@@ -19,7 +19,7 @@ export const reservasApi = {
 
   create: async (data: { actividadId: string; clienteId: string; tipoCliente: string }) => {
     const response = await apiClient.post('/reservas', data);
-    return response.data as Reserva & { intencionId: string };
+    return response.data as { intencionId: string; probabilidadListaEspera: boolean };
   },
 
   cancelar: async (reservaId: string, actividadId: string) => {

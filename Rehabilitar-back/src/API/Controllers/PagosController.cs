@@ -97,6 +97,74 @@ public class PagosController : ApiControllerBase
     }
 
     [AllowAnonymous]
+    [HttpGet("mercadopago/confirmar")]
+    public async Task<IActionResult> ConfirmarPago([FromQuery] string payment_id, [FromQuery] string external_reference)
+    {
+        if (string.IsNullOrEmpty(payment_id) || string.IsNullOrEmpty(external_reference))
+            return BadRequest(new { success = false, error = "Faltan parámetros de pago." });
+
+        var paymentResult = await _mercadoPagoService.GetPaymentStatusAsync(payment_id);
+
+        return await paymentResult.MatchAsync(
+            async status =>
+            {
+                if (!status.IsApproved)
+                    return Ok(new { success = false, error = "El pago no está aprobado." });
+
+                // Usar la external_reference que devuelve la API de MercadoPago, no la del query param
+                var verifiedRef = status.ExternalReference;
+                if (string.IsNullOrEmpty(verifiedRef))
+                    return BadRequest(new { success = false, error = "La referencia externa del pago no está disponible." });
+
+                if (verifiedRef.StartsWith("INT_"))
+                {
+                    var intencionIdString = verifiedRef.Substring(4);
+                    if (!Guid.TryParse(intencionIdString, out var intencionId))
+                        return BadRequest(new { success = false, error = "Formato de referencia inválido." });
+
+                    // Si el webhook ya procesó la intención, es éxito (idempotente)
+                    var intencionExistente = await _intencionPagoRepo.GetByIdAsync(intencionId);
+                    if (intencionExistente != null && intencionExistente.Estado == EstadoDelPago.Pagado)
+                        return Ok(new { success = true });
+
+                    var pagoResult = await _reservaService.PagarIntencionConMercadoPagoAsync(intencionId);
+                    
+                    return pagoResult.Match(
+                        _ => Ok(new { success = true }),
+                        errors => Ok(new { success = false, error = errors.First().Description })
+                    );
+                }
+                else if (verifiedRef.StartsWith("RES_"))
+                {
+                    var reservaIdString = verifiedRef.Substring(4);
+                    if (!Guid.TryParse(reservaIdString, out var reservaId))
+                        return BadRequest(new { success = false, error = "Formato de referencia inválido." });
+
+                    var reserva = await _reservaService.ObtenerReservaPorId(reservaId);
+                    
+                    return await reserva.MatchAsync<IActionResult>(
+                        async r =>
+                        {
+                            var montoPagado = status.TransactionAmount ?? r.MontoPendiente;
+                            var pagoRequest = new RegistrarPagoRequest(r.ActividadId, MetodoPago.MercadoPago, montoPagado);
+                            var confirmResult = await _reservaService.ConfirmarPagoReservaAsync(pagoRequest, reservaId);
+                            
+                            return confirmResult.Match(
+                                _ => Ok(new { success = true }),
+                                errors => Ok(new { success = false, error = errors.First().Description })
+                            );
+                        },
+                        errors => Task.FromResult<IActionResult>(Ok(new { success = false, error = "Reserva no encontrada." }))
+                    );
+                }
+
+                return BadRequest(new { success = false, error = "Formato de referencia desconocido." });
+            },
+            errors => Task.FromResult<IActionResult>(Problem(errors))
+        );
+    }
+
+    [AllowAnonymous]
     [HttpPost("mercadopago/webhook")]
     public async Task<IActionResult> Webhook([FromHeader(Name = "x-signature")] string? signature, [FromHeader(Name = "x-request-id")] string? requestId)
     {
@@ -114,8 +182,8 @@ public class PagosController : ApiControllerBase
         // Parse x-signature header (format: ts=...,v1=...)
         if (string.IsNullOrEmpty(signature)) return Unauthorized();
         var signatureParts = signature.Split(',');
-        string ts = null;
-        string v1 = null;
+        string? ts = null;
+        string? v1 = null;
         foreach (var part in signatureParts)
         {
             if (part.StartsWith("ts=")) ts = part.Substring(3);
