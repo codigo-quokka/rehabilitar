@@ -161,6 +161,7 @@ export function ReservasPage() {
   const esSuscripto = (r: Reserva) => r.tipoCliente === 'Abonado';
 
   const filteredReservas = reservas.filter(r => {
+    if (filters.estadoDeReserva === 'all' && r.estadoDeReserva === 'Cancelada') return false;
     if (filters.estadoDeReserva !== 'all' && r.estadoDeReserva !== filters.estadoDeReserva) return false;
     if (filters.pagado === 'pagados' && r.montoPendiente !== 0) return false;
     if (filters.pagado === 'pendientes' && r.montoPendiente === 0) return false;
@@ -183,16 +184,10 @@ export function ReservasPage() {
   const displayReservas = useMemo(() => {
     const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
     const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
-    if (filters.estadoDeReserva === 'Cancelada') return sorted;
-    let cancelCount = 0;
-    return sorted.filter(r => {
-      if (r.estadoDeReserva === 'Cancelada') {
-        cancelCount++;
-        return cancelCount <= 5;
-      }
-      return true;
-    });
-  }, [filteredReservas, filters.estadoDeReserva, actividades]);
+    // Remove the 5-item limit on cancelled reservations so that groups 
+    // (suscripciones) always display ALL their activities even if cancelled
+    return sorted;
+  }, [filteredReservas, actividades]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -274,30 +269,37 @@ export function ReservasPage() {
   };
 
   const handleConfirmCancelGrupo = async () => {
-    if (!grupoParaCancelar) return;
+    if (!grupoParaCancelar || grupoParaCancelar.length === 0) return;
+    if (!effectiveUserId) {
+      setToastType('error');
+      setToastMessage('Error: no se pudo identificar al usuario');
+      setShowToast(true);
+      setGrupoParaCancelar(null);
+      return;
+    }
     setShowConfirmCancelGrupo(false);
     try {
-      const activas = grupoParaCancelar.filter(
-        r => r.estadoDeReserva === 'PendienteDePago' || r.estadoDeReserva === 'Activa' || r.estadoDeReserva === 'EnEspera'
-      );
-      const results = await Promise.allSettled(
-        activas.map(r => reservasApi.cancelar(r.id, r.actividadId))
-      );
-      const failed = results.filter(r => r.status === 'rejected');
-      if (failed.length === 0) {
-        setToastType('success');
-        setToastMessage(`${activas.length} reserva(s) cancelada(s) correctamente`);
-      } else {
+      const serieId = actividades[grupoParaCancelar[0]?.actividadId]?.serieId;
+      if (!serieId) {
         setToastType('error');
-        setToastMessage(`${failed.length} reserva(s) no pudieron cancelarse`);
+        setToastMessage('Error: no se encontró la serie de la actividad');
+        setShowToast(true);
+        return;
       }
+      
+      await reservasApi.cancelarSerie(serieId, effectiveUserId);
+      
+      setToastType('success');
+      setToastMessage(`Todas las reservas activas fueron canceladas correctamente`);
       setShowToast(true);
       window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
       setShowGroupModal(false);
       fetchReservas();
-    } catch {
+    } catch (err) {
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al cancelar las reservas';
       setToastType('error');
-      setToastMessage('Error al cancelar las reservas');
+      setToastMessage(msg);
       setShowToast(true);
     } finally {
       setGrupoParaCancelar(null);

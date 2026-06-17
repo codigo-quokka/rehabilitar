@@ -151,7 +151,11 @@ export function RecurrenteGroup({
     setFetchingMonths(true);
     try {
       const userReservas = await reservasApi.getAll({ usuarioId: user!.id });
-      const userReservedIds = new Set(userReservas.map(r => r.actividadId));
+      const userReservedIds = new Set(
+        userReservas
+          .filter(r => r.estadoDeReserva !== 'Cancelada')
+          .map(r => r.actividadId)
+      );
       setReservedIds(userReservedIds);
 
       const allFuture = actividades
