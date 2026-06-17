@@ -2,7 +2,7 @@ using Domain.Clientes;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Identity;
 
-namespace Domain;
+namespace Domain.Users;
 
 public class User : IdentityUser<Guid>
 {

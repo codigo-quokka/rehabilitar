@@ -1,5 +1,5 @@
 using Application.Usuarios;
-using Domain;
+using Domain.Users;
 using Domain.Clientes; // Added for Dni class
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

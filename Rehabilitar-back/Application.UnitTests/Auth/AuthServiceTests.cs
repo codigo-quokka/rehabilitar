@@ -4,7 +4,7 @@ using Application.Clientes;
 using Application.Profesores;
 using Application.Common.Interfaces;
 using Application.Common.Settings;
-using Domain;
+using Domain.Users;
 using Domain.Clientes;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;

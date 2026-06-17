@@ -12,7 +12,7 @@ using Domain.Actividades;
 using Domain.Clientes;
 using Domain.Pagos;
 using Domain.Enums;
-using Domain;
+using Domain.Users;
 using ErrorOr;
 
 namespace Application.UnitTests.Reservas;

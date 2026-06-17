@@ -93,6 +93,11 @@ public class AptosFisicosController : ApiControllerBase
             return Problem(new List<Error> { Error.Validation(code: "User.InvalidId", description: "ID de usuario inválido.") });
         }
 
+        if (rol != "Administrador" && rol != "Recepción" && rol != "Cliente Registrado")
+        {
+            return Problem(new List<Error> { Error.Validation(code: "User.InvalidRole", description: "Rol de usuario no autorizado.") });
+        }
+
         var result = await _aptoFisicoService.GetArchivoAsync(id, usuarioId, rol);
 
         return result.Match(

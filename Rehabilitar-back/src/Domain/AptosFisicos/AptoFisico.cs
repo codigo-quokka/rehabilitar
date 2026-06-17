@@ -1,5 +1,5 @@
 using Domain.Clientes;
-using Domain;
+using Domain.Users;
 
 namespace Domain.AptosFisicos;
 

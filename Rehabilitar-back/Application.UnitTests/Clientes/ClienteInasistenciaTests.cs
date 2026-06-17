@@ -2,6 +2,7 @@ using Domain.Clientes;
 using Domain.Actividades;
 using Domain.Reservas;
 using Domain.Enums;
+using Domain.Users;
 using FluentAssertions;
 using Xunit;
 using System.Collections.Generic;

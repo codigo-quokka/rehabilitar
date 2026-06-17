@@ -2,7 +2,7 @@ using Application.Auth.DTOs;
 using Application.Common.Interfaces;
 using Application.Clientes;
 using Application.Profesores;
-using Domain;
+using Domain.Users;
 using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
 using ErrorOr;
