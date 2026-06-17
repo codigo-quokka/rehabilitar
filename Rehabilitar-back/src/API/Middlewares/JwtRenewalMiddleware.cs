@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Application.Common.Interfaces;
-using Domain;
+using Domain.Users;
 using Microsoft.AspNetCore.Identity;
 
 namespace API.Middlewares;

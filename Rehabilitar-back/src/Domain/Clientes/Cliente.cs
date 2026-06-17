@@ -1,4 +1,5 @@
 using Domain.Exceptions;
+using Domain.Users;
 
 namespace Domain.Clientes;
 

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using Domain;
+using Domain.Users;
 using Domain.Clientes;
 using Domain.Profesores;
 using Application.Seeding;

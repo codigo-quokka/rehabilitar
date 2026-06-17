@@ -7,7 +7,7 @@ using Application.Seeding;
 using Application.Usuarios;
 using Application.Actividades;
 using Application.Reservas;
-using Domain;
+using Domain.Users;
 using Infrastructure.Email;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;

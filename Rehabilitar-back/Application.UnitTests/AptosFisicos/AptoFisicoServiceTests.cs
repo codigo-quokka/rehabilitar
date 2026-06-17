@@ -3,7 +3,7 @@ using Application.Clientes;
 using Application.Common.Interfaces;
 using Domain.AptosFisicos;
 using Domain.Clientes;
-using Domain;
+using Domain.Users;
 using ErrorOr;
 using FluentAssertions;
 using Moq;

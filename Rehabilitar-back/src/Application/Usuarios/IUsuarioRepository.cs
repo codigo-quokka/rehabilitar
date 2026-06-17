@@ -1,4 +1,4 @@
-using Domain;
+using Domain.Users;
 
 namespace Application.Usuarios;
 

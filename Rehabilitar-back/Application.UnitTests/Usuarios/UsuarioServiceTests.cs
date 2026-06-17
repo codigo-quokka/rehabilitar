@@ -3,7 +3,7 @@ using Application.Clientes;
 using Application.Profesores;
 using Application.Usuarios;
 using Application.Usuarios.Requests;
-using Domain;
+using Domain.Users;
 using Domain.Profesores;
 using ErrorOr;
 using FluentAssertions;

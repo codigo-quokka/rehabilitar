@@ -3,7 +3,7 @@ using Application.Common.Interfaces;
 using Application.Profesores;
 using Application.Usuarios.Requests;
 using Application.Usuarios.Responses;
-using Domain;
+using Domain.Users;
 using Domain.Profesores;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;
