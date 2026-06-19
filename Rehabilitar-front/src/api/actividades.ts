@@ -51,4 +51,9 @@ export const actividadesApi = {
     const response = await apiClient.put(`/actividades/${id}/remover-profesor`, { profesorId });
     return response.data;
   },
+
+  iniciar: (id: string) => apiClient.post(`/actividades/${id}/iniciar`),
+  finalizar: (id: string) => apiClient.post(`/actividades/${id}/finalizar`),
+  registrarAsistencia: (id: string, dni: string) => apiClient.post(`/actividades/${id}/asistencia`, { dni }),
+  confirmarAsistencia: (id: string) => apiClient.post(`/actividades/${id}/asistencia/confirmar`),
 };
