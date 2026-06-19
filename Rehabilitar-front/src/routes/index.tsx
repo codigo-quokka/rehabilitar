@@ -21,6 +21,7 @@ import { MetricasPage } from "../features/metricas/pages/MetricasPage";
 import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
 import { MisClasesPage } from "../features/profesor/pages/MisClasesPage";
 import { AdminAptosFisicosPage } from '../features/aptosFisicos/pages/AdminAptosFisicosPage';
+import { AsistenciaPage } from '../features/asistencia';
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
@@ -62,6 +63,10 @@ export const routes = [
   {
     path: "/email-verification",
     element: <EmailVerificationPage />,
+  },
+  {
+    path: "/asistencia/:actividadId",
+    element: <AsistenciaPage />,
   },
   {
     element: <ProtectedRoute />,

@@ -1,12 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { Notitoast } from '../../../components/Notitoast';
 import { useAuth } from '../../../hooks/useAuth';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
+import { QRModal } from '../../asistencia/components';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -54,22 +56,25 @@ export function MisClasesPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [qrActividad, setQrActividad] = useState<{ id: string; nombre: string; fechaYHora: string; sala?: { nombre: string } } | null>(null);
+  const { addNotification } = useNotifications();
+
+  const loadData = useCallback(async () => {
+    if (!effectiveProfesorId) return;
+    setLoading(true);
+    try {
+      const res = await profesorApi.getMisClases(effectiveProfesorId);
+      setClases(res);
+    } catch {
+      setClases([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [effectiveProfesorId]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!effectiveProfesorId) return;
-      setLoading(true);
-      try {
-        const res = await profesorApi.getMisClases(effectiveProfesorId);
-        setClases(res);
-      } catch {
-        setClases([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [effectiveProfesorId]);
+    loadData();
+  }, [loadData]);
 
   const { grupos, individuales } = useMemo(() => {
     const gruposMap = new Map<string, Actividad[]>();
@@ -135,6 +140,14 @@ export function MisClasesPage() {
       case 'Propuesta': return 'amber' as const;
       default: return 'default' as const;
     }
+  };
+
+  const isQRDisponible = (fechaYHora: string): boolean => {
+    const now = new Date();
+    const start = new Date(fechaYHora);
+    const treintaMinAntes = new Date(start.getTime() - 30 * 60 * 1000);
+    const sesentaMinDespues = new Date(start.getTime() + 60 * 60 * 1000);
+    return now >= treintaMinAntes && now <= sesentaMinDespues;
   };
 
   return (
@@ -245,19 +258,28 @@ export function MisClasesPage() {
                               </Badge>
                             </td>
                             <td className="px-4 py-2.5">
-                              {act.profesorId && act.profesorId !== NULL_GUID ? (
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => {
-                                    setSelectedActividad(act);
-                                    setShowConfirmModal(true);
-                                  }}
-                                >
-                                  Darse de baja
-                                </Button>
-                              ) : null}
+                              <div className="flex items-center gap-1">
+                                {isQRDisponible(act.fechaYHora) && (
+                                  <button
+                                    onClick={() => setQrActividad({ id: act.id, nombre: act.nombre, fechaYHora: act.fechaYHora, sala: act.salaId ? { nombre: act.salaNombre } : null })}
+                                    className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-400 text-white px-3 py-1 rounded text-sm"
+                                  >
+                                    QR
+                                  </button>
+                                )}
+                                {act.profesorId && act.profesorId !== NULL_GUID ? (
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedActividad(act);
+                                      setShowConfirmModal(true);
+                                    }}
+                                  >
+                                    Darse de baja
+                                  </Button>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -285,16 +307,25 @@ export function MisClasesPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        {act.profesorId && act.profesorId !== NULL_GUID ? (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
-                          >
-                            Darse de baja
-                          </Button>
-                        ) : null}
+                        <div className="flex items-center gap-1">
+                          {isQRDisponible(act.fechaYHora) && (
+                            <button
+                              onClick={() => setQrActividad({ id: act.id, nombre: act.nombre, fechaYHora: act.fechaYHora, sala: act.salaId ? { nombre: act.salaNombre } : null })}
+                              className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-400 text-white px-3 py-1 rounded text-sm"
+                            >
+                              QR
+                            </button>
+                          )}
+                          {act.profesorId && act.profesorId !== NULL_GUID ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
+                            >
+                              Darse de baja
+                            </Button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -329,6 +360,10 @@ export function MisClasesPage() {
           message={toastMessage}
           onClose={() => setShowToast(false)}
         />
+      )}
+
+      {qrActividad && (
+        <QRModal actividad={qrActividad} onClose={() => setQrActividad(null)} />
       )}
     </MainLayout>
   );
