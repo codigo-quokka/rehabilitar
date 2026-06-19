@@ -1,7 +1,10 @@
+using System.Security.Claims;
 using Application.Actividades;
 using Application.Actividades.DTOs;
 using Domain.Actividades;
 using Domain.Profesores;
+using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -143,5 +146,17 @@ public class ActividadesController : ApiControllerBase
             _ => Ok(),
             errores => Problem(errores)
         );
+    }
+
+    [HttpPost("{id:guid}/asistencia/confirmar")]
+    [Authorize(Roles = "Cliente Registrado")]
+    public async Task<IActionResult> ConfirmarAsistencia(Guid id, CancellationToken ct)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var clienteId))
+            return Problem(new List<Error> { Error.Validation("User.InvalidId", "ID de usuario inválido.") });
+        
+        var result = await _actividadService.ConfirmarAsistenciaAsync(id, clienteId, ct);
+        return result.Match(_ => Ok(new { mensaje = "Asistencia registrada correctamente" }), errores => Problem(errores));
     }
 }
