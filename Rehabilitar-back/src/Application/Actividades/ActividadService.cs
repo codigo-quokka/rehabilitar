@@ -291,12 +291,41 @@ public class ActividadService : IActividadService
 
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
+        if (actividad.Estado != EstadoActividad.EnCurso)
+            return Error.Conflict("Actividad.NoEnCurso", "La actividad no está en curso.");
 
         var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
         if (reserva == null) return Error.NotFound("Reserva no encontrada");
 
         reserva.MarcarAsistencia();
         cliente.ResetearInasistencias();
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> ConfirmarAsistenciaAsync(Guid actividadId, Guid usuarioId, CancellationToken ct)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
+        if (actividad is null)
+            return Error.NotFound("Actividad.NoEncontrada", "No se encontró la actividad.");
+        
+        if (actividad.Estado != EstadoActividad.EnCurso)
+            return Error.Conflict("Actividad.NoEnCurso", "La actividad no está en curso.");
+        
+        var reserva = actividad.Reservas.FirstOrDefault(r => 
+            r.ClienteId == usuarioId && r.EstadoDeReserva == EstadoDeReserva.Activa);
+        
+        if (reserva is null)
+            return Error.NotFound("Reserva.NoEncontrada", "No se encontró una reserva activa para esta actividad.");
+        
+        reserva.MarcarAsistencia();
+        
+        var cliente = await _clienteRepo.GetByIdAsync(usuarioId, ct);
+        if (cliente is not null)
+        {
+            cliente.ResetearInasistencias();
+        }
+        
         await _uow.SaveChangesAsync(ct);
         return Result.Success;
     }

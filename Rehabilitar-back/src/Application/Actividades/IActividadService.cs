@@ -27,4 +27,5 @@ public interface IActividadService
     Task<ErrorOr<Success>> IniciarActividadAsync(Guid id, CancellationToken ct = default);
     Task<ErrorOr<Success>> FinalizarActividadAsync(Guid id, CancellationToken ct = default);
     Task<ErrorOr<Success>> RegistrarAsistenciaPorDniAsync(Guid actividadId, string dni, CancellationToken ct = default);
+    Task<ErrorOr<Success>> ConfirmarAsistenciaAsync(Guid actividadId, Guid usuarioId, CancellationToken ct);
 }
