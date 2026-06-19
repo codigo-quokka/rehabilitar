@@ -25,6 +25,7 @@ using Infrastructure.Profesores;
 using Application.Clientes;
 using Infrastructure.Services;
 using Application.Pagos;
+using Infrastructure.BackgroundServices;
 
 namespace Infrastructure.Common;
 
@@ -105,6 +106,8 @@ public static class DependencyInjection
             client.BaseAddress = new Uri("https://api.mercadopago.com/");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", configuration["MercadoPago:AccessToken"]);
         });
+
+        services.AddHostedService<ActividadAutoTransitionService>();
 
         return services;
     }
