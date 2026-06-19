@@ -99,6 +99,25 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                                       .FirstOrDefaultAsync(a => a.Id == actividadId, ct);
     }
 
+    public async Task<ICollection<Actividad>> ObtenerActividadesPorIniciarAsync(CancellationToken ct)
+    {
+        return await _context.Actividades
+            .AsNoTracking()
+            .Where(a => a.Estado == EstadoActividad.Aprobada && a.FechaYHora <= DateTime.Now)
+            .Include(a => a.Reservas)
+            .ToListAsync(ct);
+    }
+
+    public async Task<ICollection<Actividad>> ObtenerActividadesPorFinalizarAsync(CancellationToken ct)
+    {
+        var tiempoLimite = DateTime.Now.AddMinutes(-60);
+        return await _context.Actividades
+            .AsNoTracking()
+            .Where(a => a.Estado == EstadoActividad.EnCurso && a.FechaYHora <= tiempoLimite)
+            .Include(a => a.Reservas)
+            .ToListAsync(ct);
+    }
+
     // public async Task<Actividad?> EditarActividadAsync(Guid actividadId, EditarActividadRequest request)
     // NO SE NECESITA PORQUE EL UOW YA LO MANEJA, SE OBTIENE LA ACTIVIDAD, SE MODIFICA Y SE GUARDA EL CAMBIO DESDE EL SERVICE
 
