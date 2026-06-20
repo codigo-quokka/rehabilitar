@@ -423,14 +423,16 @@ export function UsuariosPage() {
             </Button>
           )
           )}
+          {/* 
           {!isReception ? (
+            
             <Button variant="rojo" size="sm" onClick={() => handleDeleteClick(u)}>
               Eliminar
             </Button>
           ) : (
             <span className="min-w-17.5 inline-block" />
           )}
-          
+          */}
         </div>
       ),
     },
