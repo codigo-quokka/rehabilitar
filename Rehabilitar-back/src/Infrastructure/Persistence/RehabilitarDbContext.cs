@@ -6,6 +6,7 @@ using Domain.Profesores;
 using Domain.Actividades;
 using Domain.AptosFisicos;
 using Domain.Pagos;
+using Domain.Notificaciones;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Actividad> Actividades { get; set; }
     public DbSet<AptoFisico> AptosFisicos { get; set; }
     public DbSet<IntencionPago> IntencionesPago { get; set; }
+    public DbSet<Notificacion> Notificaciones { get; set; }
 
     public RehabilitarDbContext(DbContextOptions<RehabilitarDbContext> options) : base(options) { }
 
@@ -152,6 +154,16 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                       v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions)null)!
                   );
             entity.Property(i => i.MontoAPagar).HasColumnType("decimal(18, 2)");
+        });
+
+        builder.Entity<Notificacion>(entity =>
+        {
+            entity.ToTable("Notificaciones");
+            entity.HasKey(n => n.Id);
+            entity.HasOne<User>()
+                  .WithMany()
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
