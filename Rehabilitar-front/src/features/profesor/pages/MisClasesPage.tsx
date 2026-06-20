@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
-import { Card, Badge, Button } from '../../../components/ui';
+import { Card, Badge, Button, Modal } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { Notitoast } from '../../../components/Notitoast';
 import { useAuth } from '../../../hooks/useAuth';
@@ -54,6 +54,7 @@ export function MisClasesPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [qrActividadId, setQrActividadId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -162,7 +163,7 @@ export function MisClasesPage() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Tipo</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Estado</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Cupo</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100" style={{ width: 170 }}></th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100" style={{ width: 240 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -245,19 +246,28 @@ export function MisClasesPage() {
                               </Badge>
                             </td>
                             <td className="px-4 py-2.5">
-                              {act.profesorId && act.profesorId !== NULL_GUID ? (
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => {
-                                    setSelectedActividad(act);
-                                    setShowConfirmModal(true);
-                                  }}
-                                >
-                                  Darse de baja
-                                </Button>
-                              ) : null}
+                              <div className="flex gap-1.5">
+                                {(act.estado === 'Aprobada' || act.estado === 'EnCurso') && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="flex-1 min-w-0"
+                                    onClick={(e) => { e.stopPropagation(); setQrActividadId(act.id); }}
+                                  >
+                                    QR
+                                  </Button>
+                                )}
+                                {act.profesorId && act.profesorId !== NULL_GUID ? (
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    className="flex-1 min-w-0"
+                                    onClick={(e) => { e.stopPropagation(); setSelectedActividad(act); setShowConfirmModal(true); }}
+                                  >
+                                    Baja
+                                  </Button>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -285,16 +295,28 @@ export function MisClasesPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        {act.profesorId && act.profesorId !== NULL_GUID ? (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
-                          >
-                            Darse de baja
-                          </Button>
-                        ) : null}
+                        <div className="flex gap-1.5">
+                          {(act.estado === 'Aprobada' || act.estado === 'EnCurso') && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="flex-1 min-w-0"
+                              onClick={() => setQrActividadId(act.id)}
+                            >
+                              QR
+                            </Button>
+                          )}
+                          {act.profesorId && act.profesorId !== NULL_GUID ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="flex-1 min-w-0"
+                              onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
+                            >
+                              Baja
+                            </Button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -322,6 +344,21 @@ export function MisClasesPage() {
         onConfirm={() => confirmGroupSerieId && handleRemoverGrupo(confirmGroupSerieId)}
         onCancel={() => setConfirmGroupSerieId(null)}
       />
+
+      <Modal isOpen={!!qrActividadId} onClose={() => setQrActividadId(null)} title="Código QR">
+        <div className="flex flex-col items-center gap-4 py-4">
+          {qrActividadId && (
+            <img
+              src={actividadesApi.getQrUrl(qrActividadId)}
+              alt="QR de asistencia"
+              className="w-64 h-64 rounded-xl border border-border dark:border-gray-700"
+            />
+          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            Escaneá este código para registrar tu asistencia
+          </p>
+        </div>
+      </Modal>
 
       {showToast && (
         <Notitoast

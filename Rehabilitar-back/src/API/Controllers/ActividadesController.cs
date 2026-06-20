@@ -1,8 +1,11 @@
 using Application.Actividades;
 using Application.Actividades.DTOs;
+using Application.Common.Settings;
 using Domain.Actividades;
 using Domain.Profesores;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QRCoder;
 
 namespace API.Controllers;
 
@@ -11,10 +14,12 @@ namespace API.Controllers;
 public class ActividadesController : ApiControllerBase
 {
     private readonly IActividadService _actividadService;
+    private readonly FrontendSettings _frontendSettings;
 
-    public ActividadesController(IActividadService actividadService)
+    public ActividadesController(IActividadService actividadService, FrontendSettings frontendSettings)
     {
         _actividadService = actividadService;
+        _frontendSettings = frontendSettings;
     }
 
     [HttpGet]
@@ -141,6 +146,31 @@ public class ActividadesController : ApiControllerBase
         var result = await _actividadService.RegistrarAsistenciaPorDniAsync(id, request.Dni, ct);
         return result.Match(
             _ => Ok(),
+            errores => Problem(errores)
+        );
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{id:guid}/qr")]
+    public IActionResult GenerarQr(Guid id)
+    {
+        var url = $"{_frontendSettings.BaseUrl.TrimEnd('/')}/asistencia/{id}";
+
+        using var generator = new QRCodeGenerator();
+        var data = generator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(data);
+        var bytes = qrCode.GetGraphic(20);
+
+        return File(bytes, "image/png");
+    }
+
+    [AllowAnonymous]
+    [HttpPost("{id:guid}/check-in")]
+    public async Task<IActionResult> CheckIn(Guid id, [FromBody] RegistrarAsistenciaRequest request, CancellationToken ct)
+    {
+        var result = await _actividadService.RegistrarAsistenciaPorDniAsync(id, request.Dni, ct);
+        return result.Match(
+            _ => Ok(new { mensaje = "Asistencia registrada correctamente" }),
             errores => Problem(errores)
         );
     }
