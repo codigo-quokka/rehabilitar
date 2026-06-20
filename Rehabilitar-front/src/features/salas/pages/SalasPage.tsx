@@ -150,6 +150,7 @@ export function SalasPage() {
               >
                 {s.activo ? "Desactivar" : "Activar"}
               </Button>
+              {/* 
               <Button
                 variant="rojo"
                 size="sm"
@@ -157,6 +158,7 @@ export function SalasPage() {
               >
                 Eliminar
               </Button>
+              */}
             </>
           )}
         </div>

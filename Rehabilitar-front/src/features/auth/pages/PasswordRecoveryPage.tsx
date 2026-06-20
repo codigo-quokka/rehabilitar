@@ -30,6 +30,15 @@ export function PasswordRecoveryPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLoading(false);
+      setToastType("error");
+      setToastMessage("Por favor, ingresa un email válido");
+      setShowToast(true);
+      return;
+    }
+
     try {
       await authApi.recoverPassword(email);
     } catch (err) {
@@ -75,17 +84,15 @@ export function PasswordRecoveryPage() {
             Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              onKeyDown={emailFilter.handleKeyDown}
-              onPaste={emailFilter.handlePaste}
-              // required
-            />
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.replace(INPUT_PRESETS.email.cleanPasteRegex, ''))}
+                onKeyDown={emailFilter.handleKeyDown}
+                onPaste={emailFilter.handlePaste}
+                placeholder="tu@email.com"
+              />
 
             <Button type="submit" className="w-full" loading={loading}>
               Enviar enlace

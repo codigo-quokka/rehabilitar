@@ -752,10 +752,10 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
-      onSuccess('Actividad cancelada exitosamente');
+      onSuccess('Actividad eliminada exitosamente');
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al cancelar la actividad';
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
       onError(msg);
     } finally {
       setShowConfirmDeleteModal(false);
@@ -1092,7 +1092,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
         isOpen={showConfirmDeleteModal}
         title="Cancelar actividad"
         body="¿Estás seguro de que deseas cancelar esta actividad? Esta acción no se puede deshacer."
-        confirmLabel="Estoy seguro"
+        confirmLabel="Cancelar"
         onConfirm={handleDelete}
         onCancel={() => setShowConfirmDeleteModal(false)}
       />
