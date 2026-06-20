@@ -5,6 +5,7 @@ using Application.Reservas;
 using Application.Salas;
 using Application.Usuarios;
 using Application.AptosFisicos;
+using Application.Notificaciones;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IReservaService, ReservaService>();
         services.AddScoped<IUsuarioService, UsuarioService>();
         services.AddScoped<IAptoFisicoService, AptoFisicoService>();
+        services.AddScoped<INotificacionService, NotificacionService>();
 
         services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
 
