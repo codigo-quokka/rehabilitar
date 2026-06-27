@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, type PieLabelRenderProps,
 } from 'recharts';
 import { MainLayout } from '../../../components/layout';
 import { Card } from '../../../components/ui';
@@ -214,8 +214,8 @@ export function MetricasPage() {
     TrenInferior: 'Tren Inferior',
   };
 
-  const renderPieLabel = ({ name, percent }: { name: string; percent: number }) =>
-    `${name} ${(percent * 100).toFixed(0)}%`;
+  const renderPieLabel = ({ name, percent }: PieLabelRenderProps) =>
+    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`;
 
   return (
     <MainLayout title="Métricas">

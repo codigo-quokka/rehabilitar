@@ -287,13 +287,18 @@ public class ActividadService : IActividadService
     public async Task<ErrorOr<Success>> RegistrarAsistenciaPorDniAsync(Guid actividadId, string dni, CancellationToken ct = default)
     {
         var cliente = await _clienteRepo.GetByDniAsync(dni, ct);
-        if (cliente == null) return Error.NotFound("Cliente no encontrado");
+        if (cliente == null)
+            return Error.NotFound(code: "DNI_NO_REGISTRADO", description: "El DNI ingresado no corresponde a ningún cliente registrado");
 
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
-        if (reserva == null) return Error.NotFound("Reserva no encontrada");
+        if (reserva == null)
+            return Error.NotFound(code: "SIN_RESERVA", description: "El cliente no tiene una reserva activa para esta clase");
+
+        if (reserva.Asistencia == EstadoAsistencia.Presente)
+            return Error.Conflict(code: "ASISTENCIA_YA_REGISTRADA", description: "El cliente ya tiene la asistencia registrada para esta clase");
 
         reserva.MarcarAsistencia();
         cliente.ResetearInasistencias();
