@@ -176,6 +176,15 @@ export interface Notification {
   type?: 'success' | 'error' | 'info';
 }
 
+export interface BackendNotificacionDTO {
+  id: string;
+  userId: string;
+  titulo: string;
+  mensaje: string;
+  fechaCreacion: string;
+  leida: boolean;
+}
+
 export type EstadoAptoFisico = 'Pendiente' | 'Aprobado' | 'Rechazado';
 
 export interface AptoFisico {

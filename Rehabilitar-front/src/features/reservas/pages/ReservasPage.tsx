@@ -7,6 +7,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { reservasApi, actividadesApi } from '../../../api';
 import { Reserva, Actividad } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 const estadoLabel: Record<string, string> = {
@@ -55,6 +56,7 @@ export function ReservasPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
@@ -141,9 +143,7 @@ export function ReservasPage() {
       await reservasApi.cancelar(reservaId, actividadId);
       setReservas((prev) => prev.map((r) => r.id === reservaId ? { ...r, estadoDeReserva: 'Cancelada' } : r));
       window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
-      setToastType('success');
-      setToastMessage('Reserva cancelada correctamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Reserva cancelada correctamente' });
     } catch (err) {
       const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
       const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al cancelar la reserva';
@@ -289,9 +289,7 @@ export function ReservasPage() {
       
       await reservasApi.cancelarSerie(serieId, effectiveUserId);
       
-      setToastType('success');
-      setToastMessage(`Todas las reservas activas fueron canceladas correctamente`);
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Todas las reservas activas fueron canceladas correctamente' });
       window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
       setShowGroupModal(false);
       fetchReservas();

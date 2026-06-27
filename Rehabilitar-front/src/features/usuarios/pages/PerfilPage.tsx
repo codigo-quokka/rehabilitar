@@ -5,6 +5,7 @@ import { PrivacyEye } from "../../../components/PrivacyEye";
 import { useAuth } from "../../../hooks/useAuth";
 import { authApi, usuariosApi } from "../../../api";
 import { Notitoast } from "../../../components/Notitoast";
+import { useImportantNotification } from "../../../hooks/useImportantNotification";
 
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 
@@ -110,6 +111,7 @@ export function PerfilPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [toastMessage, setToastMessage] = useState("");
+  const importantNotification = useImportantNotification();
 
   // New states for AptoFisico
   const [aptos, setAptos] = useState<AptoFisico[]>([]);
@@ -159,7 +161,7 @@ export function PerfilPage() {
         nombre: trimmedNombre,
         apellido: trimmedApellido,
       });
-      showToastMessage("Perfil actualizado exitosamente.", "success");
+      await importantNotification({ type: 'success', message: 'Perfil actualizado exitosamente.' });
       setEditing(false);
     } catch (err) {
       const msg =
@@ -270,10 +272,7 @@ export function PerfilPage() {
       const result = await authApi.changePassword(
         changePasswordDataRef.current,
       );
-      showToastMessage(
-        result.message || "Contraseña actualizada correctamente.",
-        "success",
-      );
+      await importantNotification({ type: 'success', message: result.message || "Contraseña actualizada correctamente." });
       setPasswordData({
         currentPassword: "",
         newPassword: "",

@@ -106,13 +106,38 @@ This project follows guidelines from these installed skills:
 - Extract repeated patterns into reusable component classes
 
 ### Notification & Toast System
-- **Hook**: `useNotifications` (src/hooks/useNotifications.tsx) - centralized notification state management
-- **NotificationTray**: Bell icon in header with unread indicator (src/components/layout/NotificationTray.tsx)
-- **Notitoast**: Reusable toast component (src/components/Notitoast.tsx) with success/error/info variants
-  - Props: `type`, `message`, `onClose`, `duration` (default 4000ms)
-  - Auto-dismiss, animations, manual close button
-- Notifications shared between toast and tray
-- **Flow**: All notifications added via `addNotification` first appear as a `Notitoast`. Only after the toast is dismissed (auto or manually) does it get added to `NotificationTray`. This is handled centrally in `NotificationsProvider` via `pendingToast` state and `dismissToast` function.
+Two distinct notification types exist:
+
+#### Simple Notifications (Notitoast only, not persisted)
+- **Hook function**: `showToast(message, type)` from `useNotifications`
+- Only a toast is displayed, never persisted to DB or shown in the tray
+- Used for: form validation errors, filter feedback, search results, auth errors, file upload validation, view-only API errors
+
+#### Important Notifications (Notitoast + persisted + tray)
+- **Hook**: `useImportantNotification` from `src/hooks/useImportantNotification.ts`
+- Three-step flow: shows Notitoast → saves to DB via `POST /api/Notificaciones` → prepends to tray state
+- Used for any action that changes persisted state affecting the system:
+  - User CRUD (create, delete, suspend, reactivate)
+  - Activity CRUD (create, modify, delete, assign profesor)
+  - Room CRUD (create, edit, activate/deactivate, delete)
+  - Reservation cancellation (single or group)
+  - Payment registration/confirmation
+  - Profile update, password change
+  - Apto físico approval/rejection
+  - Profesor removal from activity
+- **Centralized helper**: `useImportantNotification()` returns an async `notify({ message, type?, onSuccess? })` function
+  - Error notifications for API failures also use this helper so the error appears in the tray
+
+#### NotificationTray (src/components/layout/NotificationTray.tsx)
+- Fetches last 7 notifications from `GET /api/Notificaciones/mis-notificaciones` on mount
+- Empty state shows "No hay novedades" (hides "Marcar todo como leído" button)
+- Click marks notification as read via `POST /api/Notificaciones/{id}/marcar-como-leida`
+- Unread count shown on bell icon
+
+#### Notitoast (src/components/Notitoast.tsx)
+- Reusable toast component with success/error/info variants
+- Props: `type`, `message`, `onClose`, `duration` (default 4000ms)
+- Used by both simple and important notification flows
 
 ## Dark mode conventions
 

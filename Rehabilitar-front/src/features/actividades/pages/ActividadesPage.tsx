@@ -15,6 +15,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
 import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { ActividadCard } from "../components/ActividadCard";
@@ -47,6 +48,7 @@ export function ActividadesPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
 
   const [showReservasModal, setShowReservasModal] = useState(false);
   const [reservasActNombre, setReservasActNombre] = useState('');
@@ -138,9 +140,7 @@ export function ActividadesPage() {
       setShowTomarConfirm(false);
       setTomarConfirmActividad(null);
       fetchData();
-      setToastType('success');
-      setToastMessage('Te has asignado a la actividad exitosamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Te has asignado a la actividad exitosamente' });
     } catch (err) {
       console.error('Error al tomar la actividad', err);
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
@@ -713,6 +713,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
+  const importantNotification = useImportantNotification();
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -752,7 +753,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
-      onSuccess('Actividad eliminada exitosamente');
+      await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
       onClose();
     } catch (err: any) {
       const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
@@ -824,7 +825,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       } else {
         await actividadesApi.create(payload);
       }
-      onSuccess(isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente');
+      await importantNotification({ type: 'success', message: isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente' });
       onClose();
     } catch (err: any) {
       const data = err?.response?.data;

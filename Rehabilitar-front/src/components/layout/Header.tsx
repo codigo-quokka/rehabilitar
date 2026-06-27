@@ -38,8 +38,9 @@ export function Header({ title }: HeaderProps) {
         })
         .catch(() => {});
     };
-    window.addEventListener('rehabicoins:refresh', refreshCoins);
-    return () => window.removeEventListener('rehabicoins:refresh', refreshCoins);
+    window.addEventListener("rehabicoins:refresh", refreshCoins);
+    return () =>
+      window.removeEventListener("rehabicoins:refresh", refreshCoins);
   }, [user?.id]);
 
   const handleLogoutClick = () => {
@@ -136,7 +137,7 @@ export function Header({ title }: HeaderProps) {
             </div>
           )}
           <NotificationTray />
-          
+
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-full bg-linear-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm"

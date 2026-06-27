@@ -10,6 +10,7 @@ import {
 } from "../../../components/ui";
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { Notitoast } from "../../../components/Notitoast";
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { salasApi, actividadesApi } from "../../../api";
 import { Sala, Actividad } from "../../../types";
 import { useAuth } from "../../../hooks/useAuth";
@@ -29,6 +30,7 @@ export function SalasPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
 
 
   const tieneActividadesPendientes = (salaId: string): boolean => {
@@ -57,9 +59,7 @@ export function SalasPage() {
       await salasApi.delete(id);
       fetchData();
       setShowDeleteConfirm(false);
-      setToastType('success');
-      setToastMessage('Sala eliminada exitosamente.');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Sala eliminada exitosamente.' });
     } catch (err) {
       setShowDeleteConfirm(false);
       const msg = (err as any)?.response?.data?.error || 'Error al eliminar la sala.';
@@ -96,13 +96,10 @@ export function SalasPage() {
       setShowDesactivarConfirm(false);
       setSalaADesactivar(null);
       if (salaADesactivar.activo) {
-        setToastType('error');
-        setToastMessage('Sala desactivada correctamente, no se podrán crear nuevas actividades con esta sala');
+        await importantNotification({ type: 'info', message: 'Sala desactivada correctamente, no se podrán crear nuevas actividades con esta sala' });
       } else {
-        setToastType('success');
-        setToastMessage('Sala activada exitosamente.');
+        await importantNotification({ type: 'success', message: 'Sala activada exitosamente.' });
       }
-      setShowToast(true);
     } catch (err) {
       setShowDesactivarConfirm(false);
       setSalaADesactivar(null);
@@ -249,6 +246,7 @@ interface SalaFormProps {
 }
 
 function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaFormProps) {
+  const importantNotification = useImportantNotification();
   const [formData, setFormData] = useState({
     nombre: sala?.nombre || "",
     capacidad: sala?.capacidad || 20,
@@ -273,10 +271,10 @@ function SalaForm({ sala, tieneActividadesPendientes, onClose, onNotify }: SalaF
           return;
         }
         await salasApi.update(sala.id, formData);
-        onNotify?.('success', 'Sala actualizada exitosamente.');
+        await importantNotification({ type: 'success', message: 'Sala actualizada exitosamente.' });
       } else {
         await salasApi.create({ ...formData, activo: true });
-        onNotify?.('success', 'Sala creada exitosamente.');
+        await importantNotification({ type: 'success', message: 'Sala creada exitosamente.' });
       }
       onClose();
     } catch (err) {
