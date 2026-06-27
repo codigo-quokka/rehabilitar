@@ -22,7 +22,10 @@ export function NotificationTray() {
   }, [isOpen]);
 
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
+    // .NET pierde el Z al leer de SQLite (Kind=Unspecified), tratamos como UTC
+    const normalized = /[Zz]|[+-]\d{2}:\d{2}$/.test(timestamp) ? timestamp : timestamp + "Z";
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return timestamp;
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -78,7 +81,7 @@ export function NotificationTray() {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
-                <p className="text-sm">No hay notificaciones</p>
+                <p className="text-sm">No hay novedades</p>
               </div>
             ) : (
               <ul className="divide-y divide-border">
@@ -86,19 +89,26 @@ export function NotificationTray() {
                   <li key={notification.id}>
                     <button
                       onClick={() => handleNotificationClick(notification.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        !notification.read ? "bg-primary/5 dark:bg-primary/10 border-l-4 border-l-primary" : ""
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        !notification.read
+                          ? "bg-primary/5 dark:bg-primary/10 border-l-4 border-l-primary cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          : "cursor-default"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        {notification.type === 'success' && (
-                          <svg className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {notification.type === 'success' ? (
+                          <svg className="w-4 h-4 text-primary-darkest dark:text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                        )}
-                        {notification.type === 'error' && (
+                        ) : notification.type === 'error' ? (
                           <svg className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-primary-darkest dark:text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16v-4" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8h.01" />
                           </svg>
                         )}
                         <div className="flex-1 min-w-0">

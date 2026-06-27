@@ -4,6 +4,7 @@ import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button, Modal } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { useAuth } from '../../../hooks/useAuth';
 import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
@@ -54,6 +55,7 @@ export function MisClasesPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
   const [qrActividadId, setQrActividadId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -93,9 +95,7 @@ export function MisClasesPage() {
     try {
       await actividadesApi.removerProfesor(selectedActividad.id, user.id);
       setClases(prev => prev.filter(a => a.id !== selectedActividad.id));
-      setToastType('success');
-      setToastMessage('Te has dado de baja exitosamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Te has dado de baja exitosamente' });
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
       setToastType('error');
@@ -115,9 +115,7 @@ export function MisClasesPage() {
         groupActividades.map((act) => actividadesApi.removerProfesor(act.id, user.id))
       );
       setClases(prev => prev.filter(a => a.serieId !== serieId));
-      setToastType('success');
-      setToastMessage('Te has dado de baja de todas las actividades exitosamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Te has dado de baja de todas las actividades exitosamente' });
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
       setToastType('error');

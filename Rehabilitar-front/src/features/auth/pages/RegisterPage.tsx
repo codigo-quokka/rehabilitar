@@ -9,7 +9,6 @@ import {
 } from "../../../components/InformRequirements";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
-import { useNotifications } from "../../../hooks/useNotifications";
 import logo from "../../../assets/logo.png";
 import axios from "axios";
 import { DniScanner } from "../components/DniScanner";

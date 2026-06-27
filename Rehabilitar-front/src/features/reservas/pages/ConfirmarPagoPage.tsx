@@ -4,7 +4,7 @@ import { MainLayout } from '../../../components/layout';
 import { Card, Button, Input, Select } from '../../../components/ui';
 import { reservasApi, actividadesApi, apiClient } from '../../../api';
 import { Actividad } from '../../../types';
-import { useNotifications } from '../../../hooks/useNotifications';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 
 const metodoPagoOptions = [
   { value: 'MercadoPago', label: 'Mercado Pago' },
@@ -49,7 +49,7 @@ export function ConfirmarPagoPage() {
   const [loading, setLoading] = useState(false);
   const processingRef = useRef(false);
 
-  const { addNotification } = useNotifications();
+  const importantNotification = useImportantNotification();
 
   // Recovery effect: if location.state is lost (e.g. page refresh), try to load from API
   useEffect(() => {
@@ -181,13 +181,13 @@ export function ConfirmarPagoPage() {
         const msg = metodoPago === 'RehabiliCoins' && montoPagado > 0
           ? '¡Pago completo! El depósito fue reembolsado a tu saldo a favor y la reserva está totalmente saldada.'
           : '¡Pago completo! Tu reserva está totalmente saldada.';
-        addNotification(msg, 'success');
+        importantNotification({ type: 'success', message: msg });
       } else if (nuevoEstado === 'Activa') {
-        addNotification('¡Reserva confirmada! Tu lugar está asegurado.', 'success');
+        importantNotification({ type: 'success', message: '¡Reserva confirmada! Tu lugar está asegurado.' });
       } else if (nuevoEstado === 'EnEspera') {
-        addNotification('Pago registrado. Quedaste en lista de espera.', 'success');
+        importantNotification({ type: 'success', message: 'Pago registrado. Quedaste en lista de espera.' });
       } else {
-        addNotification('Pago registrado correctamente.', 'success');
+        importantNotification({ type: 'success', message: 'Pago registrado correctamente.' });
       }
 
       setTimeout(() => {
@@ -196,7 +196,7 @@ export function ConfirmarPagoPage() {
     } catch (err) {
       const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
       const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al procesar el pago';
-      addNotification(msg, 'error');
+      importantNotification({ type: 'error', message: msg });
     } finally {
       setLoading(false);
       processingRef.current = false;
@@ -213,11 +213,11 @@ export function ConfirmarPagoPage() {
           : montoPagado > 0
             ? 'Debes saldar el total restante de una vez.'
             : `El monto mínimo para señar es $${montoMinimoMP.toFixed(2)}.`;
-        addNotification(msg, 'error');
+        importantNotification({ type: 'error', message: msg });
         return;
       }
       if (monto > montoPendiente) {
-        addNotification('El monto no puede exceder el saldo pendiente', 'error');
+        importantNotification({ type: 'error', message: 'El monto no puede exceder el saldo pendiente' });
         return;
       }
 
@@ -228,7 +228,7 @@ export function ConfirmarPagoPage() {
         const response = await apiClient.post(url, body);
         window.location.href = response.data.initPoint;
       } catch {
-        addNotification('Error al iniciar el pago con Mercado Pago', 'error');
+        importantNotification({ type: 'error', message: 'Error al iniciar el pago con Mercado Pago' });
         setLoading(false);
       }
       return;
@@ -240,14 +240,14 @@ export function ConfirmarPagoPage() {
       setLoading(true);
       try {
         await apiClient.post(`/pagos/intencion/${intencionId}/pago-rehabilicoins`);
-        addNotification('¡Pago con RehabiliCoins exitoso! Tu lugar está asegurado.', 'success');
+        importantNotification({ type: 'success', message: '¡Pago con RehabiliCoins exitoso! Tu lugar está asegurado.' });
         setTimeout(() => {
           navigate('/reservas', { replace: true });
         }, 1500);
       } catch (err) {
         const apiError = (err as { response?: { data?: { errorCode?: string; error?: string; title?: string } } })?.response?.data;
         const msg = apiError?.errorCode ?? apiError?.error ?? apiError?.title ?? 'Error al procesar el pago con RehabiliCoins';
-        addNotification(msg, 'error');
+        importantNotification({ type: 'error', message: msg });
       } finally {
         processingRef.current = false;
         setLoading(false);

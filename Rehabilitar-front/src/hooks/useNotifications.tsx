@@ -4,11 +4,14 @@ import {
   useState,
   useCallback,
   useMemo,
+  useEffect,
   ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Notification } from "../types";
+import { Notification, BackendNotificacionDTO } from "../types";
 import { Notitoast } from "../components/Notitoast";
+import { notificacionesApi } from "../api";
+import { useAuth } from "./useAuth";
 
 interface PendingToast {
   id: string;
@@ -19,28 +22,47 @@ interface PendingToast {
 interface NotificationsContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  addToTray: (notification: Notification) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  refreshNotifications: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null);
 
-function createInitialNotifications(): Notification[] {
-  const now = new Date().toISOString();
-  return [
-    {
-      id: "1",
-      message: "Bienvenido a RehabilitAR",
-      timestamp: now,
-      read: false,
-    }
-  ];
+function mapBackendToNotification(dto: BackendNotificacionDTO): Notification {
+  return {
+    id: dto.id,
+    message: dto.mensaje,
+    timestamp: dto.fechaCreacion,
+    read: dto.leida,
+  };
 }
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(createInitialNotifications);
+  const { user, isLoading: authLoading } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingToast, setPendingToast] = useState<PendingToast | null>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await notificacionesApi.getMisNotificaciones();
+      const mapped = response.slice(0, 7).map(mapBackendToNotification);
+      setNotifications(mapped);
+    } catch {
+      setNotifications([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+    fetchNotifications();
+  }, [user, authLoading, fetchNotifications]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -48,53 +70,41 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   );
 
   const dismissToast = useCallback(() => {
-    setPendingToast((current) => {
-      if (!current) return null;
-      const newNotification: Notification = {
-        id: current.id,
-        message: current.message,
-        timestamp: new Date().toISOString(),
-        read: false,
-        type: current.type,
-      };
-      setNotifications((prev) => [newNotification, ...prev]);
-      return null;
-    });
+    setPendingToast(null);
   }, []);
 
-  const addNotification = useCallback((message: string, type?: 'success' | 'error' | 'info') => {
-    setPendingToast((current) => {
-      if (current) {
-        const dismissedNotification: Notification = {
-          id: current.id,
-          message: current.message,
-          timestamp: new Date().toISOString(),
-          read: false,
-          type: current.type,
-        };
-        setNotifications((prev) => [dismissedNotification, ...prev]);
-      }
-      return {
-        id: crypto.randomUUID(),
-        message,
-        type: type || 'info',
-      };
-    });
+  const showToast = useCallback((message: string, type?: 'success' | 'error' | 'info') => {
+    setPendingToast({ id: crypto.randomUUID(), message, type: type || 'info' });
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
+  const addToTray = useCallback((notification: Notification) => {
+    setNotifications((prev) => [notification, ...prev].slice(0, 7));
+  }, []);
+
+  const markAsRead = useCallback(async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      await notificacionesApi.marcarComoLeida(id);
+    } catch {
+      console.error("Failed to mark notification as read");
+    }
   }, []);
 
-  const markAllAsRead = useCallback(() => {
+  const markAllAsRead = useCallback(async () => {
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+    try {
+      await Promise.all(unreadIds.map((id) => notificacionesApi.marcarComoLeida(id)));
+    } catch {
+      console.error("Failed to mark all notifications as read");
+    }
+  }, [notifications]);
 
   return (
     <NotificationsContext.Provider
-      value={{ notifications, unreadCount, addNotification, markAsRead, markAllAsRead }}
+      value={{ notifications, unreadCount, showToast, addToTray, markAsRead, markAllAsRead, refreshNotifications: fetchNotifications }}
     >
       {children}
       {pendingToast && createPortal(

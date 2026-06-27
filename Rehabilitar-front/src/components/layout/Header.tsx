@@ -135,7 +135,7 @@ export function Header({ title }: HeaderProps) {
               <span className="text-sm font-medium">{coins}</span>
             </div>
           )}
-          {/*<NotificationTray /> Descomentarlo para mostrar la campana y la bandeja de notificaciones*/} 
+        <NotificationTray /> 
           
           <div className="flex items-center gap-3">
             <div
