@@ -93,16 +93,30 @@ export interface Sala {
   activo: boolean;
 }
 
-export interface Metricas {
+export interface ClasesPorMes {
+  mes: string;
+  cantidad: number;
+}
+
+export interface ClasesPorProfesor {
+  profesor: string;
+  cantidad: number;
+}
+
+export interface MetricasDashboard {
+  totalActividades: number;
+  actividadesEnCurso: number;
   totalUsuarios: number;
   usuariosActivos: number;
-  totalReservas: number;
-  reservasConfirmadas: number;
-  reservasCanceladas: number;
-  reservasDia: number;
-  ingresosTotales: number;
-  actividadesDia: number;
-  ocupacionSalas: number;
+  cupoPromedioOcupado: number;
+  actividadesHoy: number;
+  ocupacionGeneral: number;
+  profesoresConClases: number;
+  clasesPorMes: ClasesPorMes[];
+  clasesPorProfesor: ClasesPorProfesor[];
+  clasesPorTipo: { tipo: string; cantidad: number }[];
+  clasesPorEstado: { estado: string; cantidad: number }[];
+  clasesPorSala: { sala: string; porcentaje: number }[];
 }
 
 export interface LoginCredentials {
