@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -12,6 +12,39 @@ import { useTheme } from '../../../context/ThemeContext';
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 const CHART_COLORS = ['#4ABC8F', '#2F6274', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+
+function BarWithLabel(props: Record<string, unknown>) {
+  const x = props.x as number;
+  const y = props.y as number;
+  const width = props.width as number;
+  const height = props.height as number;
+  const fill = props.fill as string;
+  const payload = props.payload as Record<string, unknown> | undefined;
+  const value = (payload?.cantidad ?? payload?.porcentaje) as number | undefined;
+  const displayValue = value !== undefined ? (payload?.porcentaje !== undefined ? `${value}%` : String(value)) : '';
+  return (
+    <g>
+      <rect x={x} y={y} width={Math.max(width, 0)} height={Math.max(height, 0)} fill={fill} rx={4} />
+      {displayValue && width > 20 && height > 20 && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#fff"
+          stroke="rgba(0,0,0,0.3)"
+          strokeWidth={0.5}
+          paintOrder="stroke"
+          fontSize={13}
+          fontWeight={700}
+          fontFamily="inherit"
+        >
+          {displayValue}
+        </text>
+      )}
+    </g>
+  );
+}
 
 function computeMetricas(actividades: Actividad[], usuarios: User[]): MetricasDashboard {
   const today = new Date().toISOString().split('T')[0];
@@ -110,7 +143,7 @@ export function MetricasPage() {
         setActividades(acts);
         setUsuarios(users);
       } catch {
-        setError('Error al cargar las métricas');
+        setError('No hay datos disponibles');
       } finally {
         setLoading(false);
       }
@@ -122,39 +155,6 @@ export function MetricasPage() {
 
   const chartTextColor = isDark ? '#9CA3AF' : '#6B7280';
   const chartGridColor = isDark ? '#374151' : '#E5E7EB';
-
-  function BarWithLabel(props: Record<string, unknown>) {
-    const x = props.x as number;
-    const y = props.y as number;
-    const width = props.width as number;
-    const height = props.height as number;
-    const fill = props.fill as string;
-    const payload = props.payload as Record<string, unknown> | undefined;
-    const value = (payload?.cantidad ?? payload?.porcentaje) as number | undefined;
-    const displayValue = value !== undefined ? (payload?.porcentaje !== undefined ? `${value}%` : String(value)) : '';
-    return (
-      <g>
-        <rect x={x} y={y} width={Math.max(width, 0)} height={Math.max(height, 0)} fill={fill} rx={4} />
-        {displayValue && width > 20 && height > 20 && (
-          <text
-            x={x + width / 2}
-            y={y + height / 2}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="#fff"
-            stroke="rgba(0,0,0,0.3)"
-            strokeWidth={0.5}
-            paintOrder="stroke"
-            fontSize={13}
-            fontWeight={700}
-            fontFamily="inherit"
-          >
-            {displayValue}
-          </text>
-        )}
-      </g>
-    );
-  }
 
   if (loading) {
     return (
@@ -170,7 +170,17 @@ export function MetricasPage() {
     return (
       <MainLayout title="Métricas">
         <Card>
-          <p className="text-center py-8 text-red-500">{error}</p>
+          <p className="text-center py-8 text-gray-500 dark:text-gray-400">{error}</p>
+        </Card>
+      </MainLayout>
+    );
+  }
+
+  if (metricas.totalActividades === 0 && metricas.totalUsuarios === 0) {
+    return (
+      <MainLayout title="Métricas">
+        <Card>
+          <p className="text-center py-8 text-gray-500 dark:text-gray-400">No hay datos cargados</p>
         </Card>
       </MainLayout>
     );
