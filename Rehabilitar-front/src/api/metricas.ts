@@ -1,5 +1,4 @@
 import { apiClient } from './client';
-import { Metricas } from '../types';
 
 export const metricasApi = {
   getDashboard: async () => {

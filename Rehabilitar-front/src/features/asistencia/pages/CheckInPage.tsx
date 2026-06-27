@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { actividadesApi } from '../../../api';
-import { Notitoast } from '../../../components/Notitoast';
+import { useNotifications } from '../../../hooks/useNotifications';
 
 export function CheckInPage() {
   const { actividadId } = useParams<{ actividadId: string }>();
+  const { addNotification } = useNotifications();
   const [nombre, setNombre] = useState('');
   const [loadingAct, setLoadingAct] = useState(true);
   const [dni, setDni] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [registrado, setRegistrado] = useState(false);
 
   useEffect(() => {
@@ -27,15 +27,13 @@ export function CheckInPage() {
     setSubmitting(true);
     try {
       await actividadesApi.checkIn(actividadId, dni.trim());
-      setToast({ type: 'success', message: 'Asistencia registrada correctamente' });
+      addNotification('Asistencia registrada correctamente', 'success');
       setRegistrado(true);
       setDni('');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (err as Error)?.message ||
-        'Error al registrar asistencia';
-      setToast({ type: 'error', message: msg });
+      const data = (err as { response?: { data?: { error?: string; errorCode?: string } } })?.response?.data;
+      const msg = data?.error || data?.errorCode || (err as Error)?.message || 'Error al registrar asistencia';
+      addNotification(msg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -109,13 +107,6 @@ export function CheckInPage() {
         </p>
       </div>
 
-      {toast && (
-        <Notitoast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }
