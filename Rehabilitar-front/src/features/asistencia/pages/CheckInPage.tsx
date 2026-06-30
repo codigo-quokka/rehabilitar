@@ -64,12 +64,12 @@ export function CheckInPage() {
                   Asistencia registrada con éxito
                 </p>
               </div>
-              <Link
-                to="/"
-                className="text-primary hover:text-primary-dark dark:text-primary-400 text-sm font-medium transition-colors"
+              <span
+                onClick={() => (window.location.href = '/dashboard')}
+                className="text-primary hover:text-primary-dark dark:text-primary-400 text-sm font-medium transition-colors cursor-pointer"
               >
                 Volver al inicio
-              </Link>
+              </span>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
