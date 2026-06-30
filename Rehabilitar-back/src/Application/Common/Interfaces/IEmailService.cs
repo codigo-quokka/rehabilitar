@@ -16,5 +16,8 @@ public interface IEmailService
     Task<ErrorOr<Success>> SendOportunidadDeActividadParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad);
     Task<ErrorOr<Success>> SendCuentaSuspendidaEmail(string userEmail);
     Task<ErrorOr<Success>> SendCuentaReactivadaEmail(string userEmail, string nombreActividad, DateTime fechaActividad);
+    Task<ErrorOr<Success>> SendPasswordChangedEmail(string userEmail);
+    Task<ErrorOr<Success>> SendProfesorAsignadoEmail(string userEmail, string nombreActividad, DateTime fechaActividad);
+    Task<ErrorOr<Success>> SendPagoRegistradoEmail(string userEmail, string nombreActividad, DateTime fechaActividad, decimal monto);
 
 }

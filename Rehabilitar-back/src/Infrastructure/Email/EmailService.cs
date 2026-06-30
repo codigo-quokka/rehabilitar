@@ -222,7 +222,42 @@ public class EmailService : IEmailService
 
         return await SendEmailAsync(userEmail, "Cuenta reactivada", content);
     }
-    
+
+    public async Task<ErrorOr<Success>> SendPasswordChangedEmail(string userEmail)
+    {
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que tu contraseña en <strong>RehabilitAR</strong> ha sido cambiada exitosamente.</p>
+            <p class='message'>Si no realizaste este cambio, por favor contactá a un administrador de inmediato.</p>";
+
+        return await SendEmailAsync(userEmail, "Contraseña actualizada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendProfesorAsignadoEmail(string userEmail, string nombreActividad, DateTime fechaActividad)
+    {
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Te informamos que has sido asignado como profesor para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy}.</p>
+            <p class='message'>Podés ver los detalles de la actividad en la plataforma.</p>";
+
+        return await SendEmailAsync(userEmail, "Asignación a actividad", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendPagoRegistradoEmail(string userEmail, string nombreActividad, DateTime fechaActividad, decimal monto)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}/reservas";
+
+        var content = $@"
+            <p class='greeting'>¡Hola!</p>
+            <p class='message'>Se ha registrado un pago de <strong>${monto:N2}</strong> por tu reserva para la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy}.</p>
+            <p class='message'>Tu reserva está confirmada.</p>
+
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir a mis reservas</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Pago registrado", content);
+    }
 
     // --- MÉTODOS PRIVADOS DE INFRAESTRUCTURA ---
 

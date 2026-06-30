@@ -7,6 +7,7 @@ using Domain.Clientes;
 using Microsoft.AspNetCore.Identity;
 using ErrorOr;
 using Application.Common.Settings;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Auth;
 
@@ -19,6 +20,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly IJwtProvider _jwt;
     private readonly FrontendSettings _frontendSettings;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(UserManager<User> userManager,
                         IClienteRepository clienteRepo,
@@ -26,7 +28,8 @@ public class AuthService : IAuthService
                         IUnitOfWork uow,
                         IEmailService emailService,
                         IJwtProvider jwt,
-                        FrontendSettings frontendSettings)
+                        FrontendSettings frontendSettings,
+                        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _clienteRepo = clienteRepo;
@@ -35,6 +38,7 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _jwt = jwt;
         _frontendSettings = frontendSettings;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<Success>> RegisterAsync(RegisterRequest request)
@@ -134,7 +138,8 @@ public class AuthService : IAuthService
             Telefono = user?.PhoneNumber,
             FechaNacimiento = user?.FechaNacimiento.ToString("yyyy-MM-dd"),
             Documento = user?.Dni.Valor,
-            Especialidad = especialidad
+            Especialidad = especialidad,
+            NotificacionAplicacion = user.NotificacionAplicacion
         };
 
         return new AuthResponse(token, userResponse);
@@ -228,6 +233,16 @@ public class AuthService : IAuthService
             var errors = result.Errors.Select(e => Error.Validation($"Identity.{e.Code}", e.Description)).ToList();
             return errors;
         }
+
+        try
+        {
+            await _emailService.SendPasswordChangedEmail(user.Email!);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password changed email for user {UserId}", userId);
+        }
+
         return Result.Success;
     }
 

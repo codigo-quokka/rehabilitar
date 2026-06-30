@@ -7,4 +7,5 @@ public class EditarUsuarioRequest
     public string? Email { get; set; }
     public string? Rol { get; set; }
     public string? Especialidad { get; set; }
+    public bool? NotificacionAplicacion { get; set; }
 }

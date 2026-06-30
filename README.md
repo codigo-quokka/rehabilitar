@@ -29,6 +29,18 @@ dotnet test Rehabilitar-back/Application.UnitTests/Application.UnitTests.csproj
 
 ---
 
+## 📧 Sistema de Notificaciones
+
+### Email (Resend)
+El backend envía emails transaccionales mediante **Resend**. Actualmente están hardcodeados a `codigoquokka@hotmail.com` — cuando se configure un dominio verificado se cambiará al destinatario real.
+
+Se envían emails en: registro, reseteo de contraseña, cambio de contraseña, asignación de profesor, cancelación de actividad/reserva, suspensión/reactivación de cuenta, y evaluación de apto físico. Todos los envíos son no-bloqueantes (wrapped en `try/catch` con logging).
+
+### notificacionAplicacion (Preferencia In-App)
+Cada usuario tiene una preferencia `notificacionAplicacion` (`bool`, default `true`) que controla si las notificaciones dentro del sistema se persisten en la base de datos y aparecen en la bandeja de notificaciones. Si está en `false`, el toast sigue mostrándose, pero no se guarda ni aparece en el tray. Se sincroniza server-side (columna en Users table) y se refleja en el frontend al hacer login o editar el perfil.
+
+---
+
 ## 🛠️ Stack Tecnológico
 
 El proyecto está dividido en dos aplicaciones principales y sigue los principios de **Clean Architecture** en el backend y una estructura **Feature-based** en el frontend.

@@ -21,4 +21,5 @@ public class UsuarioResponse
     public int? CancelacionesConsecutivas { get; set; }
     public int? InasistenciasConsecutivas { get; set; }
     public string? Especialidad { get; set; }
+    public bool NotificacionAplicacion { get; set; }
 }
