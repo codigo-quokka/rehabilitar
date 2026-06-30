@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, type PieLabelRenderProps,
 } from 'recharts';
+import { jsPDF } from 'jspdf';
+import { autoTable } from 'jspdf-autotable';
 import { MainLayout } from '../../../components/layout';
-import { Card } from '../../../components/ui';
+import { Card, Button } from '../../../components/ui';
 import { actividadesApi, usuariosApi } from '../../../api';
 import { Actividad, User, MetricasDashboard } from '../../../types';
 import { useTheme } from '../../../context/ThemeContext';
@@ -124,6 +126,20 @@ function computeMetricas(actividades: Actividad[], usuarios: User[]): MetricasDa
   };
 }
 
+const ESTADO_LABELS: Record<string, string> = {
+  Propuesta: 'Propuesta',
+  Aprobada: 'Aprobada',
+  EnCurso: 'En Curso',
+  Finalizada: 'Finalizada',
+  Cancelada: 'Cancelada',
+};
+
+const TIPO_LABELS: Record<string, string> = {
+  TrenSuperior: 'Tren Superior',
+  TrenMedio: 'Tren Medio',
+  TrenInferior: 'Tren Inferior',
+};
+
 export function MetricasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +171,138 @@ export function MetricasPage() {
 
   const chartTextColor = isDark ? '#9CA3AF' : '#6B7280';
   const chartGridColor = isDark ? '#374151' : '#E5E7EB';
+
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const exportToCSV = useCallback(() => {
+    try {
+      const rows: string[][] = [
+        ['Métrica', 'Valor'],
+        ['Total Actividades', String(metricas.totalActividades)],
+        ['Actividades en Curso', String(metricas.actividadesEnCurso)],
+        ['Total Usuarios', String(metricas.totalUsuarios)],
+        ['Usuarios Activos', String(metricas.usuariosActivos)],
+        ['Actividades Hoy', String(metricas.actividadesHoy)],
+        ['Ocupación General', `${metricas.ocupacionGeneral}%`],
+        ['Cupo Promedio Ocupado', `${metricas.cupoPromedioOcupado}%`],
+        ['Profesores con Clases', String(metricas.profesoresConClases)],
+        [],
+        ['Clases por Mes'],
+        ['Mes', 'Cantidad'],
+        ...metricas.clasesPorMes.map(c => [c.mes, String(c.cantidad)]),
+        [],
+        ['Clases por Profesor'],
+        ['Profesor', 'Cantidad'],
+        ...metricas.clasesPorProfesor.map(c => [c.profesor, String(c.cantidad)]),
+        [],
+        ['Clases por Tipo'],
+        ['Tipo', 'Cantidad'],
+        ...metricas.clasesPorTipo.map(c => [c.tipo, String(c.cantidad)]),
+        [],
+        ['Clases por Estado'],
+        ['Estado', 'Cantidad'],
+        ...metricas.clasesPorEstado.map(c => [c.estado, String(c.cantidad)]),
+        [],
+        ['Clases por Sala'],
+        ['Sala', 'Porcentaje'],
+        ...metricas.clasesPorSala.map(c => [c.sala, `${c.porcentaje}%`]),
+      ];
+
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `metricas-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      addNotification('CSV exportado correctamente', 'info');
+    } catch {
+      addNotification('Error al exportar CSV', 'error');
+    }
+  }, [metricas]);
+
+  const exportToPDF = useCallback(() => {
+    setExportingPdf(true);
+    try {
+      const doc = new jsPDF();
+      const today = new Date().toLocaleDateString('es-AR');
+
+      doc.setFontSize(18).text('Métricas - RehabilitAR', 14, 22);
+      doc.setFontSize(10).text(`Exportado: ${today}`, 14, 30);
+
+      let y = 42;
+      doc.setFontSize(12).text('Resumen', 14, y);
+      y += 6;
+
+      autoTable(doc, {
+        startY: y,
+        head: [['Métrica', 'Valor']],
+        body: [
+          ['Total Actividades', String(metricas.totalActividades)],
+          ['Actividades en Curso', String(metricas.actividadesEnCurso)],
+          ['Total Usuarios', String(metricas.totalUsuarios)],
+          ['Actividades Hoy', String(metricas.actividadesHoy)],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [74, 188, 143] },
+      });
+
+      const sections: { title: string; headers: string[]; rows: (string | number)[][] }[] = [
+        {
+          title: 'Clases por Mes',
+          headers: ['Mes', 'Cantidad'],
+          rows: metricas.clasesPorMes.map(c => [c.mes, c.cantidad]),
+        },
+        {
+          title: 'Clases por Profesor',
+          headers: ['Profesor', 'Cantidad'],
+          rows: metricas.clasesPorProfesor.map(c => [c.profesor, c.cantidad]),
+        },
+        {
+          title: 'Clases por Tipo',
+          headers: ['Tipo', 'Cantidad'],
+          rows: metricas.clasesPorTipo.map(c => [TIPO_LABELS[c.tipo] || c.tipo, c.cantidad]),
+        },
+        {
+          title: 'Clases por Estado',
+          headers: ['Estado', 'Cantidad'],
+          rows: metricas.clasesPorEstado.map(c => [ESTADO_LABELS[c.estado] || c.estado, c.cantidad]),
+        },
+        {
+          title: 'Clases por Sala',
+          headers: ['Sala', 'Porcentaje'],
+          rows: metricas.clasesPorSala.map(c => [c.sala, `${c.porcentaje}%`]),
+        },
+      ];
+
+      for (const section of sections) {
+        y = doc.lastAutoTable?.finalY ?? y;
+        y += 14;
+        doc.setFontSize(12).text(section.title, 14, y);
+        y += 6;
+        autoTable(doc, {
+          startY: y,
+          head: [section.headers],
+          body: section.rows,
+          theme: 'grid',
+          headStyles: { fillColor: [74, 188, 143] },
+        });
+      }
+
+      doc.save(`metricas-${new Date().toISOString().split('T')[0]}.pdf`);
+      addNotification('PDF exportado correctamente', 'info');
+    } catch (err) {
+      const msg = (err as Error)?.message || 'Error desconocido al exportar PDF';
+      addNotification(msg, 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [metricas]);
 
   if (loading) {
     return (
@@ -200,26 +348,42 @@ export function MetricasPage() {
     warning: 'bg-amber-100 text-amber-700 dark:bg-gray-800 dark:text-amber-400',
   };
 
-  const estadoLabels: Record<string, string> = {
-    Propuesta: 'Propuesta',
-    Aprobada: 'Aprobada',
-    EnCurso: 'En Curso',
-    Finalizada: 'Finalizada',
-    Cancelada: 'Cancelada',
-  };
-
-  const tipoLabels: Record<string, string> = {
-    TrenSuperior: 'Tren Superior',
-    TrenMedio: 'Tren Medio',
-    TrenInferior: 'Tren Inferior',
-  };
-
   const renderPieLabel = ({ name, percent }: PieLabelRenderProps) =>
     `${name} ${((percent ?? 0) * 100).toFixed(0)}%`;
 
   return (
     <MainLayout title="Métricas">
-      <div className="space-y-6">
+      <div id="metrics-content" className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div />
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              onClick={exportToCSV}
+              aria-label="Exportar a CSV"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              CSV
+            </Button>
+            <Button
+              variant="primary"
+              onClick={exportToPDF}
+              disabled={exportingPdf}
+              aria-label="Exportar a PDF"
+            >
+              {exportingPdf ? (
+                <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent mr-1.5" />
+              ) : (
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              )}
+              PDF
+            </Button>
+          </div>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {summaryCards.map((stat) => (
             <Card key={stat.label} className={cardColorClasses[stat.color]}>
@@ -274,7 +438,7 @@ export function MetricasPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={metricas.clasesPorTipo.map(d => ({ ...d, name: tipoLabels[d.tipo] || d.tipo }))}
+                  data={metricas.clasesPorTipo.map(d => ({ ...d, name: TIPO_LABELS[d.tipo] || d.tipo }))}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -300,7 +464,7 @@ export function MetricasPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={metricas.clasesPorEstado.map(d => ({ ...d, name: estadoLabels[d.estado] || d.estado }))}
+                  data={metricas.clasesPorEstado.map(d => ({ ...d, name: ESTADO_LABELS[d.estado] || d.estado }))}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
