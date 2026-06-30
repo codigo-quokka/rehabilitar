@@ -10,6 +10,7 @@ using Domain.Exceptions;
 using Domain.Enums;
 using Domain.Pagos;
 using Application.Pagos.Requests;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Reservas;
 
@@ -20,15 +21,20 @@ public class ReservaService : IReservaService
     private readonly IClienteRepository _clienteRepo;
     private readonly IIntencionPagoRepository _intencionPagoRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<ReservaService> _logger;
 
     public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
-                        IClienteRepository clienteRepo, IIntencionPagoRepository intencionPagoRepo, IUnitOfWork uow)
+                        IClienteRepository clienteRepo, IIntencionPagoRepository intencionPagoRepo,
+                        IUnitOfWork uow, IEmailService emailService, ILogger<ReservaService> logger)
     {
         _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
         _clienteRepo = clienteRepo;
         _intencionPagoRepo = intencionPagoRepo;
         _uow = uow;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<Guid>> ReservarActividadAsync(ReservarActividadRequest request, CancellationToken ct = default)
@@ -118,6 +124,8 @@ public class ReservaService : IReservaService
 
                 var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
 
+                var reservasConfirmadas = new List<(string Email, string Nombre, DateTime Fecha)>();
+
                 foreach (var actId in intencion.ActividadesIds)
                 {
                     var actividad = await _actividadRepo.ObtenerPorIdAsync(actId);
@@ -126,6 +134,11 @@ public class ReservaService : IReservaService
                         var reserva = actividad.IniciarReserva(cliente, tipoCliente);
                         _uow.MarkAsAdded(reserva);
                         actividad.ProcesarPagoReserva(reserva.Id, actividad.Precio);
+
+                        if (cliente.User?.Email != null)
+                        {
+                            reservasConfirmadas.Add((cliente.User.Email, actividad.Nombre, actividad.FechaYHora));
+                        }
                     }
                 }
 
@@ -133,6 +146,19 @@ public class ReservaService : IReservaService
                 cliente.ResetearCancelaciones();
 
                 await _uow.SaveChangesAsync();
+
+                foreach (var (email, nombre, fecha) in reservasConfirmadas)
+                {
+                    try
+                    {
+                        await _emailService.SendReservaConfirmadaEmail(email, nombre, fecha);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send reservation confirmation email to {Email}", email);
+                    }
+                }
+
                 return Result.Success;
             }
             catch (ConcurrencyException)
@@ -166,6 +192,8 @@ public class ReservaService : IReservaService
 
                 var tipoCliente = intencion.ActividadesIds.Count >= 4 ? TipoCliente.Abonado : TipoCliente.noAbonado;
 
+                var reservasConfirmadas = new List<(string Email, string Nombre, DateTime Fecha)>();
+
                 foreach (var actId in intencion.ActividadesIds)
                 {
                     var actividad = await _actividadRepo.ObtenerPorIdAsync(actId, ct);
@@ -183,12 +211,30 @@ public class ReservaService : IReservaService
                         : actividad.Precio;
 
                     actividad.ProcesarPagoReserva(reserva.Id, montoAPagar);
+
+                    if (cliente.User?.Email != null)
+                    {
+                        reservasConfirmadas.Add((cliente.User.Email, actividad.Nombre, actividad.FechaYHora));
+                    }
                 }
 
                 // Resetear cancelaciones del cliente al pagar (consistente con ConfirmarPagoReservaAsync)
                 cliente.ResetearCancelaciones();
 
                 await _uow.SaveChangesAsync(ct);
+
+                foreach (var (email, nombre, fecha) in reservasConfirmadas)
+                {
+                    try
+                    {
+                        await _emailService.SendReservaConfirmadaEmail(email, nombre, fecha);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send reservation confirmation email to {Email}", email);
+                    }
+                }
+
                 return Result.Success;
             }
             catch (ConcurrencyException)
@@ -250,6 +296,21 @@ public class ReservaService : IReservaService
                 }
 
                 await _uow.SaveChangesAsync(ct); // Aquí EF Core valida la 'Version'
+
+                try
+                {
+                    var clienteEmail = reserva?.Cliente?.User?.Email;
+                    if (clienteEmail != null)
+                    {
+                        await _emailService.SendReservaConfirmadaEmail(clienteEmail, actividad.Nombre, actividad.FechaYHora);
+                        await _emailService.SendPagoRegistradoEmail(clienteEmail, actividad.Nombre, actividad.FechaYHora, reserva!.DetallePago.MontoPagado);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reservation/payment email for reserva {ReservaId}", reserva?.Id);
+                }
+
                 return Result.Success;
             } catch (ConcurrencyException) {
                 if (i == 2) return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
@@ -271,6 +332,21 @@ public class ReservaService : IReservaService
                 actividad.CancelarReserva(reservaId); // Lógica de dominio
                 
                 await _uow.SaveChangesAsync(ct);
+
+                try
+                {
+                    var clienteEmail = actividad.Reservas
+                        .FirstOrDefault(r => r.Id == reservaId)?.Cliente?.User?.Email;
+                    if (clienteEmail != null)
+                    {
+                        await _emailService.SendReservaCanceladaEmail(clienteEmail, actividad.Nombre, actividad.FechaYHora);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send cancellation email for reserva {ReservaId}", reservaId);
+                }
+
                 return Result.Deleted;
             } catch (ConcurrencyException) {
                 if (i == 2) return Error.Conflict("Sistema.Ocupado", "Sistema ocupado, reintente.");
@@ -319,6 +395,28 @@ public class ReservaService : IReservaService
                     return Error.NotFound("Reserva.NoActivas", "No se encontraron reservas activas para cancelar en esta serie.");
 
                 await _uow.SaveChangesAsync(ct);
+
+                foreach (var actividad in futuras)
+                {
+                    var reserva = actividad.Reservas.FirstOrDefault(r =>
+                        r.ClienteId == clienteId &&
+                        r.EstadoDeReserva == EstadoDeReserva.Cancelada &&
+                        r.Cliente?.User?.Email != null);
+
+                    if (reserva?.Cliente?.User?.Email != null)
+                    {
+                        try
+                        {
+                            await _emailService.SendReservaCanceladaEmail(
+                                reserva.Cliente.User.Email, actividad.Nombre, actividad.FechaYHora);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to send series cancellation email for reserva {ReservaId}", reserva.Id);
+                        }
+                    }
+                }
+
                 return Result.Deleted;
             }
             catch (ConcurrencyException)

@@ -42,6 +42,9 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
             .HasColumnName("Dni")
             .HasMaxLength(8)
             .IsRequired();
+
+            entity.Property(u => u.NotificacionAplicacion)
+                .HasDefaultValue(true);
         });
         builder.Entity<Role>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");

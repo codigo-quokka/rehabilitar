@@ -20,6 +20,7 @@ export interface User {
   especialidad?: string;
   saldoAFavor?: SaldoAFavor;
   rehabiliCoins?: number;
+  notificacionAplicacion?: boolean;
 }
 
 export interface AuthState {

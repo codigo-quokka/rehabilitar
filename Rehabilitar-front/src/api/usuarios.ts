@@ -14,6 +14,7 @@ interface UpdateUserData {
   email?: string;
   rol?: string;
   especialidad?: string;
+  notificacionAplicacion?: boolean;
 }
 
 export const usuariosApi = {

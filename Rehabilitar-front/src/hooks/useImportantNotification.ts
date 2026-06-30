@@ -23,20 +23,22 @@ export function useImportantNotification() {
         return;
       }
 
-      try {
-        const response = await notificacionesApi.create({
-          userId: user.id,
-          titulo: "Notificación",
-          mensaje: params.message,
-        });
-        addToTray({
-          id: response.id,
-          message: response.mensaje,
-          timestamp: response.fechaCreacion,
-          read: response.leida,
-        });
-      } catch (error) {
-        console.error("Failed to save notification:", error);
+      if (user.notificacionAplicacion !== false) {
+        try {
+          const response = await notificacionesApi.create({
+            userId: user.id,
+            titulo: "Notificación",
+            mensaje: params.message,
+          });
+          addToTray({
+            id: response.id,
+            message: response.mensaje,
+            timestamp: response.fechaCreacion,
+            read: response.leida,
+          });
+        } catch (error) {
+          console.error("Failed to save notification:", error);
+        }
       }
 
       params.onSuccess?.();

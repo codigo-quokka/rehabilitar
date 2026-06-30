@@ -17,6 +17,55 @@ This repository contains a management system for a kinesiology center, divided i
 - **Controllers**: API Controllers inherit from a custom `ApiControllerBase`. Always use the `.Match()` pattern to map `ErrorOr` results to HTTP Status Codes automatically (e.g., `return result.Match(salas => Ok(salas), errores => Problem(errores));`).
 - **Data Access**: Repositories must be scoped and managed via `IUnitOfWork`.
 
+## Email System (EmailService)
+
+### Implementation
+- **Service**: `Infrastructure/Email/EmailService.cs` implements `Application.Common.Interfaces.IEmailService`
+- **Provider**: Resend (via `IResend` / `ResendClient`)
+- **To address (TO-DO)**: Currently hardcoded to `codigoquokka@hotmail.com` in `SendEmailAsync()`. Must change to `userEmail` parameter when a verified domain is configured in Resend.
+- **Email failures are non-blocking**: All email sends are wrapped in `try/catch` with `ILogger` logging; they never cause the primary action to fail.
+
+### All EmailService Methods & Wiring
+
+| Method | Triggers when | Wired in |
+|--------|--------------|----------|
+| `SendConfirmationEmail(userEmail, verificationLink)` | User registers (self-registration) — sends verification link | `AuthService.EnviarEmailDeVerificacion()` |
+| `SendPasswordResetEmail(userEmail, link)` | User requests password reset | `AuthService.EnviarEmailDeResetPassword()` |
+| `SendNewUserWithCredentialsEmail(userEmail, password)` | Admin creates a user with generated password | `UsuarioService.EnviarMailConCredenciales()` |
+| `SendPasswordChangedEmail(userEmail)` | User changes their password successfully | `AuthService.ChangePasswordAsync()` |
+| `SendAptoFisicoAprobadoEmail(userEmail)` | Apto físico is approved by admin | `AptoFisicoService.EvaluarAsync()` |
+| `SendAptoFisicoRechazadoEmail(userEmail, motivoRechazo)` | Apto físico is rejected by admin | `AptoFisicoService.EvaluarAsync()` |
+| `SendReservaConfirmadaEmail(userEmail, nombreActividad, fechaActividad)` | Reservation payment confirmed (RehabiliCoins, MercadoPago, or manual) | `ReservaService.ConfirmarPagoReservaAsync()`, `PagarIntencionConRehabilicoinsAsync()`, `PagarIntencionConMercadoPagoAsync()` |
+| `SendPagoRegistradoEmail(userEmail, nombreActividad, fechaActividad, monto)` | Manual payment registered | `ReservaService.ConfirmarPagoReservaAsync()` |
+| `SendReservaCanceladaEmail(userEmail, nombreActividad, fechaActividad)` | Reservation cancelled (single or series) | `ReservaService.CancelarReservaAsync()`, `CancelarSerieReservasAsync()` |
+| `SendCancelacionDeActividadParaClientesEmail(userEmail, nombreActividad, fechaActividad, motivoCancelacion)` | Activity/series cancelled — notifies clients with reservations | `ActividadService.CancelarActividad()`, `CancelarSerie()` |
+| `SendCancelacionDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad, motivoCancelacion)` | Activity/series cancelled — notifies the assigned professor | `ActividadService.CancelarActividad()`, `CancelarSerie()` |
+| `SendOportunidadDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad)` | Professor removed from an activity | `ActividadService.RemoverProfesorActividad()` |
+| `SendProfesorAsignadoEmail(userEmail, nombreActividad, fechaActividad)` | Professor assigned when creating, editing, or explicitly assigning | `ActividadService.CrearActividad()`, `CrearActividadRecurrente()`, `EditarActividad()`, `AsignarProfesorActividad()` |
+| `SendCuentaSuspendidaEmail(userEmail)` | User account suspended | `UsuarioService.SuspenderAsync()` |
+| `SendCuentaReactivadaEmail(userEmail, ...)` | User account reactivated | `UsuarioService.ReactivarAsync()` |
+
+### Important: Asignar-Profesor vs Editar endpoint
+- `PUT /api/actividades/{id}/asignar-profesor` → `AsignarProfesorActividad()` — ONLY works if the activity has no professor yet (returns Conflict otherwise).
+- `PUT /api/actividades/{id}` → `EditarActividad()` — used by the frontend edit form. Also triggers the professor-assigned email if `ProfesorId` changes.
+- `POST /api/actividades` and `POST /api/actividades/recurrente` also trigger the email when a `ProfesorId` is provided at creation.
+
+### notificacionAplicacion (In-App Notification Preference)
+- **Entity field**: `User.NotificacionAplicacion` (`bool`, default `true`)
+- **DB column**: Added via migration `AddNotificacionAplicacion` with `DEFAULT TRUE`
+- **Endpoint**: `PUT /api/usuarios/{id}` accepts `notificacionAplicacion` (nullable bool in `EditarUsuarioRequest`)
+- **Frontend**: `User.notificacionAplicacion` in types. Synced to `useAuth().user` on login and toggle.
+- **ImportantNotification hook** checks this preference: if `false`, shows toast but skips DB save and tray update.
+
+### Missing Email Methods (not yet implemented)
+- User deleted
+- User profile updated
+- Activity created (no email at all — separate from professor assignment notification)
+- Activity modified (no email)
+- Activity started / finished
+- Room CRUD (create, edit, activate/deactivate, delete)
+- Payment registered via RehabiliCoins / MercadoPago (already sends reservation confirmation, but no separate payment notification)
+
 ## Frontend (React 19) Commands & Quirks
 
 - **Run Dev**: `cd Rehabilitar-front && npm run dev` (runs on `http://localhost:5173`).

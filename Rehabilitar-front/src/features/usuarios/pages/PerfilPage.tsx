@@ -113,6 +113,9 @@ export function PerfilPage() {
   const [toastMessage, setToastMessage] = useState("");
   const importantNotification = useImportantNotification();
 
+  const [notificacionAplicacion, setNotificacionAplicacion] = useState(user?.notificacionAplicacion ?? true);
+  const [prefToggleLoading, setPrefToggleLoading] = useState(false);
+
   // New states for AptoFisico
   const [aptos, setAptos] = useState<AptoFisico[]>([]);
   const [aptosCargando, setAptosCargando] = useState(true);
@@ -139,6 +142,27 @@ export function PerfilPage() {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
+  };
+
+  const handlePrefToggle = async () => {
+    if (!user || prefToggleLoading) return;
+
+    const previousValue = notificacionAplicacion;
+    const newValue = !previousValue;
+    setNotificacionAplicacion(newValue);
+    setPrefToggleLoading(true);
+
+    try {
+      await usuariosApi.update(user.id, { notificacionAplicacion: newValue });
+      updateUser({ ...user, notificacionAplicacion: newValue });
+      showToastMessage("Preferencia de notificación actualizada.", "success");
+    } catch (err) {
+      setNotificacionAplicacion(previousValue);
+      const errorCode = (err as any)?.response?.data?.error || "Error al actualizar la preferencia.";
+      showToastMessage(errorCode, "error");
+    } finally {
+      setPrefToggleLoading(false);
+    }
   };
 
   const handleConfirmSave = async () => {
@@ -593,6 +617,25 @@ export function PerfilPage() {
               </Button>
             </div>
           )}
+        </Card>
+
+        <Card className="mt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100">
+              Preferencias de notificación
+            </h3>
+          </div>
+          <label className="flex items-center gap-3 mt-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notificacionAplicacion}
+              onChange={handlePrefToggle}
+              className="w-5 h-5 rounded accent-primary border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+            />
+            <span className="text-dark dark:text-gray-100 text-sm">
+              Recibir notificaciones dentro del sistema
+            </span>
+          </label>
         </Card>
 
         <ConfirmActionModalVerde

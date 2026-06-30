@@ -11,6 +11,7 @@ using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
 using Application.Pagos;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Actividades;
 
@@ -23,13 +24,17 @@ public class ActividadService : IActividadService
     public readonly IClienteRepository _clienteRepo;
     private readonly IIntencionPagoRepository _intencionPagoRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<ActividadService> _logger;
 
     public ActividadService(IActividadRepository actividadRepo,
                             ISalaRepository salaRepo,
                             IProfesorRepository profesorRepo,
                             IClienteRepository clienteRepo,
                             IIntencionPagoRepository intencionPagoRepository,
-                            IUnitOfWork uow)
+                            IUnitOfWork uow,
+                            IEmailService emailService,
+                            ILogger<ActividadService> logger)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
@@ -37,6 +42,8 @@ public class ActividadService : IActividadService
         _clienteRepo = clienteRepo;
         _intencionPagoRepository = intencionPagoRepository;
         _uow = uow;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividad(CrearActividadRequest request, CancellationToken ct = default)
@@ -50,6 +57,12 @@ public class ActividadService : IActividadService
         
         _actividadRepo.Add(actividad);
         await _uow.SaveChangesAsync(ct);
+
+        if (request.ProfesorId.HasValue)
+        {
+            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividad.Nombre, actividad.FechaYHora, ct);
+        }
+
         return await MapToDto(actividad,ct);
     }
 
@@ -92,7 +105,13 @@ public class ActividadService : IActividadService
         foreach(Actividad a in actividadesCreadas) _actividadRepo.Add(a);
         await _uow.SaveChangesAsync(ct);
 
-        return await MapToDto(actividadesCreadas.First(), ct);
+        var primera = actividadesCreadas.First();
+        if (request.ActividadBase.ProfesorId.HasValue)
+        {
+            await EnviarEmailProfesorAsignado(request.ActividadBase.ProfesorId.Value, primera.Nombre, primera.FechaYHora, ct);
+        }
+
+        return await MapToDto(primera, ct);
     }
 
     public async Task<ErrorOr<ActividadResponse>> ModificarActividadRecurrente(EditarActividadRecurrenteRequest request, CancellationToken ct = default)
@@ -168,8 +187,16 @@ public class ActividadService : IActividadService
             request.SerieId 
         );
 
+        var oldProfesorId = actividad.ProfesorId;
+
         actividad.ModificarActividad(actividadEditada);
         await _uow.SaveChangesAsync(ct);
+
+        if (request.ProfesorId.HasValue && request.ProfesorId != oldProfesorId)
+        {
+            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividad.Nombre, actividad.FechaYHora, ct);
+        }
+
         return await MapToDto(actividad, ct);
     }
 
@@ -180,6 +207,45 @@ public class ActividadService : IActividadService
 
         actividad.CancelarActividad();
         await _uow.SaveChangesAsync(ct);
+
+        // Notificar a los clientes con reservas
+        var clienteIds = actividad.Reservas?
+            .Where(r => r.EstadoDeReserva != EstadoDeReserva.Cancelada)
+            .Select(r => r.ClienteId)
+            .Distinct()
+            .ToList() ?? new List<Guid>();
+
+        foreach (var clienteId in clienteIds)
+        {
+            try
+            {
+                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                if (cliente?.User?.Email != null)
+                {
+                    await _emailService.SendCancelacionDeActividadParaClientesEmail(
+                        cliente.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity cancellation email to client {ClienteId}", clienteId);
+            }
+        }
+
+        // Notificar al profesor si tiene uno asignado
+        if (actividad.ProfesorId.HasValue && actividad.Profesor?.User?.Email != null)
+        {
+            try
+            {
+                await _emailService.SendCancelacionDeActividadParaProfesoresEmail(
+                    actividad.Profesor.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity cancellation email to profesor {ProfesorId}", actividad.ProfesorId);
+            }
+        }
+
         return Result.Deleted;
     }
 
@@ -191,10 +257,52 @@ public class ActividadService : IActividadService
         foreach (var actividad in actividades)
         {
             if (actividad.FechaYHora > DateTime.Now)
-            actividad.CancelarActividad();
+                actividad.CancelarActividad();
         }
         
         await _uow.SaveChangesAsync(ct);
+
+        foreach (var actividad in actividades)
+        {
+            if (actividad.FechaYHora <= DateTime.Now) continue;
+
+            var clienteIds = actividad.Reservas?
+                .Where(r => r.EstadoDeReserva != EstadoDeReserva.Cancelada)
+                .Select(r => r.ClienteId)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            foreach (var clienteId in clienteIds)
+            {
+                try
+                {
+                    var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                    if (cliente?.User?.Email != null)
+                    {
+                        await _emailService.SendCancelacionDeActividadParaClientesEmail(
+                            cliente.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send activity cancellation email to client {ClienteId}", clienteId);
+                }
+            }
+
+            if (actividad.ProfesorId.HasValue && actividad.Profesor?.User?.Email != null)
+            {
+                try
+                {
+                    await _emailService.SendCancelacionDeActividadParaProfesoresEmail(
+                        actividad.Profesor.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send activity cancellation email to profesor {ProfesorId}", actividad.ProfesorId);
+                }
+            }
+        }
+
         return Result.Deleted;
     }
 
@@ -233,6 +341,19 @@ public class ActividadService : IActividadService
 
         actividad.AsignarProfesor(request.ProfesorId);
         await _uow.SaveChangesAsync(ct);
+
+        try
+        {
+            if (profesor.User?.Email != null)
+            {
+                await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, actividad.Nombre, actividad.FechaYHora);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send professor assignment email for actividad {ActividadId}", id);
+        }
+
         return await MapToDto(actividad, ct);
     }
 
@@ -247,8 +368,28 @@ public class ActividadService : IActividadService
         if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
             return Error.Validation("No puedes darte de baja de una actividad finalizada o cancelada.");
 
+        var removedProfesorId = actividad.ProfesorId;
+
         actividad.RemoverProfesor();
         await _uow.SaveChangesAsync(ct);
+
+        if (removedProfesorId.HasValue)
+        {
+            try
+            {
+                var removedProfesor = await _profesorRepo.GetByIdAsync(removedProfesorId.Value, ct);
+                if (removedProfesor?.User?.Email != null)
+                {
+                    await _emailService.SendOportunidadDeActividadParaProfesoresEmail(
+                        removedProfesor.User.Email, actividad.Nombre, actividad.FechaYHora);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity opportunity email for actividad {ActividadId}", id);
+            }
+        }
+
         return await MapToDto(actividad, ct);
     }
 
@@ -379,6 +520,22 @@ public class ActividadService : IActividadService
         }
 
         return Result.Success;
+    }
+
+    private async Task EnviarEmailProfesorAsignado(Guid profesorId, string nombreActividad, DateTime fechaActividad, CancellationToken ct)
+    {
+        try
+        {
+            var profesor = await _profesorRepo.GetByIdAsync(profesorId, ct);
+            if (profesor?.User?.Email != null)
+            {
+                await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, nombreActividad, fechaActividad);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send professor assignment email for actividad '{Nombre}'", nombreActividad);
+        }
     }
 
     private List<DateTime> GenerarFechasDeSerie(DateTime fechaInicio, DateTime fechaLimite)
