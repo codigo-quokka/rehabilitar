@@ -40,6 +40,16 @@ const estadoLabel: Record<string, string> = {
 
 const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
+const CLASE_DURACION_MS = 60 * 60 * 1000;
+const VENTANA_QR_MS = 60 * 60 * 1000;
+
+function qrDisponible(act: Actividad): boolean {
+  if (act.estado !== 'Aprobada' && act.estado !== 'EnCurso') return false;
+  const inicio = new Date(act.fechaYHora).getTime();
+  const ahora = Date.now();
+  return ahora >= inicio - VENTANA_QR_MS && ahora <= inicio + CLASE_DURACION_MS + VENTANA_QR_MS;
+}
+
 export function MisClasesPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -245,7 +255,7 @@ export function MisClasesPage() {
                             </td>
                             <td className="px-4 py-2.5">
                               <div className="flex gap-1.5">
-                                {(act.estado === 'Aprobada' || act.estado === 'EnCurso') && (
+                                {qrDisponible(act) && (
                                   <Button
                                     variant="secondary"
                                     size="sm"
@@ -294,7 +304,7 @@ export function MisClasesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1.5">
-                          {(act.estado === 'Aprobada' || act.estado === 'EnCurso') && (
+                          {qrDisponible(act) && (
                             <Button
                               variant="secondary"
                               size="sm"

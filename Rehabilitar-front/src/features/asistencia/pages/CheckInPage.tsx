@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { actividadesApi } from '../../../api';
 import { useNotifications } from '../../../hooks/useNotifications';
 
 export function CheckInPage() {
   const { actividadId } = useParams<{ actividadId: string }>();
-  const { addNotification } = useNotifications();
+  const { showToast } = useNotifications();
   const [nombre, setNombre] = useState('');
   const [loadingAct, setLoadingAct] = useState(true);
   const [dni, setDni] = useState('');
@@ -27,13 +27,13 @@ export function CheckInPage() {
     setSubmitting(true);
     try {
       await actividadesApi.checkIn(actividadId, dni.trim());
-      addNotification('Asistencia registrada correctamente', 'success');
+      showToast('Asistencia registrada correctamente', 'success');
       setRegistrado(true);
       setDni('');
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { error?: string; errorCode?: string } } })?.response?.data;
       const msg = data?.error || data?.errorCode || (err as Error)?.message || 'Error al registrar asistencia';
-      addNotification(msg, 'error');
+      showToast(msg, 'error');
     } finally {
       setSubmitting(false);
     }

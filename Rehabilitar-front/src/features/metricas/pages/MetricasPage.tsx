@@ -10,6 +10,7 @@ import { Card, Button } from '../../../components/ui';
 import { actividadesApi, usuariosApi } from '../../../api';
 import { Actividad, User, MetricasDashboard } from '../../../types';
 import { useTheme } from '../../../context/ThemeContext';
+import { useNotifications } from '../../../hooks/useNotifications';
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -147,6 +148,7 @@ export function MetricasPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const { showToast } = useNotifications();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -181,11 +183,7 @@ export function MetricasPage() {
         ['Total Actividades', String(metricas.totalActividades)],
         ['Actividades en Curso', String(metricas.actividadesEnCurso)],
         ['Total Usuarios', String(metricas.totalUsuarios)],
-        ['Usuarios Activos', String(metricas.usuariosActivos)],
         ['Actividades Hoy', String(metricas.actividadesHoy)],
-        ['Ocupación General', `${metricas.ocupacionGeneral}%`],
-        ['Cupo Promedio Ocupado', `${metricas.cupoPromedioOcupado}%`],
-        ['Profesores con Clases', String(metricas.profesoresConClases)],
         [],
         ['Clases por Mes'],
         ['Mes', 'Cantidad'],
@@ -220,11 +218,11 @@ export function MetricasPage() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 100);
-      addNotification('CSV exportado correctamente', 'info');
+      showToast('CSV exportado correctamente', 'info');
     } catch {
-      addNotification('Error al exportar CSV', 'error');
+      showToast('Error al exportar CSV', 'error');
     }
-  }, [metricas]);
+  }, [metricas, showToast]);
 
   const exportToPDF = useCallback(() => {
     setExportingPdf(true);
@@ -295,14 +293,14 @@ export function MetricasPage() {
       }
 
       doc.save(`metricas-${new Date().toISOString().split('T')[0]}.pdf`);
-      addNotification('PDF exportado correctamente', 'info');
+      showToast('PDF exportado correctamente', 'info');
     } catch (err) {
       const msg = (err as Error)?.message || 'Error desconocido al exportar PDF';
-      addNotification(msg, 'error');
+      showToast(msg, 'error');
     } finally {
       setExportingPdf(false);
     }
-  }, [metricas]);
+  }, [metricas, showToast]);
 
   if (loading) {
     return (
