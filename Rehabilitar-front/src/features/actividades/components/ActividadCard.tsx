@@ -10,6 +10,8 @@ interface ActividadCardProps {
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
   onVerReservas?: (act: Actividad) => void;
+  onAprobar?: (act: Actividad) => void;
+  onEliminarPropuesta?: (act: Actividad) => void;
 }
 
 export function ActividadCard({
@@ -19,6 +21,8 @@ export function ActividadCard({
   onModificar,
   onTomarActividad,
   onVerReservas,
+  onAprobar,
+  onEliminarPropuesta,
 }: ActividadCardProps) {
   const { user } = useAuth();
   return (
@@ -108,13 +112,15 @@ export function ActividadCard({
                 Modificar
               </Button>
             )}
-            <Button
-              variant="violeta"
-              className="flex-1"
-              onClick={() => onVerReservas(act)}
-            >
-              Ver reservas
-            </Button>
+            {act.estado !== 'Propuesta' && (
+              <Button
+                variant="violeta"
+                className="flex-1"
+                onClick={() => onVerReservas(act)}
+              >
+                Ver reservas
+              </Button>
+            )}
           </div>
         )}
         {hasRole(["Administrador"]) && !onVerReservas && act.estado !== 'Cancelada' && (
@@ -126,7 +132,37 @@ export function ActividadCard({
             Modificar
           </Button>
         )}
-        {hasRole(["Recepción"]) && onVerReservas && (
+        {hasRole(["Administrador"]) && act.estado === 'Propuesta' && (
+          <div className="flex gap-2">
+            {onAprobar && (
+              <button
+                type="button"
+                onClick={() => onAprobar(act)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-primary/20 text-dark-green hover:bg-primary/40 dark:bg-dark-green/30 dark:text-green-300 dark:hover:bg-dark-green/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary cursor-pointer"
+                aria-label="Aprobar actividad"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Aprobar
+              </button>
+            )}
+            {onEliminarPropuesta && (
+              <button
+                type="button"
+                onClick={() => onEliminarPropuesta(act)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-red-300 text-red-800 hover:bg-red-400 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 cursor-pointer"
+                aria-label="Eliminar actividad"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Eliminar
+              </button>
+            )}
+          </div>
+        )}
+        {hasRole(["Recepción"]) && onVerReservas && act.estado !== 'Propuesta' && (
           <Button
             variant="violeta"
             className="w-full"

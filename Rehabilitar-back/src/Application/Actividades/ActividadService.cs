@@ -205,6 +205,13 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
+        var reservasActivas = actividad.Reservas?
+            .Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa || r.EstadoDeReserva == EstadoDeReserva.EnEspera)
+            .ToList() ?? [];
+
+        if (reservasActivas.Count != 0)
+            return Error.Conflict("No se puede cancelar una actividad con clientes inscriptos.");
+
         actividad.CancelarActividad();
         await _uow.SaveChangesAsync(ct);
 
@@ -363,10 +370,13 @@ public class ActividadService : IActividadService
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         if (actividad.ProfesorId != request.ProfesorId)
-            return Error.Validation("No puedes darte de baja de una actividad que no tienes asignada.");
+            return Error.Validation(code: "Profesor.NoAsignado", description: "No puedes darte de baja de una actividad que no tienes asignada.");
 
         if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
-            return Error.Validation("No puedes darte de baja de una actividad finalizada o cancelada.");
+            return Error.Validation(code: "Profesor.ActividadFinalizadaOCancelada", description: "No puedes darte de baja de una actividad finalizada o cancelada.");
+
+        if (actividad.FechaYHora <= DateTime.UtcNow.AddHours(24))
+            return Error.Conflict(code: "Profesor.BajaConMenosDe24Horas", description: "No puedes darte de baja de una actividad que comienza en menos de 24 horas.");
 
         var removedProfesorId = actividad.ProfesorId;
 
@@ -389,6 +399,17 @@ public class ActividadService : IActividadService
                 _logger.LogError(ex, "Failed to send activity opportunity email for actividad {ActividadId}", id);
             }
         }
+
+        return await MapToDto(actividad, ct);
+    }
+
+    public async Task<ErrorOr<ActividadResponse>> AprobarActividad(Guid id, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        actividad.Aprobar();
+        await _uow.SaveChangesAsync(ct);
 
         return await MapToDto(actividad, ct);
     }

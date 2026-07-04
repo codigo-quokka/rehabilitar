@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button, Modal } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
-import { Notitoast } from '../../../components/Notitoast';
 import { useImportantNotification } from '../../../hooks/useImportantNotification';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
@@ -62,10 +62,8 @@ export function MisClasesPage() {
   const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [confirmGroupSerieId, setConfirmGroupSerieId] = useState<string | null>(null);
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
   const importantNotification = useImportantNotification();
+  const { showToast } = useNotifications();
   const [qrActividadId, setQrActividadId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,10 +105,9 @@ export function MisClasesPage() {
       setClases(prev => prev.filter(a => a.id !== selectedActividad.id));
       await importantNotification({ type: 'success', message: 'Te has dado de baja exitosamente' });
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
-      setToastType('error');
-      setToastMessage(msg);
-      setShowToast(true);
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.error || apiError?.errorCode || (err as Error)?.message || 'Error al darse de baja';
+      showToast(msg, 'error');
     } finally {
       setShowConfirmModal(false);
       setSelectedActividad(null);
@@ -127,10 +124,9 @@ export function MisClasesPage() {
       setClases(prev => prev.filter(a => a.serieId !== serieId));
       await importantNotification({ type: 'success', message: 'Te has dado de baja de todas las actividades exitosamente' });
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
-      setToastType('error');
-      setToastMessage(msg);
-      setShowToast(true);
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.error || apiError?.errorCode || (err as Error)?.message || 'Error al darse de baja';
+      showToast(msg, 'error');
     } finally {
       setConfirmGroupSerieId(null);
     }
@@ -368,13 +364,6 @@ export function MisClasesPage() {
         </div>
       </Modal>
 
-      {showToast && (
-        <Notitoast
-          type={toastType}
-          message={toastMessage}
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </MainLayout>
   );
 }

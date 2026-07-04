@@ -22,6 +22,7 @@ public interface IActividadService
         Guid? profesorId = null,
         CancellationToken ct = default);
     
+    Task<ErrorOr<ActividadResponse>> AprobarActividad(Guid id, CancellationToken ct = default);
     Task<ErrorOr<ActividadResponse>> AsignarProfesorActividad(Guid id, AsignarProfesorRequest request, CancellationToken ct = default);
     Task<ErrorOr<ActividadResponse>> RemoverProfesorActividad(Guid id, RemoverProfesorRequest request, CancellationToken ct = default);
     Task<ErrorOr<Success>> IniciarActividadAsync(Guid id, CancellationToken ct = default);
