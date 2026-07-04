@@ -91,6 +91,16 @@ public class ActividadesController : ApiControllerBase
         );
     }
 
+    [HttpPut("{id:guid}/aprobar")]
+    public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct)
+    {
+        var result = await _actividadService.AprobarActividad(id, ct);
+        return result.Match(
+            actividad => Ok(actividad),
+            errores => Problem(errores)
+        );
+    }
+
     [HttpPut("{id:guid}/asignar-profesor")]
     public async Task<IActionResult> AsignarProfesor(Guid id, [FromBody] AsignarProfesorRequest request, CancellationToken ct)
     {

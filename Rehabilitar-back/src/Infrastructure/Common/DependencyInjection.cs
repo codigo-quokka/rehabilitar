@@ -101,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IIntencionPagoRepository, IntencionPagoRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
+        services.AddHostedService<ActividadStateBackgroundService>();
         services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
