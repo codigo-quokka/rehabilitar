@@ -98,6 +98,13 @@ public class SeedingService : ISeedingService
         await SeedSalaAsync(salaD);
         await SeedSalaAsync(salaE);
 
+        // Reload from DB so local variables have the actual SalaIds (they may differ if Salas already existed)
+        salaA = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A"))!;
+        salaB = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B"))!;
+        salaC = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C"))!;
+        salaD = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D"))!;
+        salaE = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E"))!;
+
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
@@ -123,15 +130,7 @@ public class SeedingService : ISeedingService
             await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
             await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
             await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[FATAL] Error en seed de actividades: {ex.GetType().Name}: {ex.Message}");
-            Console.WriteLine(ex.StackTrace);
-        }
-        Console.WriteLine("--- FIN seed de actividades principales ---");
-
-        // --- Datos para testing de escenarios con Peter Parker ---
+            // --- Datos para testing de escenarios con Peter Parker ---
         Console.WriteLine("--- INICIO seed de actividades de test ---");
         // ESCENARIO 4: esporádica sin profesor, misma hora que "Yoga Terapéutico" (now+1h, donde Peter ya está asignado)
         await SeedActividadAsync("Test S4 - Conflicto horario", "Coincide con Yoga Terapéutico de Peter",
@@ -145,6 +144,15 @@ public class SeedingService : ISeedingService
         await SeedActividadAsync("Test S1 - Alta exitosa", "Esporádica disponible para tomar",
             TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
             DateTime.Today.AddDays(5).AddHours(14), 10, salaD.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FATAL] Error en seed de actividades: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+        }
+        Console.WriteLine("--- FIN seed de actividades principales ---");
+
+        
         Console.WriteLine("--- FIN seed de actividades de test ---");
 
         await SeedReservasAsync();
