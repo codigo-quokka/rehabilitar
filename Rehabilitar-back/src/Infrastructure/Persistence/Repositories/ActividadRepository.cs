@@ -90,10 +90,24 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
     public async Task<ICollection<Actividad>> ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad estado, DateTime fechaLimite, CancellationToken ct = default)
     {
         return await _context.Actividades
+            .Include(a => a.Sala)
             .Include(a => a.Reservas)
                 .ThenInclude(r => r.Cliente)
+                .ThenInclude(c => c.User)
             .Include(a => a.Profesor)
             .Where(a => a.Estado == estado && a.FechaYHora <= fechaLimite)
+            .ToListAsync(ct);
+    }
+
+    public async Task<ICollection<Actividad>> ListarActividadesPorEstadoYDespuesDeAsync(EstadoActividad estado, DateTime fechaLimite, CancellationToken ct = default)
+    {
+        return await _context.Actividades
+            .Include(a => a.Sala)
+            .Include(a => a.Reservas)
+                .ThenInclude(r => r.Cliente)
+                .ThenInclude(c => c.User)
+            .Include(a => a.Profesor)
+            .Where(a => a.Estado == estado && a.FechaYHora > fechaLimite)
             .ToListAsync(ct);
     }
 

@@ -9,8 +9,7 @@ using Domain.Actividades;
 using Domain.AptosFisicos;
 using Domain.Reservas;
 using Domain.Enums;
-using Application.Actividades;
-using Application.Actividades.DTOs;
+
 
 namespace Infrastructure.Persistence.Seeding;
 
@@ -21,19 +20,16 @@ public class SeedingService : ISeedingService
     private readonly UserManager<User> _userManager;
     private readonly RehabilitarDbContext _dbContext;
     private readonly IPasswordHasher<User> _passwordHasher;
-    private readonly IActividadService _actividadService;
 
     public SeedingService(RoleManager<Role> roleManager,
                         UserManager<User> userManager,
                         RehabilitarDbContext dbContext,
-                        IPasswordHasher<User> passwordHasher,
-                        IActividadService actividadService)
+                        IPasswordHasher<User> passwordHasher)
     {
         _roleManager = roleManager;
         _userManager = userManager;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
-        _actividadService = actividadService;
     }
 
     public async Task SeedRolesAsync()
@@ -302,32 +298,22 @@ public class SeedingService : ISeedingService
                                         EstadoActividad estado, DateTime fechaInicio,
                                         int cupoMaximo, decimal precio, Guid salaId, Guid? profesorId, DateTime fechaFinRecurrente)
     {
-        var request = new CrearActividadRecurrenteRequest(
-            new CrearActividadRequest(
-                Nombre: nombre,
-                Descripcion: descripcion,
-                Tipo: tipo,
-                Frecuencia: FrecuenciaActividad.Recurrente,
-                Estado: estado,
-                FechaYHora: fechaInicio,
-                // Precio: precio,
-                CupoMaximo: cupoMaximo,
-                SalaId: salaId,
-                ProfesorId: profesorId
-            ),
-            FechaFinRecurrente: fechaFinRecurrente
-        );
-
-        var result = await _actividadService.CrearActividadRecurrente(request);
-
-        if (result.IsError)
+        var serieId = Guid.NewGuid();
+        for (var fecha = fechaInicio; fecha <= fechaFinRecurrente; fecha = fecha.AddDays(7))
         {
-            Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+            if (await _dbContext.Actividades.AnyAsync(a =>
+                a.FechaYHora.Equals(fecha) &&
+                a.SalaId.Equals(salaId)))
+                continue;
+
+            Actividad actividad = Actividad.Create(nombre, descripcion, tipo, FrecuenciaActividad.Recurrente,
+                                                estado, fecha, cupoMaximo, precio, salaId,
+                                                profesorId, serieId);
+
+            _dbContext.Actividades.Add(actividad);
         }
-        else
-        {
-            Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
-        }
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
     }
 
     private async Task SeedReservaAsync(Guid clienteId, Guid actividadId, DetallePago detallePago, EstadoDeReserva estadoDeReserva, TipoCliente tipoCliente)

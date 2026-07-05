@@ -172,6 +172,12 @@ public class ActividadService : IActividadService
 
         if (actividad == null) return Error.NotFound("Actividad no encontrada");   
 
+        if (actividad.Estado == EstadoActividad.EnCurso)
+            return Error.Validation("No se puede modificar una actividad que está en curso.");
+
+        if (actividad.Estado == EstadoActividad.Finalizada)
+            return Error.Validation("No se puede modificar una actividad que ya finalizó.");
+
         var validacion = await ValidarActividad(id, request.CupoMaximo, request.SalaId, request.FechaYHora, request.ProfesorId, request.Tipo, request.Estado, request.SerieId ?? Guid.Empty, ct);
         
         if (validacion.IsError)
@@ -209,6 +215,15 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
+        try
+        {
+            actividad.CancelarActividad();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Error.Conflict("Actividad.NoCancelable", ex.Message);
+        }
+
         var fechaStr = actividad.FechaYHora.ToString("dd/MM/yyyy HH:mm");
         var actividadNombre = actividad.Nombre;
         var actividadFecha = actividad.FechaYHora;
@@ -223,7 +238,6 @@ public class ActividadService : IActividadService
         var profesorUserId = actividad.Profesor?.User?.Id;
         var profesorEmail = actividad.Profesor?.User?.Email;
 
-        actividad.CancelarActividad();
         await _uow.SaveChangesAsync(ct);
 
         foreach (var (email, userId) in clientesANotificar)
@@ -362,6 +376,7 @@ public class ActividadService : IActividadService
     public async Task<ErrorOr<List<ActividadResponse>>> ListarActividades(
         TipoEspecialidad? tipo, FrecuenciaActividad? frecuencia, EstadoActividad? estado, Guid? profesorId, CancellationToken ct)
     {
+        await AplicarTransicionesDeEstadoAsync(ct);
         var actividades = await _actividadRepo.ListarActividadesAsync(tipo, frecuencia, estado, profesorId, ct);
         var responses = new List<ActividadResponse>();
         foreach (var actividad in actividades)
@@ -506,11 +521,60 @@ public class ActividadService : IActividadService
 
     public async Task<ErrorOr<ActividadResponse>> ObtenerActividadPorId(Guid id, CancellationToken ct = default)
     {
+        await AplicarTransicionesDeEstadoAsync(ct);
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
         return await MapToDto(actividad, ct);
     }
 
+    public async Task AplicarTransicionesDeEstadoAsync(CancellationToken ct = default)
+    {
+        var ahora = DateTime.UtcNow;
+        var anyChange = false;
+
+        var aIniciar = await _actividadRepo.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.Aprobada, ahora, ct);
+        foreach (var a in aIniciar)
+        {
+            a.IniciarClase();
+            anyChange = true;
+        }
+
+        var aRevertir = await _actividadRepo.ListarActividadesPorEstadoYDespuesDeAsync(EstadoActividad.EnCurso, ahora, ct);
+        foreach (var a in aRevertir)
+        {
+            a.RevertirInicio();
+            anyChange = true;
+        }
+
+        var aFinalizar = await _actividadRepo.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.EnCurso, ahora.AddHours(-2), ct);
+        foreach (var a in aFinalizar)
+        {
+            var clienteIds = a.Reservas
+                .Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa && r.Asistencia == EstadoAsistencia.Pendiente)
+                .Select(r => r.ClienteId)
+                .ToList();
+
+            var clientes = new List<Cliente>();
+            foreach (var clienteId in clienteIds)
+            {
+                if (a.Reservas.FirstOrDefault(r => r.ClienteId == clienteId)?.Cliente is { } cliente)
+                    clientes.Add(cliente);
+            }
+
+            a.FinalizarClase(clientes);
+            anyChange = true;
+        }
+
+        var aDesfinalizar = await _actividadRepo.ListarActividadesPorEstadoYDespuesDeAsync(EstadoActividad.Finalizada, ahora.AddHours(-2), ct);
+        foreach (var a in aDesfinalizar)
+        {
+            a.RevertirFin();
+            anyChange = true;
+        }
+
+        if (anyChange)
+            await _uow.SaveChangesAsync(ct);
+    }
     
     private async Task<ErrorOr<ActividadResponse>> MapToDto(Actividad actividad, CancellationToken ct = default)
     {
