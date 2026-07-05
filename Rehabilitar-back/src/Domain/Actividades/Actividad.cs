@@ -260,10 +260,6 @@ public class Actividad
 					 Guid? profesorId,
 					 Guid? serieId)
 	{
-		if (fechaYHora < DateTime.Now)
-			throw new ArgumentException("La fecha y hora de la actividad no puede ser en el pasado.");
-
-
 		return new Actividad(nombre, descripcion, tipo, frecuencia, estado, fechaYHora, cupoMaximo, precio, salaId, profesorId, serieId);
 	}
 

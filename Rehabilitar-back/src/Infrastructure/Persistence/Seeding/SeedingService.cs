@@ -339,15 +339,22 @@ public class SeedingService : ISeedingService
             FechaFinRecurrente: fechaFinRecurrente
         );
 
-        var result = await _actividadService.CrearActividadRecurrente(request);
+        try
+        {
+            var result = await _actividadService.CrearActividadRecurrente(request);
 
-        if (result.IsError)
-        {
-            Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+            if (result.IsError)
+            {
+                Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+            }
+            else
+            {
+                Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
+            Console.WriteLine($"Excepción al seedear actividad recurrente '{nombre}': {ex.Message}");
         }
     }
 
