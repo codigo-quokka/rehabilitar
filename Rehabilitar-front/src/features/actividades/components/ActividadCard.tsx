@@ -107,6 +107,7 @@ export function ActividadCard({
               <Button
                 variant="primary"
                 className="flex-1"
+                disabled={act.estado === 'EnCurso' || act.estado === 'Finalizada'}
                 onClick={() => onModificar(act)}
               >
                 Modificar
@@ -127,6 +128,7 @@ export function ActividadCard({
           <Button
             variant="primary"
             className="w-full"
+            disabled={act.estado === 'EnCurso' || act.estado === 'Finalizada'}
             onClick={() => onModificar(act)}
           >
             Modificar

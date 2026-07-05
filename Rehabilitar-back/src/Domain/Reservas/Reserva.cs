@@ -37,6 +37,7 @@ public class Reserva
 
     public void MarcarAsistencia() { Asistencia = EstadoAsistencia.Presente; }
     public void MarcarAusente() { Asistencia = EstadoAsistencia.Ausente; }
+    public void MarcarPendiente() { Asistencia = EstadoAsistencia.Pendiente; }
 
     public void AplicarDescuento(decimal porcentaje)
     {

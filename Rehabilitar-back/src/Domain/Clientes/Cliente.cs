@@ -108,11 +108,17 @@ public class Cliente
 
     private void SuspenderCuenta()
     {
-        User.Suspender();
+        User?.Suspender();
     }
 
     public void ResetearInasistencias()
     {
         InasistenciasConsecutivas = 0;
+    }
+
+    public void RevertirInasistencia()
+    {
+        if (InasistenciasConsecutivas <= 0) return;
+        InasistenciasConsecutivas--;
     }
 }

@@ -140,6 +140,7 @@ public class UsuarioService : IUsuarioService
         if (request.NotificacionAplicacion.HasValue)
         {
             user.ActualizarPreferenciaNotificacion(request.NotificacionAplicacion.Value);
+            await _uow.SaveChangesAsync();
         }
 
         if (!string.IsNullOrEmpty(request.Rol))

@@ -1,9 +1,4 @@
 using Application.Actividades;
-using Application.Common.Interfaces;
-using Domain.Actividades;
-using Domain.Clientes;
-using Domain.Reservas;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,37 +39,7 @@ public class ActividadStateBackgroundService : BackgroundService
     private async Task ProcesarTransicionesAsync(CancellationToken ct)
     {
         using var scope = _serviceProvider.CreateScope();
-        var repositorio = scope.ServiceProvider.GetRequiredService<IActividadRepository>();
-        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var ahora = DateTime.UtcNow;
-
-        var actividadesAIniciar = await repositorio.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.Aprobada, ahora, ct);
-        foreach (var actividad in actividadesAIniciar)
-        {
-            actividad.IniciarClase();
-            _logger.LogInformation("Actividad {ActividadId} iniciada automáticamente.", actividad.Id);
-        }
-
-        var actividadesAFinalizar = await repositorio.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.EnCurso, ahora.AddHours(-2), ct);
-        foreach (var actividad in actividadesAFinalizar)
-        {
-            var clienteIds = actividad.Reservas
-                .Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa && r.Asistencia == EstadoAsistencia.Pendiente)
-                .Select(r => r.ClienteId)
-                .ToList();
-
-            var clientes = new List<Cliente>();
-            foreach (var clienteId in clienteIds)
-            {
-                if (actividad.Reservas.FirstOrDefault(r => r.ClienteId == clienteId)?.Cliente is { } cliente)
-                    clientes.Add(cliente);
-            }
-
-            actividad.FinalizarClase(clientes);
-            _logger.LogInformation("Actividad {ActividadId} finalizada automáticamente.", actividad.Id);
-        }
-
-        if (actividadesAIniciar.Count > 0 || actividadesAFinalizar.Count > 0)
-            await uow.SaveChangesAsync(ct);
+        var actividadService = scope.ServiceProvider.GetRequiredService<IActividadService>();
+        await actividadService.AplicarTransicionesDeEstadoAsync(ct);
     }
 }
