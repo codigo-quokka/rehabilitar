@@ -176,6 +176,13 @@ public class Actividad
 		
 	}
 
+	public void Aprobar()
+	{
+		if (Estado != EstadoActividad.Propuesta)
+			throw new InvalidOperationException("Solo se pueden aprobar actividades en estado Propuesta.");
+		Estado = EstadoActividad.Aprobada;
+	}
+
 	public void CancelarActividad()
 	{
 		if (Estado == EstadoActividad.Finalizada)

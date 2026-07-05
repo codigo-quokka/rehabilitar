@@ -17,6 +17,8 @@ interface RecurrenteGroupProps {
   onTomarActividad: (act: Actividad) => void;
   onVerReservas?: (act: Actividad) => void;
   onVerSuscriptores?: (actividadesGrupo: Actividad[]) => void;
+  onAprobar?: (act: Actividad) => void;
+  onEliminarPropuesta?: (act: Actividad) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
@@ -31,6 +33,8 @@ export function RecurrenteGroup({
   onSuccess,
   onVerReservas,
   onVerSuscriptores,
+  onAprobar,
+  onEliminarPropuesta,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
@@ -354,6 +358,16 @@ export function RecurrenteGroup({
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
               <Badge variant="recurrente">Recurrente</Badge>
+              {hasRole(["Administrador", "Profesor", "Recepción"]) && (
+                <Badge variant={
+                  first.estado === 'Cancelada' ? 'warning' :
+                  first.estado === 'EnCurso' ? 'info' :
+                  first.estado === 'Aprobada' ? 'success' :
+                  first.estado === 'Propuesta' ? 'amber' : 'default'
+                }>
+                  {first.estado}
+                </Badge>
+              )}
             </div>
             <Badge variant="info">
               {count} actividades
@@ -405,19 +419,57 @@ export function RecurrenteGroup({
                 >
                   Modificar todas
                 </Button>
-                <Button
-                  variant="violeta"
-                  className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleVerSuscriptores();
-                  }}
-                >
-                  Ver suscriptores
-                </Button>
+                {first.estado !== 'Propuesta' && (
+                  <Button
+                    variant="violeta"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVerSuscriptores();
+                    }}
+                  >
+                    Ver suscriptores
+                  </Button>
+                )}
               </div>
             )}
-            {hasRole(["Recepción"]) && onVerReservas && (
+            {hasRole(["Administrador"]) && first.estado === 'Propuesta' && (
+              <div className="flex gap-2">
+                {onAprobar && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAprobar(first);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-primary/20 text-dark-green hover:bg-primary/40 dark:bg-dark-green/30 dark:text-green-300 dark:hover:bg-dark-green/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary cursor-pointer"
+                    aria-label="Aprobar actividad"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Aprobar
+                  </button>
+                )}
+                {onEliminarPropuesta && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEliminarPropuesta(first);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-red-300 text-red-800 hover:bg-red-400 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 cursor-pointer"
+                    aria-label="Eliminar actividad"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            )}
+            {hasRole(["Recepción"]) && onVerReservas && first.estado !== 'Propuesta' && (
               <Button
                 variant="violeta"
                 className="w-full"
@@ -748,6 +800,8 @@ export function RecurrenteGroup({
                       setExpanded(false);
                       await cardProps.onTomarActividad(a);
                     }}
+                    onAprobar={onAprobar}
+                    onEliminarPropuesta={onEliminarPropuesta}
                   />
                 ))
               ) : (

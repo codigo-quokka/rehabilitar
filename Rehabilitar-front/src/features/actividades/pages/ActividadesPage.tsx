@@ -16,6 +16,7 @@ import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api
 import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
 import { useImportantNotification } from '../../../hooks/useImportantNotification';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { ActividadCard } from "../components/ActividadCard";
@@ -62,6 +63,11 @@ export function ActividadesPage() {
 
   const [showTomarConfirm, setShowTomarConfirm] = useState(false);
   const [tomarConfirmActividad, setTomarConfirmActividad] = useState<Actividad | null>(null);
+
+  const [showAprobarConfirm, setShowAprobarConfirm] = useState(false);
+  const [aprobarConfirmActividad, setAprobarConfirmActividad] = useState<Actividad | null>(null);
+  const [showEliminarPropuestaConfirm, setShowEliminarPropuestaConfirm] = useState(false);
+  const [eliminarPropuestaActividad, setEliminarPropuestaActividad] = useState<Actividad | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -148,6 +154,46 @@ export function ActividadesPage() {
       setToastMessage(msg);
       setShowToast(true);
     }
+  };
+
+  const handleAprobar = async (actividad: Actividad) => {
+    try {
+      await actividadesApi.aprobar(actividad.id);
+      fetchData();
+      await importantNotification({ type: 'success', message: 'Actividad aprobada exitosamente' });
+    } catch (err: any) {
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al aprobar actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
+  const handleConfirmarAprobar = async () => {
+    if (!aprobarConfirmActividad) return;
+    setShowAprobarConfirm(false);
+    await handleAprobar(aprobarConfirmActividad);
+    setAprobarConfirmActividad(null);
+  };
+
+  const handleEliminarPropuesta = async (actividad: Actividad) => {
+    try {
+      await actividadesApi.delete(actividad.id);
+      fetchData();
+      await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
+    } catch (err: any) {
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
+  const handleConfirmarEliminarPropuesta = async () => {
+    if (!eliminarPropuestaActividad) return;
+    setShowEliminarPropuestaConfirm(false);
+    await handleEliminarPropuesta(eliminarPropuestaActividad);
+    setEliminarPropuestaActividad(null);
   };
 
   const handleVerSuscriptores = async (actividadesGrupo: Actividad[]) => {
@@ -477,6 +523,14 @@ export function ActividadesPage() {
                 }}
                 onVerReservas={handleVerReservas}
                 onVerSuscriptores={handleVerSuscriptores}
+                onAprobar={(act) => {
+                  setAprobarConfirmActividad(act);
+                  setShowAprobarConfirm(true);
+                }}
+                onEliminarPropuesta={(act) => {
+                  setEliminarPropuestaActividad(act);
+                  setShowEliminarPropuestaConfirm(true);
+                }}
                 onError={(msg) => {
                   setToastType('error');
                   setToastMessage(msg);
@@ -504,6 +558,14 @@ export function ActividadesPage() {
                   setShowTomarConfirm(true);
                 }}
                 onVerReservas={handleVerReservas}
+                onAprobar={(act) => {
+                  setAprobarConfirmActividad(act);
+                  setShowAprobarConfirm(true);
+                }}
+                onEliminarPropuesta={(act) => {
+                  setEliminarPropuestaActividad(act);
+                  setShowEliminarPropuestaConfirm(true);
+                }}
               />
             ))}
           </div>
@@ -696,6 +758,24 @@ export function ActividadesPage() {
         onConfirm={handleConfirmarTomar}
         onCancel={() => { setShowTomarConfirm(false); setTomarConfirmActividad(null); }}
       />
+
+      <ConfirmActionModalVerde
+        isOpen={showAprobarConfirm}
+        title="Aprobar actividad"
+        body={`¿Estás seguro de que deseas aprobar la actividad "${aprobarConfirmActividad?.nombre}"?`}
+        confirmLabel="Aprobar"
+        onConfirm={handleConfirmarAprobar}
+        onCancel={() => { setShowAprobarConfirm(false); setAprobarConfirmActividad(null); }}
+      />
+
+      <ConfirmActionModal
+        isOpen={showEliminarPropuestaConfirm}
+        title="Eliminar actividad"
+        body={`¿Estás seguro de que deseas eliminar la actividad "${eliminarPropuestaActividad?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={handleConfirmarEliminarPropuesta}
+        onCancel={() => { setShowEliminarPropuestaConfirm(false); setEliminarPropuestaActividad(null); }}
+      />
     </MainLayout>
   );
 }
@@ -714,6 +794,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
   const importantNotification = useImportantNotification();
+  const { showToast } = useNotifications();
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -756,8 +837,9 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       await importantNotification({ type: 'success', message: 'Actividad cancelada exitosamente' });
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
-      onError(msg);
+      const apiError = err?.response?.data;
+      const msg = apiError?.errorCode || apiError?.error || err?.message || 'Error al eliminar actividad';
+      showToast(msg, 'error');
     } finally {
       setShowConfirmDeleteModal(false);
       setLoading(false);

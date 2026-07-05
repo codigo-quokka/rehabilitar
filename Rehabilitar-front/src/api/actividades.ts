@@ -44,6 +44,11 @@ export const actividadesApi = {
     return response.data;
   },
 
+  aprobar: async (id: string) => {
+    const response = await apiClient.put(`/actividades/${id}/aprobar`);
+    return response.data;
+  },
+
   asignarProfesor: async (id: string, profesorId: string) => {
     const response = await apiClient.put(`/actividades/${id}/asignar-profesor`, { profesorId });
     return response.data;
