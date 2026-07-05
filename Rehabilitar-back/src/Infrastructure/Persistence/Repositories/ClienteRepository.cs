@@ -8,6 +8,13 @@ public class ClienteRepository : RepositoryBase<Cliente>, IClienteRepository
 {
     public ClienteRepository(RehabilitarDbContext context) : base(context) { }
 
+    public override async Task<Cliente?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Clientes
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.UserId == id, ct);
+    }
+
     public async Task<Cliente?> GetByDniAsync(string dni, CancellationToken ct = default)
     {
         var dniValue = new Dni(dni);

@@ -753,7 +753,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
-      await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
+      await importantNotification({ type: 'success', message: 'Actividad cancelada exitosamente' });
       onClose();
     } catch (err: any) {
       const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';

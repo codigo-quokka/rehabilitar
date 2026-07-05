@@ -113,7 +113,7 @@ export function PerfilPage() {
   const [toastMessage, setToastMessage] = useState("");
   const importantNotification = useImportantNotification();
 
-  const [notificacionAplicacion, setNotificacionAplicacion] = useState(user?.notificacionAplicacion ?? true);
+  const notificacionAplicacion = user?.notificacionAplicacion ?? true;
   const [prefToggleLoading, setPrefToggleLoading] = useState(false);
 
   // New states for AptoFisico
@@ -147,9 +147,7 @@ export function PerfilPage() {
   const handlePrefToggle = async () => {
     if (!user || prefToggleLoading) return;
 
-    const previousValue = notificacionAplicacion;
-    const newValue = !previousValue;
-    setNotificacionAplicacion(newValue);
+    const newValue = !notificacionAplicacion;
     setPrefToggleLoading(true);
 
     try {
@@ -157,7 +155,6 @@ export function PerfilPage() {
       updateUser({ ...user, notificacionAplicacion: newValue });
       showToastMessage("Preferencia de notificación actualizada.", "success");
     } catch (err) {
-      setNotificacionAplicacion(previousValue);
       const errorCode = (err as any)?.response?.data?.error || "Error al actualizar la preferencia.";
       showToastMessage(errorCode, "error");
     } finally {

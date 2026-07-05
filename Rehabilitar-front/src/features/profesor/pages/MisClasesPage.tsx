@@ -220,6 +220,7 @@ export function MisClasesPage() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">—</td>
                           <td className="px-4 py-3">
+                            {acts.some(a => a.estado !== 'Cancelada') && (
                             <Button
                               variant="danger"
                               size="sm"
@@ -231,6 +232,7 @@ export function MisClasesPage() {
                             >
                               Darse de baja en todas
                             </Button>
+                            )}
                           </td>
                         </tr>
                         {isExpanded && sorted.map((act) => (
@@ -270,7 +272,13 @@ export function MisClasesPage() {
                                     variant="danger"
                                     size="sm"
                                     className="flex-1 min-w-0"
-                                    onClick={(e) => { e.stopPropagation(); setSelectedActividad(act); setShowConfirmModal(true); }}
+                                    disabled={act.estado === 'Cancelada'}
+                                    onClick={(e) => {
+                                      if (act.estado === 'Cancelada') return;
+                                      e.stopPropagation();
+                                      setSelectedActividad(act);
+                                      setShowConfirmModal(true);
+                                    }}
                                   >
                                     Baja
                                   </Button>
@@ -319,7 +327,12 @@ export function MisClasesPage() {
                               variant="danger"
                               size="sm"
                               className="flex-1 min-w-0"
-                              onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
+                              disabled={act.estado === 'Cancelada'}
+                              onClick={() => {
+                                if (act.estado === 'Cancelada') return;
+                                setSelectedActividad(act);
+                                setShowConfirmModal(true);
+                              }}
                             >
                               Baja
                             </Button>
