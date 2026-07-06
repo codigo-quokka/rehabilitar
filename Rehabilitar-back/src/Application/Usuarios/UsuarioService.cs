@@ -202,14 +202,15 @@ public class UsuarioService : IUsuarioService
         await _userManager.SetLockoutEnabledAsync(user, true);
         await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
 
-        try
-        {
-            await _emailService.SendCuentaSuspendidaEmail(user.Email!);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send suspension email for user {UserId}", id);
-        }
+        // TEMPORAL: Email deshabilitado por límite de resend
+        // try
+        // {
+        //     await _emailService.SendCuentaSuspendidaEmail(user.Email!);
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, "Failed to send suspension email for user {UserId}", id);
+        // }
         
         return Result.Success;
     }

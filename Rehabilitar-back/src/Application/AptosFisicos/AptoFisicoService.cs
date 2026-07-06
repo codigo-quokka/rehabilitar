@@ -1,7 +1,9 @@
 using Application.Clientes;
 using Application.Common.Interfaces;
+using Application.Notificaciones;
 using Domain.AptosFisicos;
 using ErrorOr;
+using Microsoft.Extensions.Logging;
 
 namespace Application.AptosFisicos;
 
@@ -11,16 +13,26 @@ public class AptoFisicoService : IAptoFisicoService
     private readonly IClienteRepository _clienteRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailService _emailService;
+    private readonly INotificacionService _notificacionService;
+    private readonly ILogger<AptoFisicoService> _logger;
 
     private static readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
     private const long MaxFileSize = 5 * 1024 * 1024; // 5 MB
 
-    public AptoFisicoService(IAptoFisicoRepository aptoFisicoRepository, IClienteRepository clienteRepository, IUnitOfWork unitOfWork, IEmailService emailService)
+    public AptoFisicoService(
+        IAptoFisicoRepository aptoFisicoRepository,
+        IClienteRepository clienteRepository,
+        IUnitOfWork unitOfWork,
+        IEmailService emailService,
+        INotificacionService notificacionService,
+        ILogger<AptoFisicoService> logger)
     {
         _aptoFisicoRepository = aptoFisicoRepository;
         _clienteRepository = clienteRepository;
         _unitOfWork = unitOfWork;
         _emailService = emailService;
+        _notificacionService = notificacionService;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<AptoFisicoResponse>> SubirAsync(Guid clienteId, Stream archivoStream, string nombreArchivo, string contentType)
@@ -93,7 +105,6 @@ public class AptoFisicoService : IAptoFisicoService
         {
             aptoFisico.Aprobar(evaluadoPor);
             aptoFisico.Cliente.AprobarAptoFisico(); // Actualiza el estado del cliente
-            await _emailService.SendAptoFisicoAprobadoEmail(aptoFisico.Cliente.User.Email!);
         }
         else
         {
@@ -104,10 +115,70 @@ public class AptoFisicoService : IAptoFisicoService
             aptoFisico.Rechazar(evaluadoPor, motivoRechazo);
             // Si se rechaza, el apto fisico del cliente no esta aprobado
             aptoFisico.Cliente.RechazarAptoFisico();
-            await _emailService.SendAptoFisicoRechazadoEmail(aptoFisico.Cliente.User.Email!, motivoRechazo);
         }
 
         await _unitOfWork.SaveChangesAsync();
+
+        // Notificaciones no bloqueantes
+        var userId = aptoFisico.Cliente.UserId;
+        var fechaStr = aptoFisico.FechaEvaluacion?.ToString("dd/MM/yyyy HH:mm") ?? "desconocida";
+
+        if (aprobado)
+        {
+            try
+            {
+                var notifResult = await _notificacionService.CrearNotificacionAsync(
+                    userId,
+                    "Apto físico aprobado",
+                    $"Tu apto físico ha sido aprobado el {fechaStr}.",
+                    default);
+
+                if (notifResult.IsError)
+                    _logger.LogWarning("Error al notificar aprobación de apto físico al usuario {UserId}: {Errors}", userId, string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Excepción al notificar aprobación de apto físico al usuario {UserId}", userId);
+            }
+
+            try
+            {
+                // TEMPORAL: Email deshabilitado por límite de resend
+                // await _emailService.SendAptoFisicoAprobadoEmail(aptoFisico.Cliente.User.Email!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email de aprobación de apto físico a {Email}", aptoFisico.Cliente.User?.Email);
+            }
+        }
+        else
+        {
+            try
+            {
+                var notifResult = await _notificacionService.CrearNotificacionAsync(
+                    userId,
+                    "Apto físico rechazado",
+                    $"Tu apto físico ha sido rechazado. Motivo: {motivoRechazo}",
+                    default);
+
+                if (notifResult.IsError)
+                    _logger.LogWarning("Error al notificar rechazo de apto físico al usuario {UserId}: {Errors}", userId, string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Excepción al notificar rechazo de apto físico al usuario {UserId}", userId);
+            }
+
+            try
+            {
+                // TEMPORAL: Email deshabilitado por límite de resend
+                // await _emailService.SendAptoFisicoRechazadoEmail(aptoFisico.Cliente.User.Email!, motivoRechazo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email de rechazo de apto físico a {Email}", aptoFisico.Cliente.User?.Email);
+            }
+        }
 
         return Result.Success;
     }

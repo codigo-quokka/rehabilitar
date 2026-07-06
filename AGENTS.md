@@ -33,8 +33,8 @@ This repository contains a management system for a kinesiology center, divided i
 | `SendPasswordResetEmail(userEmail, link)` | User requests password reset | `AuthService.EnviarEmailDeResetPassword()` |
 | `SendNewUserWithCredentialsEmail(userEmail, password)` | Admin creates a user with generated password | `UsuarioService.EnviarMailConCredenciales()` |
 | `SendPasswordChangedEmail(userEmail)` | User changes their password successfully | `AuthService.ChangePasswordAsync()` |
-| `SendAptoFisicoAprobadoEmail(userEmail)` | Apto físico is approved by admin | `AptoFisicoService.EvaluarAsync()` |
-| `SendAptoFisicoRechazadoEmail(userEmail, motivoRechazo)` | Apto físico is rejected by admin | `AptoFisicoService.EvaluarAsync()` |
+| `SendAptoFisicoAprobadoEmail(userEmail)` | Apto físico is approved by admin | `AptoFisicoService.EvaluarAsync()` ⚠️ |
+| `SendAptoFisicoRechazadoEmail(userEmail, motivoRechazo)` | Apto físico is rejected by admin | `AptoFisicoService.EvaluarAsync()` ⚠️ |
 | `SendReservaConfirmadaEmail(userEmail, nombreActividad, fechaActividad)` | Reservation payment confirmed (RehabiliCoins, MercadoPago, or manual) | `ReservaService.ConfirmarPagoReservaAsync()`, `PagarIntencionConRehabilicoinsAsync()`, `PagarIntencionConMercadoPagoAsync()` |
 | `SendPagoRegistradoEmail(userEmail, nombreActividad, fechaActividad, monto)` | Manual payment registered | `ReservaService.ConfirmarPagoReservaAsync()` |
 | `SendReservaCanceladaEmail(userEmail, nombreActividad, fechaActividad)` | Reservation cancelled (single or series) | `ReservaService.CancelarReservaAsync()`, `CancelarSerieReservasAsync()` |
@@ -42,7 +42,7 @@ This repository contains a management system for a kinesiology center, divided i
 | `SendCancelacionDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad, motivoCancelacion)` | Activity/series cancelled — notifies the assigned professor | `ActividadService.CancelarActividad()`, `CancelarSerie()` |
 | `SendOportunidadDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad)` | Professor removed from an activity | `ActividadService.RemoverProfesorActividad()` |
 | `SendProfesorAsignadoEmail(userEmail, nombreActividad, fechaActividad)` | Professor assigned when creating, editing, or explicitly assigning | `ActividadService.CrearActividad()`, `CrearActividadRecurrente()`, `EditarActividad()`, `AsignarProfesorActividad()` |
-| `SendCuentaSuspendidaEmail(userEmail)` | User account suspended | `UsuarioService.SuspenderAsync()` |
+| `SendCuentaSuspendidaEmail(userEmail)` | User account suspended | `UsuarioService.SuspenderAsync()` ⚠️ |
 | `SendCuentaReactivadaEmail(userEmail, ...)` | User account reactivated | `UsuarioService.ReactivarAsync()` |
 | `SendActividadModificadaParaClientesEmail(userEmail, nombreActividad, fechaActividad, descripcionCambios)` | Activity modified (name, room, or date/time changes) — notifies enrolled clients | `ActividadService.EditarActividad()` |
 | `SendActividadModificadaParaProfesoresEmail(userEmail, nombreActividad, fechaActividad, descripcionCambios)` | Activity modified (name, room, or date/time changes) — notifies assigned professor | `ActividadService.EditarActividad()` |
@@ -69,6 +69,21 @@ Notes:
 - The new professor also gets the standard `SendProfesorAsignadoEmail` + tray notification (via `EnviarEmailProfesorAsignado`).
 - Clients with cancelled reservations are **not** notified.
 - Notifications are non-blocking (wrapped in try/catch with `ILogger`), consistent with the rest of the system.
+
+### Temporarily Disabled Emails (⚠️)
+
+All emails marked with ⚠️ in the table above are wrapped in `// TEMPORAL: Email deshabilitado por límite de resend` comments.
+When the Resend service is available again, uncomment the following blocks:
+
+| File | Lines to uncomment |
+|------|-------------------|
+| `ActividadService.cs` — `EditarActividad()` | `SendActividadModificadaParaClientesEmail` for each client |
+| `ActividadService.cs` — `EditarActividad()` | `SendActividadModificadaParaProfesoresEmail` for current professor |
+| `ActividadService.cs` — `EditarActividad()` | `SendOportunidadDeActividadParaProfesoresEmail` for old professor |
+| `ActividadService.cs` — `EditarActividad()` | `SendProfesorAsignadoEmail` for new professor (in `EnviarEmailProfesorAsignado`) |
+| `AptoFisicoService.cs` — `EvaluarAsync()` | `SendAptoFisicoAprobadoEmail` |
+| `AptoFisicoService.cs` — `EvaluarAsync()` | `SendAptoFisicoRechazadoEmail` |
+| `UsuarioService.cs` — `SuspenderAsync()` | `SendCuentaSuspendidaEmail` |
 
 ### notificacionAplicacion (In-App Notification Preference)
 - **Entity field**: `User.NotificacionAplicacion` (`bool`, default `true`)

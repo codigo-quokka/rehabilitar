@@ -1,11 +1,13 @@
 using Application.AptosFisicos;
 using Application.Clientes;
 using Application.Common.Interfaces;
+using Application.Notificaciones;
 using Domain.AptosFisicos;
 using Domain.Clientes;
 using Domain.Users;
 using ErrorOr;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Application.UnitTests.AptosFisicos;
@@ -16,6 +18,8 @@ public class AptoFisicoServiceTests
     private readonly Mock<IClienteRepository> _clienteRepoMock;
     private readonly Mock<IUnitOfWork> _uowMock;
     private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<INotificacionService> _notificacionServiceMock;
+    private readonly Mock<ILogger<AptoFisicoService>> _loggerMock;
     private readonly AptoFisicoService _sut;
 
     public AptoFisicoServiceTests()
@@ -24,12 +28,16 @@ public class AptoFisicoServiceTests
         _clienteRepoMock = new Mock<IClienteRepository>();
         _uowMock = new Mock<IUnitOfWork>();
         _emailServiceMock = new Mock<IEmailService>();
+        _notificacionServiceMock = new Mock<INotificacionService>();
+        _loggerMock = new Mock<ILogger<AptoFisicoService>>();
 
         _sut = new AptoFisicoService(
             _aptoFisicoRepoMock.Object,
             _clienteRepoMock.Object,
             _uowMock.Object,
-            _emailServiceMock.Object);
+            _emailServiceMock.Object,
+            _notificacionServiceMock.Object,
+            _loggerMock.Object);
     }
 
     [Fact]
@@ -57,7 +65,7 @@ public class AptoFisicoServiceTests
 
         // Assert
         result.IsError.Should().BeFalse();
-        _emailServiceMock.Verify(x => x.SendAptoFisicoAprobadoEmail(user.Email!), Times.Once);
+        _notificacionServiceMock.Verify(x => x.CrearNotificacionAsync(clienteId, It.IsAny<string>(), It.IsAny<string>(), default), Times.Once);
         _uowMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }
 
@@ -87,7 +95,7 @@ public class AptoFisicoServiceTests
 
         // Assert
         result.IsError.Should().BeFalse();
-        _emailServiceMock.Verify(x => x.SendAptoFisicoRechazadoEmail(user.Email!, motivo), Times.Once);
+        _notificacionServiceMock.Verify(x => x.CrearNotificacionAsync(clienteId, It.IsAny<string>(), It.IsAny<string>(), default), Times.Once);
         _uowMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }
 
