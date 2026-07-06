@@ -149,7 +149,8 @@ export function ActividadesPage() {
       await importantNotification({ type: 'success', message: 'Te has asignado a la actividad exitosamente' });
     } catch (err) {
       console.error('Error al tomar la actividad', err);
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
+      const data = (err as { response?: { data?: { error?: string; errorCode?: string } } })?.response?.data;
+      const msg = data?.error || data?.errorCode || (err as Error)?.message || 'Error al tomar la actividad';
       setToastType('error');
       setToastMessage(msg);
       setShowToast(true);
@@ -1150,7 +1151,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       )}
 
       <div className={`flex gap-3 pt-4 ${isEditing ? 'justify-between' : 'justify-end'}`}>
-        {isEditing && (
+        {isEditing && actividad?.estado === 'Aprobada' && (
           <Button
             variant="rojo"
             type="button"

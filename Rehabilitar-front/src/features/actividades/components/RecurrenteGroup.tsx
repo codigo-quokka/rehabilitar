@@ -324,7 +324,7 @@ export function RecurrenteGroup({
     if (failed.length > 0) {
       const reasons = failed.map(r => {
         const err = (r as PromiseRejectedResult).reason;
-        return err?.response?.data?.error || err?.message || 'Error desconocido';
+        return err?.response?.data?.error || err?.response?.data?.errorCode || err?.message || 'Error desconocido';
       });
       onError?.(`${failed.length} actividad(es) no pudieron asignarse: ${reasons[0]}`);
     }
@@ -407,7 +407,7 @@ export function RecurrenteGroup({
           <div className="flex-1" />
 
           <div className="flex flex-col gap-2">
-            {hasRole(["Administrador"]) && first.estado !== 'Cancelada' && (
+            {hasRole(["Administrador"]) && first.estado !== 'Cancelada' && first.estado !== 'Finalizada' && (
               <div className="flex gap-2">
                 <Button
                   variant="primary"
