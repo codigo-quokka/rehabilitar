@@ -57,6 +57,12 @@ public class SeedingService : ISeedingService
 
     public async Task SeedAsync()
     {
+        // Limpiar datos transientes de ejecuciones anteriores para evitar actividades huérfanas
+        _dbContext.Reservas.RemoveRange(_dbContext.Reservas);
+        _dbContext.Set<AptoFisico>().RemoveRange(_dbContext.Set<AptoFisico>());
+        _dbContext.Actividades.RemoveRange(_dbContext.Actividades);
+        await _dbContext.SaveChangesAsync();
+
         await SeedReceptionAsync("recepcion@rehabilitar.com", "Recepcion", "Receptionist");
         
         await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566", rehabiliCoins: 500);
@@ -99,7 +105,7 @@ public class SeedingService : ISeedingService
         var steve = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "steve@rogers.com");
         var natasha = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "natasha@romanoff.com");
         var now = DateTime.Today;
-        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(1), 10, salaA.Id, peter.UserId);
+        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddMinutes(40), 10, salaA.Id, peter.UserId);
         await SeedActividadAsync("Recuperación Funcional", "Ejercicios para la recuperación de funciones motoras", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(2), 10, salaE.Id, peter.UserId);
         await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
         await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
@@ -114,6 +120,21 @@ public class SeedingService : ISeedingService
         await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
         await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
         await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+
+        // --- Datos para testing de escenarios con Peter Parker ---
+        // ESCENARIO 4: esporádica sin profesor, misma hora que "Yoga Terapéutico" (now+1h, donde Peter ya está asignado)
+        await SeedActividadAsync("Test S4 - Conflicto horario", "Coincide con Yoga Terapéutico de Peter",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Now.AddHours(1), 10, salaC.Id);
+        // ESCENARIO 3: Peter ya tiene actividad que choca con la 1ra instancia de "Rehabilitación de Hombro" (tomorrow+10h)
+        await SeedActividadAsync("Test S3 - Clase conflictiva", "Choca con la primera fecha de Rehab de Hombro",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Today.AddDays(1).AddHours(10), 10, salaE.Id, peter.UserId);
+        // ESCENARIO 1: esporádica sin profesor en horario libre (Peter no tiene nada a día+5 14h)
+        await SeedActividadAsync("Test S1 - Alta exitosa", "Esporádica disponible para tomar",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Today.AddDays(5).AddHours(14), 10, salaD.Id);
+
         await SeedReservasAsync();
     }
 

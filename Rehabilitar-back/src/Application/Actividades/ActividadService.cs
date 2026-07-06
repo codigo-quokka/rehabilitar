@@ -210,7 +210,7 @@ public class ActividadService : IActividadService
             .ToList() ?? [];
 
         if (reservasActivas.Count != 0)
-            return Error.Conflict("No se puede cancelar una actividad con clientes inscriptos.");
+            return Error.Conflict(description: "No se puede cancelar una actividad con clientes inscriptos.");
 
         actividad.CancelarActividad();
         await _uow.SaveChangesAsync(ct);
@@ -334,7 +334,7 @@ public class ActividadService : IActividadService
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         if (actividad.ProfesorId.HasValue && actividad.ProfesorId.Value != Guid.Empty)
-            return Error.Conflict("La actividad ya tiene un profesor asignado.");
+            return Error.Conflict(description: "La actividad ya tiene un profesor asignado.");
 
         var profesor = await _profesorRepo.GetByIdAsync(request.ProfesorId, ct);
         if (profesor == null)
@@ -344,7 +344,7 @@ public class ActividadService : IActividadService
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
         if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
-            return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
+            return Error.Conflict(description: "El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
         await _uow.SaveChangesAsync(ct);
@@ -455,6 +455,16 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
+        if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso)
+            return Error.Validation(code: "ACTIVIDAD_NO_DISPONIBLE", description: "La actividad no está disponible para registrar asistencia");
+
+        var ahora = DateTime.UtcNow;
+        var inicioVentana = actividad.FechaYHora.AddHours(-1);
+        var finVentana = actividad.FechaYHora.AddHours(2);
+
+        if (ahora < inicioVentana || ahora > finVentana)
+            return Error.Validation(code: "FUERA_DE_VENTANA_HORARIA", description: "Solo se puede registrar asistencia desde 1 hora antes hasta 2 horas después del inicio de la actividad");
+
         var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
         if (reserva == null)
             return Error.NotFound(code: "SIN_RESERVA", description: "El cliente no tiene una reserva activa para esta clase");
@@ -523,7 +533,7 @@ public class ActividadService : IActividadService
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
-            return Error.Conflict($"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+            return Error.Conflict(description: $"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
         if (profesorId.HasValue)
@@ -537,7 +547,7 @@ public class ActividadService : IActividadService
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
             if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
-                return Error.Conflict($"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+                return Error.Conflict(description: $"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
         }
 
         return Result.Success;

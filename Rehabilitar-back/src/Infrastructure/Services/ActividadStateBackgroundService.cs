@@ -46,8 +46,8 @@ public class ActividadStateBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var repositorio = scope.ServiceProvider.GetRequiredService<IActividadRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var ahora = DateTime.UtcNow;
-
+        var ahora = DateTime.Now;
+        _logger.LogInformation("Estado actual: {Ahora:yyyy-MM-dd HH:mm:ss}", ahora);
         var actividadesAIniciar = await repositorio.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.Aprobada, ahora, ct);
         foreach (var actividad in actividadesAIniciar)
         {
@@ -55,7 +55,7 @@ public class ActividadStateBackgroundService : BackgroundService
             _logger.LogInformation("Actividad {ActividadId} iniciada automáticamente.", actividad.Id);
         }
 
-        var actividadesAFinalizar = await repositorio.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.EnCurso, ahora.AddHours(-2), ct);
+        var actividadesAFinalizar = await repositorio.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.EnCurso, ahora.AddHours(-1), ct);
         foreach (var actividad in actividadesAFinalizar)
         {
             var clienteIds = actividad.Reservas

@@ -103,7 +103,7 @@ export function ActividadCard({
         )}
         {hasRole(["Administrador"]) && onVerReservas && (
           <div className="flex gap-2">
-            {act.estado !== 'Cancelada' && (
+            {act.estado !== 'Cancelada' && act.estado !== 'Finalizada' && (
               <Button
                 variant="primary"
                 className="flex-1"
@@ -123,7 +123,7 @@ export function ActividadCard({
             )}
           </div>
         )}
-        {hasRole(["Administrador"]) && !onVerReservas && act.estado !== 'Cancelada' && (
+        {hasRole(["Administrador"]) && !onVerReservas && act.estado !== 'Cancelada' && act.estado !== 'Finalizada' && (
           <Button
             variant="primary"
             className="w-full"
