@@ -262,6 +262,7 @@ export function MisClasesPage() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">—</td>
                           <td className="px-4 py-3">
+                            {acts.some(a => a.estado !== 'Cancelada') && (
                             <Button
                               variant="danger"
                               size="sm"
@@ -275,6 +276,7 @@ export function MisClasesPage() {
                             >
                               Darse de baja en todas
                             </Button>
+                            )}
                           </td>
                         </tr>
                         {isExpanded && sorted.map((act) => (

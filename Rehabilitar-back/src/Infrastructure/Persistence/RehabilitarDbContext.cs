@@ -115,6 +115,10 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                   .WithMany(p => p.ActividadesAsignadas)
                   .HasForeignKey(a => a.ProfesorId)
                   .OnDelete(DeleteBehavior.SetNull);
+            entity.HasMany(a => a.Reservas)
+                  .WithOne(r => r.Actividad)
+                  .HasForeignKey(r => r.ActividadId)
+                  .OnDelete(DeleteBehavior.ClientCascade);
         });
 
         builder.Entity<Sala>(entity =>

@@ -412,6 +412,7 @@ export function RecurrenteGroup({
                 <Button
                   variant="primary"
                   className="flex-1"
+                  disabled={first.estado === 'EnCurso' || first.estado === 'Finalizada'}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleOpenEditGroup();

@@ -82,6 +82,27 @@ public class Actividad
 		}
 	}
 
+	public void RevertirInicio()
+	{
+		if (Estado != EstadoActividad.EnCurso)
+			throw new InvalidOperationException("Solo se puede revertir el inicio de una actividad en curso.");
+		Estado = EstadoActividad.Aprobada;
+	}
+
+	public void RevertirFin()
+	{
+		if (Estado != EstadoActividad.Finalizada)
+			throw new InvalidOperationException("Solo se puede revertir la finalización de una actividad finalizada.");
+		Estado = EstadoActividad.EnCurso;
+
+		foreach (var reserva in Reservas.Where(r => r.Asistencia == EstadoAsistencia.Ausente))
+		{
+			reserva.MarcarPendiente();
+			if (reserva.Cliente != null)
+				reserva.Cliente.RevertirInasistencia();
+		}
+	}
+
 	public void FinalizarClase(IEnumerable<Cliente> clientes)
 	{
 		Estado = EstadoActividad.Finalizada;
@@ -187,6 +208,8 @@ public class Actividad
 	{
 		if (Estado == EstadoActividad.Finalizada)
 			throw new InvalidOperationException("No se puede cancelar una actividad que ya está finalizada.");
+		if (Estado == EstadoActividad.EnCurso)
+			throw new InvalidOperationException("No se puede cancelar una actividad que ya está en curso.");
 		Estado = EstadoActividad.Cancelada;
 
 		foreach (var reserva in Reservas.Where(r =>
