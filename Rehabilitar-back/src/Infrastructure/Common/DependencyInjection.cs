@@ -101,8 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IIntencionPagoRepository, IntencionPagoRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
-        // TEMPORAL: Background service deshabilitado para pruebas
-        // services.AddHostedService<ActividadStateBackgroundService>();
+        services.AddHostedService<ActividadStateBackgroundService>();
         services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();

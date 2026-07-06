@@ -738,7 +738,7 @@ public class ActividadService : IActividadService
 
     public async Task AplicarTransicionesDeEstadoAsync(CancellationToken ct = default)
     {
-        var ahora = DateTime.UtcNow;
+        var ahora = DateTime.Now;
         var anyChange = false;
 
         var aIniciar = await _actividadRepo.ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad.Aprobada, ahora, ct);

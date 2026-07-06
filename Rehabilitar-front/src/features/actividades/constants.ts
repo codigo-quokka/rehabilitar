@@ -23,5 +23,6 @@ export const estadoLabel: Record<string, string> = {
   Propuesta: 'Propuesta',
   Aprobada: 'Aprobada',
   EnCurso: 'En Curso',
+  Finalizada: 'Finalizada',
   Cancelada: 'Cancelada',
 };
