@@ -182,7 +182,13 @@ public class ActividadService : IActividadService
         
         if (validacion.IsError)
             return validacion.Errors;
-        
+
+        // Capturar datos originales ANTES de modificar
+        var oldNombre = actividad.Nombre;
+        var oldSalaId = actividad.SalaId;
+        var oldFecha = actividad.FechaYHora;
+        var oldProfesorId = actividad.ProfesorId;
+
         Actividad actividadEditada = Actividad.Create(
             request.Nombre,
             request.Descripcion,
@@ -197,14 +203,131 @@ public class ActividadService : IActividadService
             request.SerieId 
         );
 
-        var oldProfesorId = actividad.ProfesorId;
-
         actividad.ModificarActividad(actividadEditada);
         await _uow.SaveChangesAsync(ct);
 
-        if (request.ProfesorId.HasValue && request.ProfesorId != oldProfesorId)
+        // --- NOTIFICACIONES ---
+        var fechaStr = actividad.FechaYHora.ToString("dd/MM/yyyy HH:mm");
+        var actividadNombre = actividad.Nombre;
+        var actividadFecha = actividad.FechaYHora;
+
+        var cambios = new List<string>();
+        if (request.Nombre != oldNombre)
+            cambios.Add($"Nombre: \"{oldNombre}\" → \"{request.Nombre}\"");
+        if (request.SalaId != oldSalaId)
         {
-            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividad.Nombre, actividad.FechaYHora, ct);
+            cambios.Add("Sala modificada");
+        }
+        if (request.FechaYHora != oldFecha)
+            cambios.Add($"Fecha y hora: {oldFecha:dd/MM/yyyy HH:mm} → {request.FechaYHora:dd/MM/yyyy HH:mm}");
+
+        var descripcionCambios = string.Join("; ", cambios);
+        bool hayCambiosEnActividad = cambios.Count > 0;
+        bool hayCambioDeProfesor = request.ProfesorId != oldProfesorId;
+
+        if (hayCambiosEnActividad || hayCambioDeProfesor)
+        {
+            // Notificar a clientes con reservas activas
+            var clientesANotificar = actividad.Reservas?
+                .Where(r => r.EstadoDeReserva != EstadoDeReserva.Cancelada && r.Cliente != null)
+                .Select(r => (Email: r.Cliente!.User?.Email, UserId: r.Cliente!.UserId))
+                .Where(x => x.UserId != Guid.Empty)
+                .ToList() ?? new List<(string? Email, Guid UserId)>();
+
+            foreach (var (email, userId) in clientesANotificar)
+            {
+                try
+                {
+                    // TEMPORAL: Email deshabilitado por límite de resend
+                    // if (email != null)
+                    // {
+                    //     await _emailService.SendActividadModificadaParaClientesEmail(
+                    //         email, actividadNombre, actividadFecha, descripcionCambios);
+                    // }
+
+                    var notifResult = await _notificacionService.CrearNotificacionAsync(
+                        userId,
+                        "Actividad modificada",
+                        $"La actividad \"{actividadNombre}\" del {fechaStr} ha sido modificada.{(descripcionCambios.Length > 0 ? " Cambios: " + descripcionCambios : "")}",
+                        ct);
+
+                    if (notifResult.IsError)
+                        _logger.LogWarning("Error al notificar cliente {UserId}: {Errors}", userId, string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Excepción al notificar cliente {UserId}", userId);
+                }
+            }
+
+            // Notificar al profesor actual si hay cambios en la actividad (no por cambio de profesor)
+            if (hayCambiosEnActividad && actividad.ProfesorId.HasValue)
+            {
+                var profesor = await _profesorRepo.GetByIdAsync(actividad.ProfesorId.Value, ct);
+                if (profesor?.User != null)
+                {
+                    try
+                    {
+                        // TEMPORAL: Email deshabilitado por límite de resend
+                        // if (profesor.User.Email != null)
+                        // {
+                        //     await _emailService.SendActividadModificadaParaProfesoresEmail(
+                        //         profesor.User.Email, actividadNombre, actividadFecha, descripcionCambios);
+                        // }
+
+                        var notifResult = await _notificacionService.CrearNotificacionAsync(
+                            profesor.UserId,
+                            "Actividad modificada",
+                            $"La actividad \"{actividadNombre}\" del {fechaStr} a la que estás asignado ha sido modificada. Cambios: {descripcionCambios}",
+                            ct);
+
+                        if (notifResult.IsError)
+                            _logger.LogWarning("Error al notificar profesor {UserId}: {Errors}", profesor.UserId, string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Excepción al notificar profesor {ActividadId}", id);
+                    }
+                }
+            }
+        }
+
+        // Notificar al nuevo profesor si fue asignado
+        if (hayCambioDeProfesor && request.ProfesorId.HasValue)
+        {
+            // TEMPORAL: Email deshabilitado por límite de resend (el tray se envía dentro del helper)
+            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividadNombre, actividadFecha, ct);
+        }
+
+        // Notificar al profesor anterior que fue desasignado
+        if (hayCambioDeProfesor && oldProfesorId.HasValue)
+        {
+            try
+            {
+                var oldProfesor = await _profesorRepo.GetByIdAsync(oldProfesorId.Value, ct);
+                if (oldProfesor?.User != null)
+                {
+                    // TEMPORAL: Email deshabilitado por límite de resend
+                    // if (oldProfesor.User.Email != null)
+                    // {
+                    //     await _emailService.SendOportunidadDeActividadParaProfesoresEmail(
+                    //         oldProfesor.User.Email, actividadNombre, actividadFecha);
+                    // }
+
+                    var notifResult = await _notificacionService.CrearNotificacionAsync(
+                        oldProfesor.UserId,
+                        "Actividad reasignada",
+                        $"Ya no estás asignado a la actividad \"{actividadNombre}\" del {fechaStr}.",
+                        ct);
+
+                    if (notifResult.IsError)
+                        _logger.LogWarning("Error al notificar profesor anterior {UserId}: {Errors}", oldProfesor.UserId, string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Excepción al notificar profesor anterior {ActividadId}", id);
+            }
         }
 
         return await MapToDto(actividad, ct);
@@ -648,10 +771,11 @@ public class ActividadService : IActividadService
         try
         {
             var profesor = await _profesorRepo.GetByIdAsync(profesorId, ct);
-            if (profesor?.User?.Email != null)
-            {
-                await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, nombreActividad, fechaActividad);
-            }
+            // TEMPORAL: Email deshabilitado por límite de resend
+            // if (profesor?.User?.Email != null)
+            // {
+            //     await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, nombreActividad, fechaActividad);
+            // }
 
             if (profesor != null)
             {
