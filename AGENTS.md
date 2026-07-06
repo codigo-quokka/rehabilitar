@@ -40,17 +40,18 @@ This repository contains a management system for a kinesiology center, divided i
 | `SendReservaCanceladaEmail(userEmail, nombreActividad, fechaActividad)` | Reservation cancelled (single or series) | `ReservaService.CancelarReservaAsync()`, `CancelarSerieReservasAsync()` |
 | `SendCancelacionDeActividadParaClientesEmail(userEmail, nombreActividad, fechaActividad, motivoCancelacion)` | Activity/series cancelled — notifies clients with reservations | `ActividadService.CancelarActividad()`, `CancelarSerie()` |
 | `SendCancelacionDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad, motivoCancelacion)` | Activity/series cancelled — notifies the assigned professor | `ActividadService.CancelarActividad()`, `CancelarSerie()` |
-| `SendOportunidadDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad)` | Professor removed from an activity | `ActividadService.RemoverProfesorActividad()` |
+| `SendOportunidadDeActividadParaProfesoresEmail(userEmail, nombreActividad, fechaActividad)` | Professor removed from an activity — notifies other professors with same specialty | `ActividadService.RemoverProfesorActividad()` ⚠️ |
 | `SendProfesorAsignadoEmail(userEmail, nombreActividad, fechaActividad)` | Professor assigned when creating, editing, or explicitly assigning | `ActividadService.CrearActividad()`, `CrearActividadRecurrente()`, `EditarActividad()`, `AsignarProfesorActividad()` |
 | `SendCuentaSuspendidaEmail(userEmail)` | User account suspended | `UsuarioService.SuspenderAsync()` ⚠️ |
-| `SendCuentaReactivadaEmail(userEmail, ...)` | User account reactivated | `UsuarioService.ReactivarAsync()` |
+| `SendCuentaReactivadaEmail(userEmail, ...)` | User account reactivated | `UsuarioService.ReactivarAsync()` ⚠️ |
 | `SendActividadModificadaParaClientesEmail(userEmail, nombreActividad, fechaActividad, descripcionCambios)` | Activity modified (name, room, or date/time changes) — notifies enrolled clients | `ActividadService.EditarActividad()` |
 | `SendActividadModificadaParaProfesoresEmail(userEmail, nombreActividad, fechaActividad, descripcionCambios)` | Activity modified (name, room, or date/time changes) — notifies assigned professor | `ActividadService.EditarActividad()` |
 
-### Important: Asignar-Profesor vs Editar endpoint
+### Important: Asignar-Profesor vs Editar vs Remover endpoint
 - `PUT /api/actividades/{id}/asignar-profesor` → `AsignarProfesorActividad()` — ONLY works if the activity has no professor yet (returns Conflict otherwise).
 - `PUT /api/actividades/{id}` → `EditarActividad()` — used by the frontend edit form. Also triggers the professor-assigned email if `ProfesorId` changes.
 - `POST /api/actividades` and `POST /api/actividades/recurrente` also trigger the email when a `ProfesorId` is provided at creation.
+- `PUT /api/actividades/{id}/remover-profesor` → `RemoverProfesorActividad()` — professor self-unregisters. Notifies other professors of same specialty via tray (email commented). No tray or email to the unregistering professor (frontend shows success toast).
 
 ### EditarActividad Notification Behavior
 - **Blocks editing** if `Estado == EnCurso` or `Finalizada`.
@@ -84,6 +85,8 @@ When the Resend service is available again, uncomment the following blocks:
 | `AptoFisicoService.cs` — `EvaluarAsync()` | `SendAptoFisicoAprobadoEmail` |
 | `AptoFisicoService.cs` — `EvaluarAsync()` | `SendAptoFisicoRechazadoEmail` |
 | `UsuarioService.cs` — `SuspenderAsync()` | `SendCuentaSuspendidaEmail` |
+| `UsuarioService.cs` — `ReactivarAsync()` | `SendCuentaReactivadaEmail` |
+| `ActividadService.cs` — `RemoverProfesorActividad()` | `SendOportunidadDeActividadParaProfesoresEmail` for each other professor with same specialty |
 
 ### notificacionAplicacion (In-App Notification Preference)
 - **Entity field**: `User.NotificacionAplicacion` (`bool`, default `true`)

@@ -552,26 +552,61 @@ public class ActividadService : IActividadService
         if (actividad.FechaYHora <= DateTime.UtcNow.AddHours(24))
             return Error.Conflict(code: "Profesor.BajaConMenosDe24Horas", description: "No puedes darte de baja de una actividad que comienza en menos de 24 horas.");
 
-        var removedProfesorId = actividad.ProfesorId;
-
         actividad.RemoverProfesor();
         await _uow.SaveChangesAsync(ct);
 
-        if (removedProfesorId.HasValue)
+        // Notificar a otros profesores con la misma especialidad
+        var actividadNombre = actividad.Nombre;
+        var actividadFecha = actividad.FechaYHora;
+        var fechaStr = actividadFecha.ToString("dd/MM/yyyy HH:mm");
+
+        try
         {
-            try
+            var otrosProfesores = await _profesorRepo.GetByEspecialidadAsync(actividad.Tipo, ct);
+            var otrosProfesoresFiltrados = otrosProfesores
+                .Where(p => p.UserId != request.ProfesorId)
+                .ToList();
+
+            foreach (var profe in otrosProfesoresFiltrados)
             {
-                var removedProfesor = await _profesorRepo.GetByIdAsync(removedProfesorId.Value, ct);
-                if (removedProfesor?.User?.Email != null)
+                if (profe.User != null)
                 {
-                    await _emailService.SendOportunidadDeActividadParaProfesoresEmail(
-                        removedProfesor.User.Email, actividad.Nombre, actividad.FechaYHora);
+                    // TEMPORAL: Email deshabilitado por límite de resend
+                    // if (profe.User.Email != null)
+                    // {
+                    //     try
+                    //     {
+                    //         await _emailService.SendOportunidadDeActividadParaProfesoresEmail(
+                    //             profe.User.Email, actividadNombre, actividadFecha);
+                    //     }
+                    //     catch (Exception ex)
+                    //     {
+                    //         _logger.LogError(ex, "Failed to send opportunity email to profesor {UserId}", profe.UserId);
+                    //     }
+                    // }
+
+                    try
+                    {
+                        var notifResult = await _notificacionService.CrearNotificacionAsync(
+                            profe.UserId,
+                            "Oportunidad de actividad",
+                            $"La actividad \"{actividadNombre}\" del {fechaStr} está disponible para ser tomada.",
+                            ct);
+
+                        if (notifResult.IsError)
+                            _logger.LogWarning("Error al notificar oportunidad al profesor {UserId}: {Errors}", profe.UserId,
+                                string.Join(", ", notifResult.Errors.Select(e => e.Description)));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Excepción al notificar oportunidad al profesor {UserId}", profe.UserId);
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send activity opportunity email for actividad {ActividadId}", id);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al notificar a otros profesores tras baja del profesor {ProfesorId}", request.ProfesorId);
         }
 
         return await MapToDto(actividad, ct);
