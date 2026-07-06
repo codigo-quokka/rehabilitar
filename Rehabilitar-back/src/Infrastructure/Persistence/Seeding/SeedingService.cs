@@ -98,6 +98,13 @@ public class SeedingService : ISeedingService
         await SeedSalaAsync(salaD);
         await SeedSalaAsync(salaE);
 
+        // Reload from DB so local variables have the actual SalaIds (they may differ if Salas already existed)
+        salaA = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A"))!;
+        salaB = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B"))!;
+        salaC = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C"))!;
+        salaD = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D"))!;
+        salaE = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E"))!;
+
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
@@ -105,23 +112,26 @@ public class SeedingService : ISeedingService
         var steve = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "steve@rogers.com");
         var natasha = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "natasha@romanoff.com");
         var now = DateTime.Today;
-        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddMinutes(40), 10, salaA.Id, peter.UserId);
-        await SeedActividadAsync("Recuperación Funcional", "Ejercicios para la recuperación de funciones motoras", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(2), 10, salaE.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
-        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
-        await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, DateTime.Now.AddHours(3), 25, salaD.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, DateTime.Now.AddHours(4), 12, 1000, salaE.Id, clark.UserId, DateTime.Now.AddHours(4).AddDays(30));
-        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
-        await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(4).AddHours(16), 20, salaB.Id, clark.UserId);
-        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
-        await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
-        await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(15), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(6).AddHours(15).AddDays(45));
-        await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
-        await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
-        await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
-
-        // --- Datos para testing de escenarios con Peter Parker ---
+        Console.WriteLine("--- INICIO seed de actividades ---");
+        try
+        {
+            await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(1), 10, salaA.Id, peter.UserId);
+            await SeedActividadAsync("Recuperación Funcional", "Ejercicios para la recuperación de funciones motoras", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(2), 10, salaE.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
+            await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
+            await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, DateTime.Now.AddHours(3), 25, salaD.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, DateTime.Now.AddHours(4), 12, 1000, salaE.Id, clark.UserId, DateTime.Now.AddHours(4).AddDays(30));
+            await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
+            await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(4).AddHours(16), 20, salaB.Id, clark.UserId);
+            await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
+            await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
+            await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(15), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(6).AddHours(15).AddDays(45));
+            await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
+            await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
+            await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+            // --- Datos para testing de escenarios con Peter Parker ---
+        Console.WriteLine("--- INICIO seed de actividades de test ---");
         // ESCENARIO 4: esporádica sin profesor, misma hora que "Yoga Terapéutico" (now+1h, donde Peter ya está asignado)
         await SeedActividadAsync("Test S4 - Conflicto horario", "Coincide con Yoga Terapéutico de Peter",
             TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
@@ -134,6 +144,16 @@ public class SeedingService : ISeedingService
         await SeedActividadAsync("Test S1 - Alta exitosa", "Esporádica disponible para tomar",
             TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
             DateTime.Today.AddDays(5).AddHours(14), 10, salaD.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FATAL] Error en seed de actividades: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+        }
+        Console.WriteLine("--- FIN seed de actividades principales ---");
+
+        
+        Console.WriteLine("--- FIN seed de actividades de test ---");
 
         await SeedReservasAsync();
     }
@@ -309,14 +329,25 @@ public class SeedingService : ISeedingService
         if (await _dbContext.Actividades.AnyAsync(a =>
             a.FechaYHora.Equals(fechaYHora) &&
             a.SalaId.Equals(salaId)))
-                return;
+        {
+            Console.WriteLine($"[SKIP] '{nombre}' ya existe (sala={salaId} fecha={fechaYHora:yyyy-MM-dd HH:mm})");
+            return;
+        }
 
-        Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
-                                            estado, fechaYHora, cupoMaximo, 1000, salaId,
-                                            profesorId, serieId);
+        try
+        {
+            Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
+                                                estado, fechaYHora, cupoMaximo, 1000, salaId,
+                                                profesorId, serieId);
 
-        _dbContext.Actividades.Add(actividad);
-        await _dbContext.SaveChangesAsync();
+            _dbContext.Actividades.Add(actividad);
+            await _dbContext.SaveChangesAsync();
+            Console.WriteLine($"[OK] '{nombre}' creada (sala={salaId} fecha={fechaYHora:yyyy-MM-dd HH:mm})");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] '{nombre}': {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     private async Task SeedActividadRecurrenteAsync(string nombre, string descripcion, TipoEspecialidad tipo,
@@ -339,15 +370,22 @@ public class SeedingService : ISeedingService
             FechaFinRecurrente: fechaFinRecurrente
         );
 
-        var result = await _actividadService.CrearActividadRecurrente(request);
+        try
+        {
+            var result = await _actividadService.CrearActividadRecurrente(request);
 
-        if (result.IsError)
-        {
-            Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+            if (result.IsError)
+            {
+                Console.WriteLine($"Error al seedear actividad recurrente '{nombre}': {string.Join(", ", result.Errors)}");
+            }
+            else
+            {
+                Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"Actividad recurrente '{nombre}' creada exitosamente.");
+            Console.WriteLine($"Excepción al seedear actividad recurrente '{nombre}': {ex.Message}");
         }
     }
 
