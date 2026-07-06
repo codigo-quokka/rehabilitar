@@ -31,7 +31,7 @@ namespace API.Controllers
 
             return StatusCode(statusCode, new
             {
-                Error = primerError.Description,
+                Error = !string.IsNullOrEmpty(primerError.Description) ? primerError.Description : primerError.Code,
                 ErrorCode = primerError.Type != ErrorType.Validation ? primerError.Code : null,
                 FieldErrors = fieldErrors
             });

@@ -163,7 +163,9 @@ export function ActividadesPage() {
       fetchData();
       await importantNotification({ type: 'success', message: 'Actividad aprobada exitosamente' });
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al aprobar actividad';
+      const msg = err?.response?.data?.error || err?.response?.data?.errorCode ||
+        Object.values(err?.response?.data?.fieldErrors || {}).flat().filter(Boolean).join(', ') ||
+        err?.message || 'Error al aprobar actividad';
       setToastType('error');
       setToastMessage(msg);
       setShowToast(true);
@@ -183,7 +185,9 @@ export function ActividadesPage() {
       fetchData();
       await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
+      const msg = err?.response?.data?.error || err?.response?.data?.errorCode ||
+        Object.values(err?.response?.data?.fieldErrors || {}).flat().filter(Boolean).join(', ') ||
+        err?.message || 'Error al eliminar actividad';
       setToastType('error');
       setToastMessage(msg);
       setShowToast(true);
