@@ -3,6 +3,9 @@ using Application.Common.Settings;
 using ErrorOr;
 using Microsoft.Extensions.Configuration;
 using Resend;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace Infrastructure.Email;
 
@@ -293,6 +296,8 @@ public class EmailService : IEmailService
 
     // --- MÉTODOS PRIVADOS DE INFRAESTRUCTURA ---
 
+    /*
+    // RESEND:
     private async Task<ErrorOr<Success>> SendEmailAsync(string userEmail, string subject, string htmlContent)
     {
         var message = new EmailMessage
@@ -314,6 +319,46 @@ public class EmailService : IEmailService
         catch (Exception)
         {
             return Error.Failure("Email.Connection", "No se pudo conectar con el servidor de correos.");
+        }
+    }
+    */
+
+    // SMTP local para desarrollo con smtp4dev
+    private async Task<ErrorOr<Success>> SendEmailAsync(string userEmail, string subject, string htmlContent)
+    {
+        var message = new MimeMessage();
+
+        // Podés inventar el remitente que quieras, smtp4dev lo va a aceptar igual
+        message.From.Add(new MailboxAddress("RehabilitAR", _config["SmtpLocal:FromEmail"]!));
+        message.To.Add(new MailboxAddress("", userEmail));
+        message.Subject = subject;
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = BuildBaseHtml(htmlContent)
+        };
+        message.Body = bodyBuilder.ToMessageBody();
+
+        try
+        {
+            using var client = new SmtpClient();
+
+            // Conexión al localhost en el puerto 2525, SIN seguridad SSL/TLS para entorno local
+            await client.ConnectAsync(
+                _config["SmtpLocal:Host"]!,
+                int.Parse(_config["SmtpLocal:Port"]!),
+                SecureSocketOptions.None);
+
+            // No hace falta AuthenticateAsync en desarrollo local con smtp4dev
+
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            return Result.Success;
+        }
+        catch (Exception)
+        {
+            return Error.Failure("Email.Connection", "No se pudo conectar con el servidor de correos local.");
         }
     }
 
