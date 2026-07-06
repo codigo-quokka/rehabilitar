@@ -151,6 +151,8 @@ export function ActividadesPage() {
       console.error('Error al tomar la actividad', err);
       const data = (err as { response?: { data?: { error?: string; errorCode?: string } } })?.response?.data;
       const msg = data?.error || data?.errorCode || (err as Error)?.message || 'Error al tomar la actividad';
+      setShowTomarConfirm(false);
+      setTomarConfirmActividad(null);
       setToastType('error');
       setToastMessage(msg);
       setShowToast(true);

@@ -22,6 +22,19 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                  ct); // chequear lógica
     }
 
+    public async Task<Actividad?> ObtenerActividadSuperpuestaEnProfesorAsync(Guid profesorId, DateTime nuevaFechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default)
+    {
+        DateTime FinEstimado = nuevaFechaYHora.AddHours(1);
+        return await _context.Actividades
+            .FirstOrDefaultAsync(
+                a => a.ProfesorId == profesorId &&
+                a.FechaYHora < FinEstimado &&
+                nuevaFechaYHora < a.FechaYHora.AddHours(1) &&
+                a.Id != actividadId &&
+                a.Estado != EstadoActividad.Cancelada,
+                ct);
+    }
+
     public async Task<bool> ExisteActividadSuperpuestaEnSalaAsync(Guid salaId, DateTime nuevaFechaYHora, Guid? actividadId, Guid serieId, CancellationToken ct = default)
     {
         DateTime FinEstimado = nuevaFechaYHora.AddHours(1); // Asumiendo que cada actividad dura 1 hora
