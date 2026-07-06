@@ -375,7 +375,7 @@ public class ActividadService : IActividadService
         if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
             return Error.Validation(code: "Profesor.ActividadFinalizadaOCancelada", description: "No puedes darte de baja de una actividad finalizada o cancelada.");
 
-        if (actividad.FechaYHora <= DateTime.UtcNow.AddHours(24))
+        if (actividad.FechaYHora <= DateTime.Now.AddHours(24))
             return Error.Conflict(code: "Profesor.BajaConMenosDe24Horas", description: "No puedes darte de baja de una actividad que comienza en menos de 24 horas.");
 
         var removedProfesorId = actividad.ProfesorId;
@@ -408,9 +408,49 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-        actividad.Aprobar();
-        await _uow.SaveChangesAsync(ct);
+        if (actividad.Estado != EstadoActividad.Propuesta)
+            return Error.Conflict("Solo se pueden aprobar actividades en estado Propuesta.");
 
+        List<Actividad> actividadesAAprobar;
+
+        if (actividad.SerieId.HasValue)
+        {
+            var seriesActivities = await _actividadRepo.ListarPorSerieIdAsync(actividad.SerieId.Value, ct);
+            actividadesAAprobar = seriesActivities
+                .Where(a => a.Estado == EstadoActividad.Propuesta)
+                .ToList();
+
+            if (actividadesAAprobar.Count == 0)
+                return Error.Conflict("La serie de actividades ya ha sido aprobada o cancelada.");
+        }
+        else
+        {
+            actividadesAAprobar = new List<Actividad> { actividad };
+        }
+
+        var items = actividadesAAprobar
+            .Select(a => (a.FechaYHora, (Guid?)a.Id))
+            .ToList();
+
+        var validacion = await ValidarLoteDeDisponibilidad(
+            items,
+            actividad.CupoMaximo,
+            actividad.SalaId,
+            actividad.ProfesorId,
+            actividad.Tipo,
+            actividad.Estado,
+            actividad.SerieId ?? Guid.Empty,
+            ct);
+
+        if (validacion.IsError)
+            return validacion.Errors;
+
+        foreach (var act in actividadesAAprobar)
+        {
+            act.Aprobar();
+        }
+
+        await _uow.SaveChangesAsync(ct);
         return await MapToDto(actividad, ct);
     }
 
@@ -458,7 +498,7 @@ public class ActividadService : IActividadService
         if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso)
             return Error.Validation(code: "ACTIVIDAD_NO_DISPONIBLE", description: "La actividad no está disponible para registrar asistencia");
 
-        var ahora = DateTime.UtcNow;
+        var ahora = DateTime.Now;
         var inicioVentana = actividad.FechaYHora.AddHours(-1);
         var finVentana = actividad.FechaYHora.AddHours(2);
 

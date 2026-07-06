@@ -135,7 +135,7 @@ public class Actividad
 		Version = Guid.NewGuid();
         var reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
         
-        var horasParaInicio = (FechaYHora - DateTime.UtcNow).TotalHours;
+        var horasParaInicio = (FechaYHora - DateTime.Now).TotalHours;
 
         if (reserva.EstadoDeReserva == EstadoDeReserva.Activa)
 		{
