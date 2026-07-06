@@ -44,7 +44,7 @@ const CLASE_DURACION_MS = 60 * 60 * 1000;
 const VENTANA_QR_MS = 60 * 60 * 1000;
 
 function qrDisponible(act: Actividad): boolean {
-  if (act.estado !== 'Aprobada' && act.estado !== 'EnCurso') return false;
+  if (act.estado !== 'Aprobada' && act.estado !== 'EnCurso' && act.estado !== 'Finalizada') return false;
   const inicio = new Date(act.fechaYHora).getTime();
   const ahora = Date.now();
   return ahora >= inicio - VENTANA_QR_MS && ahora <= inicio + CLASE_DURACION_MS + VENTANA_QR_MS;

@@ -527,8 +527,9 @@ public class ActividadService : IActividadService
         if (profesor.Especialidad != actividad.Tipo)
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
-        if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
-            return Error.Conflict(description: "El profesor ya tiene una actividad en ese horario.");
+        var conflicto = await _actividadRepo.ObtenerActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct);
+        if (conflicto != null)
+            return Error.Conflict(description: $"Ya tienes una actividad en ese horario: {conflicto.Nombre}");
 
         actividad.AsignarProfesor(request.ProfesorId);
         await _uow.SaveChangesAsync(ct);
@@ -704,7 +705,7 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-        if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso)
+        if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso && actividad.Estado != EstadoActividad.Finalizada)
             return Error.Validation(code: "ACTIVIDAD_NO_DISPONIBLE", description: "La actividad no está disponible para registrar asistencia");
 
         var ahora = DateTime.Now;
