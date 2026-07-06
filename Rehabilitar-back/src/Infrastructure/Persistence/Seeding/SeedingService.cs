@@ -53,6 +53,12 @@ public class SeedingService : ISeedingService
 
     public async Task SeedAsync()
     {
+        // Limpiar datos transientes de ejecuciones anteriores para evitar actividades huérfanas
+        _dbContext.Reservas.RemoveRange(_dbContext.Reservas);
+        _dbContext.Set<AptoFisico>().RemoveRange(_dbContext.Set<AptoFisico>());
+        _dbContext.Actividades.RemoveRange(_dbContext.Actividades);
+        await _dbContext.SaveChangesAsync();
+
         await SeedReceptionAsync("recepcion@rehabilitar.com", "Recepcion", "Receptionist");
         
         await SeedClienteAsync("Paul", "Atreides", "paul@atreides.com", "11222333", "542214445566", rehabiliCoins: 500);
@@ -88,6 +94,13 @@ public class SeedingService : ISeedingService
         await SeedSalaAsync(salaD);
         await SeedSalaAsync(salaE);
 
+        // Reload from DB so local variables have the actual SalaIds (they may differ if Salas already existed)
+        salaA = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala A"))!;
+        salaB = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala B"))!;
+        salaC = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala C"))!;
+        salaD = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala D"))!;
+        salaE = (await _dbContext.Salas.FirstAsync(s => s.Nombre == "Sala E"))!;
+
         var peter = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "peter@parker.com");
         var clark = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "clark@kent.com");
         var bruce = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "bruce@wayne.com");
@@ -95,21 +108,136 @@ public class SeedingService : ISeedingService
         var steve = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "steve@rogers.com");
         var natasha = await _dbContext.Profesores.Include(p => p.User).FirstAsync(p => p.User!.Email == "natasha@romanoff.com");
         var now = DateTime.Today;
-        await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(1), 10, salaA.Id, peter.UserId);
-        await SeedActividadAsync("Recuperación Funcional", "Ejercicios para la recuperación de funciones motoras", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(2), 10, salaE.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
-        await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(11), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
-        await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, DateTime.Now.AddHours(3), 25, salaD.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, DateTime.Now.AddHours(4), 12, 1000, salaE.Id, clark.UserId, DateTime.Now.AddHours(4).AddDays(30));
-        await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(10), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
-        await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(4).AddHours(16), 20, salaB.Id, clark.UserId);
-        await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(1).AddHours(9), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
-        await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
-        await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(15), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(6).AddHours(15).AddDays(45));
-        await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
-        await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(7), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
-        await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(11), 4, salaC.Id, bruce.UserId);
-        await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(9), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+        Console.WriteLine("--- INICIO seed de actividades ---");
+        try
+        {
+            await SeedActividadAsync("Yoga Terapéutico", "Ejercicios suaves para mejorar la movilidad", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(1), 10, salaA.Id, peter.UserId);
+            await SeedActividadAsync("Recuperación Funcional", "Ejercicios para la recuperación de funciones motoras", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, DateTime.Now.AddHours(2), 10, salaE.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Rehabilitación de Hombro", "Fortalecimiento y recuperación articular", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(1).AddHours(10), 15, 1000, salaB.Id, null, now.AddDays(1).AddHours(10).AddDays(60));
+            await SeedActividadRecurrenteAsync("Ejercicios Core", "Trabajo de abdomen y estabilidad lumbar", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(1), 20, 1000, salaC.Id, null, now.AddDays(2).AddHours(11).AddDays(40));
+            await SeedActividadAsync("Fortalecimiento Lumbar", "Prevención y recuperación de lesiones lumbares", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, DateTime.Now.AddHours(3), 25, salaD.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Rehabilitación de Rodilla", "Ejercicios para recuperación de rodilla", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, DateTime.Now.AddHours(4), 12, 1000, salaE.Id, peter.UserId, DateTime.Now.AddHours(4).AddDays(30));
+            await SeedActividadRecurrenteAsync("Tonificación General", "Circuito de ejercicios de tonificación", TipoEspecialidad.TrenSuperior, EstadoActividad.Aprobada, now.AddDays(3).AddHours(1), 8, 1000, salaA.Id, null, now.AddDays(3).AddHours(10).AddDays(50));
+            await SeedActividadAsync("Estiramientos Asistidos", "Estiramientos guiados con asistencia", TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(4).AddHours(16), 20, salaB.Id, clark.UserId);
+            await SeedActividadRecurrenteAsync("Gimnasia Postural", "Corrección postural y alineación corporal", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(1).AddHours(1), 30, 1000, salaC.Id, bruce.UserId, now.AddDays(1).AddHours(9).AddDays(60));
+            await SeedActividadAsync("Pilates Rehabilitador", "Fortalece el core con movimientos controlados", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(8), 5, salaE.Id, diana.UserId);
+            await SeedActividadRecurrenteAsync("Aqua Terapia", "Ejercicios de bajo impacto en agua para rehabilitación", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(1), 15, 1000, salaD.Id, natasha.UserId, now.AddDays(6).AddHours(15).AddDays(45));
+            await SeedActividadAsync("Boxeo Terapéutico", "Entrenamiento de boxeo adaptado a pacientes", TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta, now.AddDays(7).AddHours(18), 10, salaB.Id, peter.UserId);
+            await SeedActividadRecurrenteAsync("Movilidad Articular", "Ejercicios para mejorar el rango de movimiento articular", TipoEspecialidad.TrenMedio, EstadoActividad.Aprobada, now.AddDays(2).AddHours(2), 25, 1000, salaC.Id, steve.UserId, now.AddDays(2).AddHours(7).AddDays(30));
+            await SeedActividadAsync("Reeducación Postural Global", "Técnica avanzada de corrección postural global", TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada, now.AddDays(4).AddHours(1), 4, salaC.Id, bruce.UserId);
+            await SeedActividadRecurrenteAsync("Kinesiología Deportiva", "Preparación física y prevención de lesiones para deportistas", TipoEspecialidad.TrenInferior, EstadoActividad.Aprobada, now.AddDays(6).AddHours(2), 20, 1000, salaE.Id, clark.UserId, now.AddDays(6).AddHours(9).AddDays(60));
+        // --- Actividades de prueba para los 7 escenarios ---
+        Console.WriteLine("--- INICIO actividades de TEST para escenarios de aprobación ---");
+
+        // Actividades de test pre-existentes
+        await SeedActividadAsync("Test S4 - Conflicto horario", "Coincide con Yoga Terapéutico de Peter",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Now.AddHours(1), 10, salaC.Id);
+        await SeedActividadAsync("Test S3 - Clase conflictiva", "Choca con la primera fecha de Rehab de Hombro",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Today.AddDays(1).AddHours(10), 10, salaE.Id, peter.UserId);
+        await SeedActividadAsync("Test S1 - Alta exitosa", "Esporádica disponible para tomar",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            DateTime.Today.AddDays(5).AddHours(14), 10, salaD.Id);
+
+        var testHora = DateTime.Now.AddHours(1);
+
+        // -------------------------------------------------------
+        // ESCENARIO 1: Aprobación exitosa clase única (esporádica, Propuesta)
+        // Sala D, Diana Prince (TrenSuperior) — todo disponible en este horario
+        // -------------------------------------------------------
+        await SeedActividadAsync("TEST E1 - Aprobación exitosa única",
+            "Clase única Propuesta sin conflictos. Todos los recursos disponibles.",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta,
+            testHora.AddDays(90), 15, salaD.Id, diana.UserId);
+
+        // -------------------------------------------------------
+        // ESCENARIO 2: Aprobación exitosa clase recurrente (2 instancias, Propuesta)
+        // Sala B, Bruce Wayne (TrenMedio) — ambas fechas libres
+        // -------------------------------------------------------
+        var serieE2 = Guid.NewGuid();
+        var actE2_1 = Actividad.Create("TEST E2 - Aprobación exitosa recurrente (sem 1)",
+            "1ra instancia recurrente Propuesta sin conflictos.",
+            TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(97), 15, 1000, salaB.Id, bruce.UserId, serieE2);
+        _dbContext.Actividades.Add(actE2_1);
+        var actE2_2 = Actividad.Create("TEST E2 - Aprobación exitosa recurrente (sem 2)",
+            "2da instancia recurrente Propuesta sin conflictos.",
+            TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(104), 15, 1000, salaB.Id, bruce.UserId, serieE2);
+        _dbContext.Actividades.Add(actE2_2);
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine("[OK] TEST E2: serie {0}", serieE2);
+
+        // -------------------------------------------------------
+        // ESCENARIO 3: Eliminación exitosa (esporádica, Propuesta)
+        // Sala C, Clark Kent (TrenInferior) — cualquier actividad Propuesta sirve
+        // -------------------------------------------------------
+        await SeedActividadAsync("TEST E3 - Eliminación exitosa",
+            "Actividad Propuesta para probar eliminación.",
+            TipoEspecialidad.TrenInferior, FrecuenciaActividad.Esporadica, EstadoActividad.Propuesta,
+            testHora.AddDays(111), 20, salaC.Id, clark.UserId);
+
+        // -------------------------------------------------------
+
+        // -------------------------------------------------------
+        // ESCENARIO 4: Aprobación fallida — profesor no disponible
+        // Actividad bloqueadora en Sala C (con Diana) en la 2da fecha
+        // Recurrente Propuesta en Sala D (con Diana): 1ra libre, 2da solo prof choca (sala D libre)
+        // -------------------------------------------------------
+        await SeedActividadAsync("TEST BLOQ E4prof - Diana ocupada",
+            "Aprobada que ocupa a Diana en Sala C para simular prof no disponible en E4.",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            testHora.AddDays(153), 20, salaC.Id, diana.UserId);
+        var serieE4 = Guid.NewGuid();
+        var actE4_1 = Actividad.Create("TEST E4prof - Profesor no disponible (sem 1)",
+            "1ra instancia — Sala D y Diana libres. Pasa validación.",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(139), 15, 1000, salaD.Id, diana.UserId, serieE4);
+        _dbContext.Actividades.Add(actE4_1);
+        var actE4_2 = Actividad.Create("TEST E4prof - Profesor no disponible (sem 2)",
+            "2da instancia — Sala D libre, pero Diana ocupada en Sala C. Falla: prof no disponible.",
+            TipoEspecialidad.TrenSuperior, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(153), 15, 1000, salaD.Id, diana.UserId, serieE4);
+        _dbContext.Actividades.Add(actE4_2);
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine("[OK] TEST E4prof: serie {0}", serieE4);
+
+        // -------------------------------------------------------
+        // ESCENARIO 5: Aprobación fallida — sala no disponible
+        // Actividad bloqueadora en Sala C (con otro prof: Bruce) en la 2da fecha
+        // Recurrente Propuesta en Sala C (con Steve): 1ra libre, 2da solo sala choca (Steve libre)
+        // -------------------------------------------------------
+        await SeedActividadAsync("TEST BLOQ E5sala - Sala C ocupada por Bruce",
+            "Aprobada que ocupa Sala C con Bruce para simular sala no disponible en E5.",
+            TipoEspecialidad.TrenMedio, FrecuenciaActividad.Esporadica, EstadoActividad.Aprobada,
+            testHora.AddDays(167), 20, salaC.Id, bruce.UserId);
+        var serieE5 = Guid.NewGuid();
+        var actE5_1 = Actividad.Create("TEST E5sala - Sala no disponible (sem 1)",
+            "1ra instancia — Sala C y Steve libres. Pasa validación.",
+            TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(153), 15, 1000, salaC.Id, steve.UserId, serieE5);
+        _dbContext.Actividades.Add(actE5_1);
+        var actE5_2 = Actividad.Create("TEST E5sala - Sala no disponible (sem 2)",
+            "2da instancia — Sala C ocupada por Bruce, Steve libre. Falla: sala no disponible.",
+            TipoEspecialidad.TrenMedio, FrecuenciaActividad.Recurrente, EstadoActividad.Propuesta,
+            testHora.AddDays(167), 15, 1000, salaC.Id, steve.UserId, serieE5);
+        _dbContext.Actividades.Add(actE5_2);
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine("[OK] TEST E5sala: serie {0}", serieE5);
+
+        Console.WriteLine("--- FIN actividades de TEST para escenarios de aprobación ---");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FATAL] Error en seed de actividades: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+        }
+        Console.WriteLine("--- FIN seed de actividades principales ---");
+
+        
+        Console.WriteLine("--- FIN seed de actividades de test ---");
+
         await SeedReservasAsync();
     }
 
@@ -284,14 +412,25 @@ public class SeedingService : ISeedingService
         if (await _dbContext.Actividades.AnyAsync(a =>
             a.FechaYHora.Equals(fechaYHora) &&
             a.SalaId.Equals(salaId)))
-                return;
+        {
+            Console.WriteLine($"[SKIP] '{nombre}' ya existe (sala={salaId} fecha={fechaYHora:yyyy-MM-dd HH:mm})");
+            return;
+        }
 
-        Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
-                                            estado, fechaYHora, cupoMaximo, 1000, salaId,
-                                            profesorId, serieId);
+        try
+        {
+            Actividad actividad = Actividad.Create(nombre, descripcion, tipo, frecuencia,
+                                                estado, fechaYHora, cupoMaximo, 1000, salaId,
+                                                profesorId, serieId);
 
-        _dbContext.Actividades.Add(actividad);
-        await _dbContext.SaveChangesAsync();
+            _dbContext.Actividades.Add(actividad);
+            await _dbContext.SaveChangesAsync();
+            Console.WriteLine($"[OK] '{nombre}' creada (sala={salaId} fecha={fechaYHora:yyyy-MM-dd HH:mm})");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] '{nombre}': {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     private async Task SeedActividadRecurrenteAsync(string nombre, string descripcion, TipoEspecialidad tipo,

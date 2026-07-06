@@ -518,7 +518,7 @@ public class ActividadService : IActividadService
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         if (actividad.ProfesorId.HasValue && actividad.ProfesorId.Value != Guid.Empty)
-            return Error.Conflict("La actividad ya tiene un profesor asignado.");
+            return Error.Conflict(description: "La actividad ya tiene un profesor asignado.");
 
         var profesor = await _profesorRepo.GetByIdAsync(request.ProfesorId, ct);
         if (profesor == null)
@@ -528,7 +528,7 @@ public class ActividadService : IActividadService
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
         if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
-            return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
+            return Error.Conflict(description: "El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
         await _uow.SaveChangesAsync(ct);
@@ -549,7 +549,7 @@ public class ActividadService : IActividadService
         if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
             return Error.Validation(code: "Profesor.ActividadFinalizadaOCancelada", description: "No puedes darte de baja de una actividad finalizada o cancelada.");
 
-        if (actividad.FechaYHora <= DateTime.UtcNow.AddHours(24))
+        if (actividad.FechaYHora <= DateTime.Now.AddHours(24))
             return Error.Conflict(code: "Profesor.BajaConMenosDe24Horas", description: "No puedes darte de baja de una actividad que comienza en menos de 24 horas.");
 
         actividad.RemoverProfesor();
@@ -617,9 +617,49 @@ public class ActividadService : IActividadService
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
-        actividad.Aprobar();
-        await _uow.SaveChangesAsync(ct);
+        if (actividad.Estado != EstadoActividad.Propuesta)
+            return Error.Conflict("Solo se pueden aprobar actividades en estado Propuesta.");
 
+        List<Actividad> actividadesAAprobar;
+
+        if (actividad.SerieId.HasValue)
+        {
+            var seriesActivities = await _actividadRepo.ListarPorSerieIdAsync(actividad.SerieId.Value, ct);
+            actividadesAAprobar = seriesActivities
+                .Where(a => a.Estado == EstadoActividad.Propuesta)
+                .ToList();
+
+            if (actividadesAAprobar.Count == 0)
+                return Error.Conflict("La serie de actividades ya ha sido aprobada o cancelada.");
+        }
+        else
+        {
+            actividadesAAprobar = new List<Actividad> { actividad };
+        }
+
+        var items = actividadesAAprobar
+            .Select(a => (a.FechaYHora, (Guid?)a.Id))
+            .ToList();
+
+        var validacion = await ValidarLoteDeDisponibilidad(
+            items,
+            actividad.CupoMaximo,
+            actividad.SalaId,
+            actividad.ProfesorId,
+            actividad.Tipo,
+            actividad.Estado,
+            actividad.SerieId ?? Guid.Empty,
+            ct);
+
+        if (validacion.IsError)
+            return validacion.Errors;
+
+        foreach (var act in actividadesAAprobar)
+        {
+            act.Aprobar();
+        }
+
+        await _uow.SaveChangesAsync(ct);
         return await MapToDto(actividad, ct);
     }
 
@@ -663,6 +703,16 @@ public class ActividadService : IActividadService
 
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso)
+            return Error.Validation(code: "ACTIVIDAD_NO_DISPONIBLE", description: "La actividad no está disponible para registrar asistencia");
+
+        var ahora = DateTime.Now;
+        var inicioVentana = actividad.FechaYHora.AddHours(-1);
+        var finVentana = actividad.FechaYHora.AddHours(2);
+
+        if (ahora < inicioVentana || ahora > finVentana)
+            return Error.Validation(code: "FUERA_DE_VENTANA_HORARIA", description: "Solo se puede registrar asistencia desde 1 hora antes hasta 2 horas después del inicio de la actividad");
 
         var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
         if (reserva == null)
@@ -781,7 +831,7 @@ public class ActividadService : IActividadService
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
-            return Error.Conflict($"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+            return Error.Conflict(description: $"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
         if (profesorId.HasValue)
@@ -795,7 +845,7 @@ public class ActividadService : IActividadService
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
             if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
-                return Error.Conflict($"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+                return Error.Conflict(description: $"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
         }
 
         return Result.Success;

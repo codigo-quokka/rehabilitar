@@ -156,7 +156,7 @@ public class Actividad
 		Version = Guid.NewGuid();
         var reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
         
-        var horasParaInicio = (FechaYHora - DateTime.UtcNow).TotalHours;
+        var horasParaInicio = (FechaYHora - DateTime.Now).TotalHours;
 
         if (reserva.EstadoDeReserva == EstadoDeReserva.Activa)
 		{
@@ -283,10 +283,6 @@ public class Actividad
 					 Guid? profesorId,
 					 Guid? serieId)
 	{
-		if (fechaYHora < DateTime.Now)
-			throw new ArgumentException("La fecha y hora de la actividad no puede ser en el pasado.");
-
-
 		return new Actividad(nombre, descripcion, tipo, frecuencia, estado, fechaYHora, cupoMaximo, precio, salaId, profesorId, serieId);
 	}
 

@@ -50,6 +50,9 @@ function qrDisponible(act: Actividad): boolean {
   return ahora >= inicio - VENTANA_QR_MS && ahora <= inicio + CLASE_DURACION_MS + VENTANA_QR_MS;
 }
 
+const puedeRemoverProfesor = (act: Actividad): boolean =>
+  act.estado !== 'Cancelada' && act.estado !== 'Finalizada' && act.estado !== 'EnCurso';
+
 export function MisClasesPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -118,15 +121,57 @@ export function MisClasesPage() {
     if (!user) return;
     try {
       const groupActividades = grupos.find(([id]) => id === serieId)?.[1] || [];
-      await Promise.allSettled(
-        groupActividades.map((act) => actividadesApi.removerProfesor(act.id, user.id))
+      const removibles = groupActividades.filter(puedeRemoverProfesor);
+      const noRemovibles = groupActividades.filter(a => !puedeRemoverProfesor(a));
+
+      const resultados = await Promise.allSettled(
+        removibles.map((act) => actividadesApi.removerProfesor(act.id, user.id))
       );
-      setClases(prev => prev.filter(a => a.serieId !== serieId));
-      await importantNotification({ type: 'success', message: 'Te has dado de baja de todas las actividades exitosamente' });
-    } catch (err) {
-      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
-      const msg = apiError?.error || apiError?.errorCode || (err as Error)?.message || 'Error al darse de baja';
-      showToast(msg, 'error');
+
+      const idsExitosos = new Set<string>();
+      let count24h = 0;
+      let countOtrosErrores = 0;
+
+      resultados.forEach((res, i) => {
+        const act = removibles[i];
+        if (res.status === 'fulfilled') {
+          idsExitosos.add(act.id);
+        } else {
+          const reason = res.reason as { response?: { data?: { errorCode?: string; error?: string } } };
+          const errorCode = reason?.response?.data?.errorCode;
+          if (errorCode === 'Profesor.BajaConMenosDe24Horas') {
+            count24h++;
+          } else {
+            countOtrosErrores++;
+          }
+        }
+      });
+
+      setClases(prev => prev.filter(a => !idsExitosos.has(a.id)));
+
+      const partes: string[] = [];
+      if (idsExitosos.size > 0) {
+        partes.push(`Te has dado de baja de ${idsExitosos.size} ${idsExitosos.size === 1 ? 'actividad' : 'actividades'} exitosamente.`);
+      }
+      if (count24h > 0) {
+        partes.push(`No se pudo dar de baja en ${count24h} ${count24h === 1 ? 'actividad' : 'actividades'} porque comienza${count24h === 1 ? '' : 'n'} en menos de 24 horas.`);
+      }
+      if (noRemovibles.length > 0) {
+        const estados = noRemovibles.map(a => estadoLabel[a.estado] || a.estado).filter((v, i, a) => a.indexOf(v) === i);
+        partes.push(`${noRemovibles.length} ${noRemovibles.length === 1 ? 'actividad está' : 'actividades están'} ${estados.join(' / ')}.`);
+      }
+      if (countOtrosErrores > 0) {
+        partes.push(`Ocurrió un error inesperado en ${countOtrosErrores} ${countOtrosErrores === 1 ? 'actividad' : 'actividades'}.`);
+      }
+
+      const msg = partes.join(' ');
+      if (idsExitosos.size > 0) {
+        await importantNotification({ type: 'success', message: msg });
+      } else {
+        showToast(msg, 'error');
+      }
+    } catch {
+      showToast('Error al procesar la baja', 'error');
     } finally {
       setConfirmGroupSerieId(null);
     }
@@ -180,6 +225,7 @@ export function MisClasesPage() {
                     const isExpanded = expandedGroup === serieId;
                     const salaUnica = acts.every(a => a.salaNombre === first.salaNombre);
 
+                    const todasNoRemovibles = acts.every(a => !puedeRemoverProfesor(a));
                     return (
                       <>
                         <tr
@@ -221,6 +267,8 @@ export function MisClasesPage() {
                               variant="danger"
                               size="sm"
                               className="w-full"
+                              disabled={todasNoRemovibles}
+                              title={todasNoRemovibles ? 'No hay actividades en las que puedas darte de baja' : undefined}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setConfirmGroupSerieId(serieId);
@@ -268,13 +316,9 @@ export function MisClasesPage() {
                                     variant="danger"
                                     size="sm"
                                     className="flex-1 min-w-0"
-                                    disabled={act.estado === 'Cancelada'}
-                                    onClick={(e) => {
-                                      if (act.estado === 'Cancelada') return;
-                                      e.stopPropagation();
-                                      setSelectedActividad(act);
-                                      setShowConfirmModal(true);
-                                    }}
+                                    disabled={!puedeRemoverProfesor(act)}
+                                    title={!puedeRemoverProfesor(act) ? `No puedes darte de baja de una actividad ${estadoLabel[act.estado]?.toLowerCase() || act.estado.toLowerCase()}` : undefined}
+                                    onClick={(e) => { e.stopPropagation(); setSelectedActividad(act); setShowConfirmModal(true); }}
                                   >
                                     Baja
                                   </Button>
@@ -323,12 +367,9 @@ export function MisClasesPage() {
                               variant="danger"
                               size="sm"
                               className="flex-1 min-w-0"
-                              disabled={act.estado === 'Cancelada'}
-                              onClick={() => {
-                                if (act.estado === 'Cancelada') return;
-                                setSelectedActividad(act);
-                                setShowConfirmModal(true);
-                              }}
+                              disabled={!puedeRemoverProfesor(act)}
+                              title={!puedeRemoverProfesor(act) ? `No puedes darte de baja de una actividad ${estadoLabel[act.estado]?.toLowerCase() || act.estado.toLowerCase()}` : undefined}
+                              onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
                             >
                               Baja
                             </Button>

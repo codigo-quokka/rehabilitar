@@ -415,7 +415,7 @@ public class ReservaService : IReservaService
                 var actividades = await _actividadRepo.ListarPorSerieIdConReservasAsync(serieId, ct);
 
                 var futuras = actividades
-                    .Where(a => a.FechaYHora > DateTime.UtcNow)
+                    .Where(a => a.FechaYHora > DateTime.Now)
                     .OrderBy(a => a.FechaYHora)
                     .ToList();
 
