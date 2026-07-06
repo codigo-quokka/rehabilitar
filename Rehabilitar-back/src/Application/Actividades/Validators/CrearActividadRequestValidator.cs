@@ -15,7 +15,7 @@ public class CrearActividadRequestValidator : AbstractValidator<CrearActividadRe
             .MaximumLength(500).WithMessage("La descripción no puede exceder los 500 caracteres.");
 
         RuleFor(x => x.FechaYHora)
-            .GreaterThan(DateTime.UtcNow).WithMessage("La fecha y hora de la actividad debe ser en el futuro.");
+            .GreaterThan(DateTime.Now).WithMessage("La fecha y hora de la actividad debe ser en el futuro.");
 
         RuleFor(x => x.CupoMaximo)
             .GreaterThan(0).WithMessage("El cupo máximo debe ser mayor a 0.")
