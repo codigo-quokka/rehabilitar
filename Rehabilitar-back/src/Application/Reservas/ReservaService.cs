@@ -10,6 +10,7 @@ using Domain.Exceptions;
 using Domain.Enums;
 using Domain.Pagos;
 using Application.Pagos.Requests;
+using Application.Notificaciones;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Reservas;
@@ -22,11 +23,13 @@ public class ReservaService : IReservaService
     private readonly IIntencionPagoRepository _intencionPagoRepo;
     private readonly IUnitOfWork _uow;
     private readonly IEmailService _emailService;
+    private readonly INotificacionService _notificacionService;
     private readonly ILogger<ReservaService> _logger;
 
     public ReservaService(IReservaRepository reservaRepo, IActividadRepository actividadRepo,
                         IClienteRepository clienteRepo, IIntencionPagoRepository intencionPagoRepo,
-                        IUnitOfWork uow, IEmailService emailService, ILogger<ReservaService> logger)
+                        IUnitOfWork uow, IEmailService emailService,
+                        INotificacionService notificacionService, ILogger<ReservaService> logger)
     {
         _reservaRepo = reservaRepo;
         _actividadRepo = actividadRepo;
@@ -34,6 +37,7 @@ public class ReservaService : IReservaService
         _intencionPagoRepo = intencionPagoRepo;
         _uow = uow;
         _emailService = emailService;
+        _notificacionService = notificacionService;
         _logger = logger;
     }
 
@@ -159,6 +163,18 @@ public class ReservaService : IReservaService
                     }
                 }
 
+                try
+                {
+                    await _notificacionService.CrearNotificacionAsync(
+                        cliente.UserId,
+                        "Reserva confirmada",
+                        $"Tu reserva para la actividad ha sido confirmada.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reservation tray notification to client {ClienteId}", cliente.UserId);
+                }
+
                 return Result.Success;
             }
             catch (ConcurrencyException)
@@ -235,6 +251,19 @@ public class ReservaService : IReservaService
                     }
                 }
 
+                try
+                {
+                    await _notificacionService.CrearNotificacionAsync(
+                        cliente.UserId,
+                        "Reserva confirmada",
+                        $"Tu reserva para la actividad ha sido confirmada.",
+                        ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reservation tray notification to client {ClienteId}", cliente.UserId);
+                }
+
                 return Result.Success;
             }
             catch (ConcurrencyException)
@@ -309,6 +338,22 @@ public class ReservaService : IReservaService
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to send reservation/payment email for reserva {ReservaId}", reserva?.Id);
+                }
+
+                try
+                {
+                    if (reserva?.Cliente != null)
+                    {
+                        await _notificacionService.CrearNotificacionAsync(
+                            reserva.ClienteId,
+                            "Reserva confirmada",
+                            $"Tu reserva para la actividad \"{actividad.Nombre}\" ha sido confirmada.",
+                            ct);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reservation tray notification for reserva {ReservaId}", reserva?.Id);
                 }
 
                 return Result.Success;

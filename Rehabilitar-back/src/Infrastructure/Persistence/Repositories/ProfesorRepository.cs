@@ -1,4 +1,5 @@
 using Infrastructure.Persistence.Repositories;
+using Domain.Actividades;
 using Domain.Profesores;
 using Infrastructure.Persistence;
 using Application.Profesores;
@@ -15,5 +16,13 @@ public class ProfesorRepository : RepositoryBase<Profesor>, IProfesorRepository
         return await _context.Profesores
             .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.UserId == id, ct);
+    }
+
+    public async Task<IEnumerable<Profesor>> GetByEspecialidadAsync(TipoEspecialidad especialidad, CancellationToken ct = default)
+    {
+        return await _context.Profesores
+            .Include(p => p.User)
+            .Where(p => p.Especialidad == especialidad)
+            .ToListAsync(ct);
     }
 }

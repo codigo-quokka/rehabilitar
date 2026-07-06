@@ -17,6 +17,9 @@ public class UsuarioRepository : IUsuarioRepository
 
     public UsuarioRepository(UserManager<User> userManager) => _userManager = userManager;
 
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await _userManager.FindByIdAsync(id.ToString());
+
     public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
         => await _userManager.Users.ToListAsync(ct);
 

@@ -243,6 +243,38 @@ public class EmailService : IEmailService
         return await SendEmailAsync(userEmail, "Asignación a actividad", content);
     }
 
+    public async Task<ErrorOr<Success>> SendActividadModificadaParaClientesEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string descripcionCambios)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} ha sido modificada.</p>
+            <p class='message'><strong>Cambios realizados:</strong> {descripcionCambios}</p>
+            <p class='message'>Podés ver los detalles actualizados en la plataforma.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad modificada", content);
+    }
+
+    public async Task<ErrorOr<Success>> SendActividadModificadaParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string descripcionCambios)
+    {
+        var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}";
+
+        var content = $@"
+            <p class='greeting'>Hola,</p>
+            <p class='message'>Te informamos que la actividad <strong>{nombreActividad}</strong> con fecha {fechaActividad:dd/MM/yyyy} a la que estás asignado ha sido modificada.</p>
+            <p class='message'><strong>Cambios realizados:</strong> {descripcionCambios}</p>
+            <p class='message'>Podés ver los detalles actualizados en la plataforma.</p>
+            <div class='button-container'>
+                <a href='{sitioUrl}' class='confirm-button'>Ir al sitio</a>
+            </div>";
+
+        return await SendEmailAsync(userEmail, "Actividad modificada", content);
+    }
+
     public async Task<ErrorOr<Success>> SendPagoRegistradoEmail(string userEmail, string nombreActividad, DateTime fechaActividad, decimal monto)
     {
         var sitioUrl = $"{_frontendSettings.BaseUrl?.TrimEnd('/')}/reservas";

@@ -140,6 +140,7 @@ public class UsuarioService : IUsuarioService
         if (request.NotificacionAplicacion.HasValue)
         {
             user.ActualizarPreferenciaNotificacion(request.NotificacionAplicacion.Value);
+            await _uow.SaveChangesAsync();
         }
 
         if (!string.IsNullOrEmpty(request.Rol))
@@ -201,14 +202,15 @@ public class UsuarioService : IUsuarioService
         await _userManager.SetLockoutEnabledAsync(user, true);
         await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
 
-        try
-        {
-            await _emailService.SendCuentaSuspendidaEmail(user.Email!);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send suspension email for user {UserId}", id);
-        }
+        // TEMPORAL: Email deshabilitado por límite de resend
+        // try
+        // {
+        //     await _emailService.SendCuentaSuspendidaEmail(user.Email!);
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, "Failed to send suspension email for user {UserId}", id);
+        // }
         
         return Result.Success;
     }
@@ -222,15 +224,16 @@ public class UsuarioService : IUsuarioService
         await _userManager.SetLockoutEndDateAsync(user, null);
         await _userManager.SetLockoutEnabledAsync(user, false);
 
-        try
-        {
-            // nombreActividad y fechaActividad no se usan en la plantilla del email
-            await _emailService.SendCuentaReactivadaEmail(user.Email!, string.Empty, default);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send reactivation email for user {UserId}", id);
-        }
+        // TEMPORAL: Email deshabilitado por límite de resend
+        // try
+        // {
+        //     // nombreActividad y fechaActividad no se usan en la plantilla del email
+        //     await _emailService.SendCuentaReactivadaEmail(user.Email!, string.Empty, default);
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, "Failed to send reactivation email for user {UserId}", id);
+        // }
         
         return Result.Success;
     }

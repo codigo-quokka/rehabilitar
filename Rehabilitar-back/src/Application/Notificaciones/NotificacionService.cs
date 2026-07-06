@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Usuarios;
 using Domain.Notificaciones;
 using ErrorOr;
 
@@ -8,15 +9,21 @@ public class NotificacionService : INotificacionService
 {
     private readonly INotificacionRepository _notificacionRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public NotificacionService(INotificacionRepository notificacionRepository, IUnitOfWork unitOfWork)
+    public NotificacionService(INotificacionRepository notificacionRepository, IUnitOfWork unitOfWork, IUsuarioRepository usuarioRepository)
     {
         _notificacionRepository = notificacionRepository;
         _uow = unitOfWork;
+        _usuarioRepository = usuarioRepository;
     }
 
     public async Task<ErrorOr<NotificacionDTO>> CrearNotificacionAsync(Guid userId, string titulo, string mensaje, CancellationToken ct = default)
     {
+        var user = await _usuarioRepository.GetByIdAsync(userId, ct);
+        if (user is not null && !user.NotificacionAplicacion)
+            return Error.Forbidden("Notificaciones.Deshabilitadas", "El usuario tiene las notificaciones deshabilitadas.");
+
         var notificacion = Notificacion.Create(userId, titulo, mensaje);
         _notificacionRepository.Add(notificacion);
         await _uow.SaveChangesAsync(ct);

@@ -1,5 +1,4 @@
 using Domain.Actividades;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Salas;
 
@@ -11,7 +10,6 @@ public class Sala
     public string? Descripcion { get; private set; }
     public bool Activo { get; private set; } = true;
 
-    [NotMapped]
     public List<Actividad> Actividades { get; private set; } = new();
 
 #nullable disable

@@ -19,5 +19,7 @@ public interface IEmailService
     Task<ErrorOr<Success>> SendPasswordChangedEmail(string userEmail);
     Task<ErrorOr<Success>> SendProfesorAsignadoEmail(string userEmail, string nombreActividad, DateTime fechaActividad);
     Task<ErrorOr<Success>> SendPagoRegistradoEmail(string userEmail, string nombreActividad, DateTime fechaActividad, decimal monto);
+    Task<ErrorOr<Success>> SendActividadModificadaParaClientesEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string descripcionCambios);
+    Task<ErrorOr<Success>> SendActividadModificadaParaProfesoresEmail(string userEmail, string nombreActividad, DateTime fechaActividad, string descripcionCambios);
 
 }

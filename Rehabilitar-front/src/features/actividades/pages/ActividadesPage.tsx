@@ -183,7 +183,9 @@ export function ActividadesPage() {
     try {
       await actividadesApi.delete(actividad.id);
       fetchData();
-      await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
+      setToastType('success');
+      setToastMessage('Actividad eliminada exitosamente');
+      setShowToast(true);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.errorCode ||
         Object.values(err?.response?.data?.fieldErrors || {}).flat().filter(Boolean).join(', ') ||
@@ -798,7 +800,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
-  const importantNotification = useImportantNotification();
   const { showToast } = useNotifications();
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
@@ -839,7 +840,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
-      await importantNotification({ type: 'success', message: 'Actividad cancelada exitosamente' });
+      showToast('Actividad cancelada exitosamente', 'success');
       onClose();
     } catch (err: any) {
       const apiError = err?.response?.data;
@@ -912,7 +913,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       } else {
         await actividadesApi.create(payload);
       }
-      await importantNotification({ type: 'success', message: isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente' });
+      showToast(isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente', 'success');
       onClose();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -1158,6 +1159,8 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
           <Button
             variant="rojo"
             type="button"
+            disabled={actividad?.estado === 'EnCurso'}
+            className={actividad?.estado === 'EnCurso' ? '!bg-red-500 dark:!bg-red-900' : ''}
             onClick={() => setShowConfirmDeleteModal(true)}
           >
             Cancelar actividad
