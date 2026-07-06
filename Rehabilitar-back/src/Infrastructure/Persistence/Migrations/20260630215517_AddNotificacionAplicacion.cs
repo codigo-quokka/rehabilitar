@@ -5,24 +5,24 @@
 namespace Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSolicitudReactivacion : Migration
+    public partial class AddNotificacionAplicacion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
-                name: "SolicitoReactivacion",
+                name: "NotificacionAplicacion",
                 table: "Users",
                 type: "INTEGER",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "SolicitoReactivacion",
+                name: "NotificacionAplicacion",
                 table: "Users");
         }
     }

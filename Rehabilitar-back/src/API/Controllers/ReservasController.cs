@@ -77,7 +77,7 @@ public class ReservasController : ApiControllerBase
         var result = await _reservaService.ReservarActividadAsync(request, ct);
 
         return result.Match(
-            reserva => CreatedAtAction(nameof(GetAll), new { usuarioId = reserva.ClienteId }, reserva),
+            intencionId => Ok(new { IntencionId = intencionId }),
             errores => Problem(errores)
         );
     }
@@ -88,7 +88,7 @@ public class ReservasController : ApiControllerBase
         var result = await _reservaService.ReservarActividadesRecurrentes(request, ct);
 
         return result.Match(
-            success => Ok(),
+            success => Ok(new { IntencionId = success }),
             errores => Problem(errores)
         );
     }
@@ -108,6 +108,37 @@ public class ReservasController : ApiControllerBase
     public async Task<IActionResult> Cancelar([FromQuery] Guid actividadId, Guid id, CancellationToken ct)
     {
         var result = await _reservaService.CancelarReservaAsync(actividadId, id, ct);
+
+        return result.Match(
+            _ => NoContent(),
+            errores => Problem(errores)
+        );
+    }
+
+    [HttpPut("serie/{serieId:guid}/cancelar")]
+    [Authorize]
+    public async Task<IActionResult> CancelarSerie(Guid serieId, [FromQuery] Guid? clienteId, CancellationToken ct)
+    {
+        // Determinamos el clienteId según el rol:
+        // - Administrador/Recepción: pueden pasar cualquier clienteId
+        // - Cliente Registrado: solo puede cancelar sus propias reservas
+        Guid effectiveClienteId;
+        var userRole = User.FindFirstValue(ClaimTypes.Role);
+        
+        if (userRole == "Administrador" || userRole == "Recepción")
+        {
+            if (!clienteId.HasValue || clienteId.Value == Guid.Empty)
+                return Problem(new List<Error> { Error.Validation("Reserva.ClienteRequerido", "Debe especificar el clienteId.") });
+            effectiveClienteId = clienteId.Value;
+        }
+        else
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdClaim, out effectiveClienteId))
+                return Problem(new List<Error> { Error.Validation("User.InvalidId", "ID de usuario inválido.") });
+        }
+
+        var result = await _reservaService.CancelarSerieReservasAsync(effectiveClienteId, serieId, ct);
 
         return result.Match(
             _ => NoContent(),

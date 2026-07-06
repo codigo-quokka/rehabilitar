@@ -10,6 +10,8 @@ using Application.Reservas.DTOs;
 using Application.Salas;
 using Application.Profesores;
 using Application.Clientes;
+using Application.Pagos;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Actividades;
 
@@ -20,19 +22,28 @@ public class ActividadService : IActividadService
     public readonly ISalaRepository _salaRepo;
     public readonly IProfesorRepository _profesorRepo;
     public readonly IClienteRepository _clienteRepo;
+    private readonly IIntencionPagoRepository _intencionPagoRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<ActividadService> _logger;
 
     public ActividadService(IActividadRepository actividadRepo,
                             ISalaRepository salaRepo,
                             IProfesorRepository profesorRepo,
                             IClienteRepository clienteRepo,
-                            IUnitOfWork uow)
+                            IIntencionPagoRepository intencionPagoRepository,
+                            IUnitOfWork uow,
+                            IEmailService emailService,
+                            ILogger<ActividadService> logger)
     {
         _actividadRepo = actividadRepo;
         _salaRepo = salaRepo;
         _profesorRepo = profesorRepo;
         _clienteRepo = clienteRepo;
+        _intencionPagoRepository = intencionPagoRepository;
         _uow = uow;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<ActividadResponse>> CrearActividad(CrearActividadRequest request, CancellationToken ct = default)
@@ -46,6 +57,12 @@ public class ActividadService : IActividadService
         
         _actividadRepo.Add(actividad);
         await _uow.SaveChangesAsync(ct);
+
+        if (request.ProfesorId.HasValue)
+        {
+            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividad.Nombre, actividad.FechaYHora, ct);
+        }
+
         return await MapToDto(actividad,ct);
     }
 
@@ -88,7 +105,13 @@ public class ActividadService : IActividadService
         foreach(Actividad a in actividadesCreadas) _actividadRepo.Add(a);
         await _uow.SaveChangesAsync(ct);
 
-        return await MapToDto(actividadesCreadas.First(), ct);
+        var primera = actividadesCreadas.First();
+        if (request.ActividadBase.ProfesorId.HasValue)
+        {
+            await EnviarEmailProfesorAsignado(request.ActividadBase.ProfesorId.Value, primera.Nombre, primera.FechaYHora, ct);
+        }
+
+        return await MapToDto(primera, ct);
     }
 
     public async Task<ErrorOr<ActividadResponse>> ModificarActividadRecurrente(EditarActividadRecurrenteRequest request, CancellationToken ct = default)
@@ -164,19 +187,129 @@ public class ActividadService : IActividadService
             request.SerieId 
         );
 
+        var oldProfesorId = actividad.ProfesorId;
+
         actividad.ModificarActividad(actividadEditada);
         await _uow.SaveChangesAsync(ct);
+
+        if (request.ProfesorId.HasValue && request.ProfesorId != oldProfesorId)
+        {
+            await EnviarEmailProfesorAsignado(request.ProfesorId.Value, actividad.Nombre, actividad.FechaYHora, ct);
+        }
+
         return await MapToDto(actividad, ct);
     }
 
-    public async Task<ErrorOr<Deleted>> EliminarActividad(Guid id, CancellationToken ct = default)
+    public async Task<ErrorOr<Deleted>> CancelarActividad(Guid id, CancellationToken ct = default)
     {
         var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
+        var reservasActivas = actividad.Reservas?
+            .Where(r => r.EstadoDeReserva == EstadoDeReserva.Activa || r.EstadoDeReserva == EstadoDeReserva.EnEspera)
+            .ToList() ?? [];
+
+        if (reservasActivas.Count != 0)
+            return Error.Conflict(description: "No se puede cancelar una actividad con clientes inscriptos.");
+
         actividad.CancelarActividad();
-        _actividadRepo.Remove(actividad);
         await _uow.SaveChangesAsync(ct);
+
+        // Notificar a los clientes con reservas
+        var clienteIds = actividad.Reservas?
+            .Where(r => r.EstadoDeReserva != EstadoDeReserva.Cancelada)
+            .Select(r => r.ClienteId)
+            .Distinct()
+            .ToList() ?? new List<Guid>();
+
+        foreach (var clienteId in clienteIds)
+        {
+            try
+            {
+                var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                if (cliente?.User?.Email != null)
+                {
+                    await _emailService.SendCancelacionDeActividadParaClientesEmail(
+                        cliente.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity cancellation email to client {ClienteId}", clienteId);
+            }
+        }
+
+        // Notificar al profesor si tiene uno asignado
+        if (actividad.ProfesorId.HasValue && actividad.Profesor?.User?.Email != null)
+        {
+            try
+            {
+                await _emailService.SendCancelacionDeActividadParaProfesoresEmail(
+                    actividad.Profesor.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity cancellation email to profesor {ProfesorId}", actividad.ProfesorId);
+            }
+        }
+
+        return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<Deleted>> CancelarSerie(Guid serieId, CancellationToken ct = default)
+    {
+        var actividades = await _actividadRepo.ListarPorSerieIdAsync(serieId, ct);
+        if (!actividades.Any()) return Error.NotFound("No se encontraron actividades para esta serie.");
+
+        foreach (var actividad in actividades)
+        {
+            if (actividad.FechaYHora > DateTime.Now)
+                actividad.CancelarActividad();
+        }
+        
+        await _uow.SaveChangesAsync(ct);
+
+        foreach (var actividad in actividades)
+        {
+            if (actividad.FechaYHora <= DateTime.Now) continue;
+
+            var clienteIds = actividad.Reservas?
+                .Where(r => r.EstadoDeReserva != EstadoDeReserva.Cancelada)
+                .Select(r => r.ClienteId)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            foreach (var clienteId in clienteIds)
+            {
+                try
+                {
+                    var cliente = await _clienteRepo.GetByIdAsync(clienteId, ct);
+                    if (cliente?.User?.Email != null)
+                    {
+                        await _emailService.SendCancelacionDeActividadParaClientesEmail(
+                            cliente.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send activity cancellation email to client {ClienteId}", clienteId);
+                }
+            }
+
+            if (actividad.ProfesorId.HasValue && actividad.Profesor?.User?.Email != null)
+            {
+                try
+                {
+                    await _emailService.SendCancelacionDeActividadParaProfesoresEmail(
+                        actividad.Profesor.User.Email, actividad.Nombre, actividad.FechaYHora, "Cancelada por el administrador");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send activity cancellation email to profesor {ProfesorId}", actividad.ProfesorId);
+                }
+            }
+        }
+
         return Result.Deleted;
     }
 
@@ -201,7 +334,7 @@ public class ActividadService : IActividadService
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         if (actividad.ProfesorId.HasValue && actividad.ProfesorId.Value != Guid.Empty)
-            return Error.Conflict("La actividad ya tiene un profesor asignado.");
+            return Error.Conflict(description: "La actividad ya tiene un profesor asignado.");
 
         var profesor = await _profesorRepo.GetByIdAsync(request.ProfesorId, ct);
         if (profesor == null)
@@ -211,10 +344,23 @@ public class ActividadService : IActividadService
             return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
         if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, actividad.FechaYHora, id, actividad.SerieId ?? Guid.Empty, ct))
-            return Error.Conflict("El profesor ya tiene una actividad en ese horario.");
+            return Error.Conflict(description: "El profesor ya tiene una actividad en ese horario.");
 
         actividad.AsignarProfesor(request.ProfesorId);
         await _uow.SaveChangesAsync(ct);
+
+        try
+        {
+            if (profesor.User?.Email != null)
+            {
+                await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, actividad.Nombre, actividad.FechaYHora);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send professor assignment email for actividad {ActividadId}", id);
+        }
+
         return await MapToDto(actividad, ct);
     }
 
@@ -224,13 +370,47 @@ public class ActividadService : IActividadService
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
         if (actividad.ProfesorId != request.ProfesorId)
-            return Error.Validation("No puedes darte de baja de una actividad que no tienes asignada.");
+            return Error.Validation(code: "Profesor.NoAsignado", description: "No puedes darte de baja de una actividad que no tienes asignada.");
 
         if (actividad.Estado == EstadoActividad.Finalizada || actividad.Estado == EstadoActividad.Cancelada)
-            return Error.Validation("No puedes darte de baja de una actividad finalizada o cancelada.");
+            return Error.Validation(code: "Profesor.ActividadFinalizadaOCancelada", description: "No puedes darte de baja de una actividad finalizada o cancelada.");
+
+        if (actividad.FechaYHora <= DateTime.UtcNow.AddHours(24))
+            return Error.Conflict(code: "Profesor.BajaConMenosDe24Horas", description: "No puedes darte de baja de una actividad que comienza en menos de 24 horas.");
+
+        var removedProfesorId = actividad.ProfesorId;
 
         actividad.RemoverProfesor();
         await _uow.SaveChangesAsync(ct);
+
+        if (removedProfesorId.HasValue)
+        {
+            try
+            {
+                var removedProfesor = await _profesorRepo.GetByIdAsync(removedProfesorId.Value, ct);
+                if (removedProfesor?.User?.Email != null)
+                {
+                    await _emailService.SendOportunidadDeActividadParaProfesoresEmail(
+                        removedProfesor.User.Email, actividad.Nombre, actividad.FechaYHora);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send activity opportunity email for actividad {ActividadId}", id);
+            }
+        }
+
+        return await MapToDto(actividad, ct);
+    }
+
+    public async Task<ErrorOr<ActividadResponse>> AprobarActividad(Guid id, CancellationToken ct = default)
+    {
+        var actividad = await _actividadRepo.ObtenerPorIdAsync(id, ct);
+        if (actividad == null) return Error.NotFound("Actividad no encontrada");
+
+        actividad.Aprobar();
+        await _uow.SaveChangesAsync(ct);
+
         return await MapToDto(actividad, ct);
     }
 
@@ -269,13 +449,28 @@ public class ActividadService : IActividadService
     public async Task<ErrorOr<Success>> RegistrarAsistenciaPorDniAsync(Guid actividadId, string dni, CancellationToken ct = default)
     {
         var cliente = await _clienteRepo.GetByDniAsync(dni, ct);
-        if (cliente == null) return Error.NotFound("Cliente no encontrado");
+        if (cliente == null)
+            return Error.NotFound(code: "DNI_NO_REGISTRADO", description: "El DNI ingresado no corresponde a ningún cliente registrado");
 
         var actividad = await _actividadRepo.ObtenerPorIdAsync(actividadId, ct);
         if (actividad == null) return Error.NotFound("Actividad no encontrada");
 
+        if (actividad.Estado != EstadoActividad.Aprobada && actividad.Estado != EstadoActividad.EnCurso)
+            return Error.Validation(code: "ACTIVIDAD_NO_DISPONIBLE", description: "La actividad no está disponible para registrar asistencia");
+
+        var ahora = DateTime.UtcNow;
+        var inicioVentana = actividad.FechaYHora.AddHours(-1);
+        var finVentana = actividad.FechaYHora.AddHours(2);
+
+        if (ahora < inicioVentana || ahora > finVentana)
+            return Error.Validation(code: "FUERA_DE_VENTANA_HORARIA", description: "Solo se puede registrar asistencia desde 1 hora antes hasta 2 horas después del inicio de la actividad");
+
         var reserva = actividad.Reservas.FirstOrDefault(r => r.ClienteId == cliente.UserId && r.EstadoDeReserva == EstadoDeReserva.Activa);
-        if (reserva == null) return Error.NotFound("Reserva no encontrada");
+        if (reserva == null)
+            return Error.NotFound(code: "SIN_RESERVA", description: "El cliente no tiene una reserva activa para esta clase");
+
+        if (reserva.Asistencia == EstadoAsistencia.Presente)
+            return Error.Conflict(code: "ASISTENCIA_YA_REGISTRADA", description: "El cliente ya tiene la asistencia registrada para esta clase");
 
         reserva.MarcarAsistencia();
         cliente.ResetearInasistencias();
@@ -296,6 +491,9 @@ public class ActividadService : IActividadService
         string nombreSala = actividad.Sala?.Nombre ?? string.Empty;
         string? nombreProfesor = actividad.Profesor?.User?.FirstName != null ? $"{actividad.Profesor.User.FirstName} {actividad.Profesor.User.LastName}" : string.Empty;
 
+        int intencionesPendientes = await _intencionPagoRepository.ContarIntencionesPendientesRecientesAsync(actividad.Id, TimeSpan.FromMinutes(15));
+        bool probabilidad = actividad.CupoMaximo > 0 && (actividad.CupoOcupado + intencionesPendientes) >= actividad.CupoMaximo;
+
         return new ActividadResponse(
             actividad.Id,
             actividad.Nombre,
@@ -306,12 +504,13 @@ public class ActividadService : IActividadService
             actividad.Estado,
             actividad.CupoMaximo,
             actividad.CupoDisponible,
+            actividad.Precio,
             actividad.SalaId,
             nombreSala,
             actividad.ProfesorId,
             nombreProfesor,
             actividad.SerieId,
-            actividad.ProbabilidadListaEspera
+            probabilidad
         );
     }
 
@@ -334,7 +533,7 @@ public class ActividadService : IActividadService
             return Error.Validation($"El cupo máximo no puede exceder la capacidad de la sala ({sala.Capacidad}).");
         
         if (await _actividadRepo.ExisteActividadSuperpuestaEnSalaAsync(sala.Id, fechaYHora, id, serieId, ct))
-            return Error.Conflict($"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+            return Error.Conflict(description: $"La sala no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
 
         Profesor? profesor;
         if (profesorId.HasValue)
@@ -348,10 +547,26 @@ public class ActividadService : IActividadService
                 return Error.Validation("El profesor no tiene la especialidad requerida para esta actividad");
 
             if (await _actividadRepo.ExisteActividadSuperpuestaEnProfesorAsync(profesor.UserId, fechaYHora, id, serieId, ct))
-                return Error.Conflict($"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
+                return Error.Conflict(description: $"El profesor no está disponible el {fechaYHora.ToString("dd/MM/yyyy")} a las {fechaYHora.ToString("HH:mm")}");
         }
 
         return Result.Success;
+    }
+
+    private async Task EnviarEmailProfesorAsignado(Guid profesorId, string nombreActividad, DateTime fechaActividad, CancellationToken ct)
+    {
+        try
+        {
+            var profesor = await _profesorRepo.GetByIdAsync(profesorId, ct);
+            if (profesor?.User?.Email != null)
+            {
+                await _emailService.SendProfesorAsignadoEmail(profesor.User.Email, nombreActividad, fechaActividad);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send professor assignment email for actividad '{Nombre}'", nombreActividad);
+        }
     }
 
     private List<DateTime> GenerarFechasDeSerie(DateTime fechaInicio, DateTime fechaLimite)

@@ -7,7 +7,7 @@ using Application.Seeding;
 using Application.Usuarios;
 using Application.Actividades;
 using Application.Reservas;
-using Domain;
+using Domain.Users;
 using Infrastructure.Email;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
@@ -24,6 +24,8 @@ using Application.Profesores;
 using Infrastructure.Profesores;
 using Application.Clientes;
 using Infrastructure.Services;
+using Application.Pagos;
+using Application.Notificaciones;
 
 namespace Infrastructure.Common;
 
@@ -96,8 +98,10 @@ public static class DependencyInjection
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IReservaRepository, ReservaRepository>();
         services.AddScoped<IAptoFisicoRepository, AptoFisicoRepository>();
-        services.AddScoped<ISuscripcionRepository, SuscripcionRepository>();
+        services.AddScoped<IIntencionPagoRepository, IntencionPagoRepository>();
         services.AddScoped<IDocumentScannerService, Infrastructure.Auth.DocumentScannerService>();
+        services.AddScoped<INotificacionRepository, NotificacionRepository>();
+        services.AddHostedService<ActividadStateBackgroundService>();
         services.AddHttpClient<IMercadoPagoService, MercadoPagoService>((serviceProvider, client) =>
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();

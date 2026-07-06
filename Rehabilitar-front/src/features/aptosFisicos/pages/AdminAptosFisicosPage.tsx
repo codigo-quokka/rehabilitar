@@ -4,6 +4,7 @@ import { Card, Table, Badge, Button, Modal, Input, FilterDropdown } from '../../
 import { aptosFisicosApi } from '../../../api/aptosFisicos';
 import { AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { ConfirmActionModalVerde } from '../../../components/ConfirmActionModalVerde';
 import { Eye, Check, X, FileText } from 'lucide-react';
 import { AptoFisicoViewer } from '../components/AptoFisicoViewer';
@@ -15,6 +16,7 @@ export function AdminAptosFisicosPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
+  const importantNotification = useImportantNotification();
 
   const showToastMessage = (message: string, type: 'success' | 'error') => {
     setToastMessage(message);
@@ -111,7 +113,7 @@ export function AdminAptosFisicosPage() {
     if (!aptoToApprove) return;
     try {
       await aptosFisicosApi.evaluar(aptoToApprove.id, true);
-      showToastMessage('Apto físico aprobado exitosamente.', 'success');
+      await importantNotification({ type: 'success', message: 'Apto físico aprobado exitosamente.' });
       fetchAptos();
     } catch (err) {
       console.error('Error al aprobar apto físico:', err);
@@ -131,7 +133,7 @@ export function AdminAptosFisicosPage() {
     if (!aptoToReject) return;
     try {
       await aptosFisicosApi.evaluar(aptoToReject.id, false, rejectReason);
-      showToastMessage('Apto físico rechazado exitosamente.', 'success');
+      await importantNotification({ type: 'success', message: 'Apto físico rechazado exitosamente.' });
       fetchAptos();
     } catch (err) {
       console.error('Error al rechazar apto físico:', err);

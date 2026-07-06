@@ -17,7 +17,8 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                 a => a.ProfesorId == profesorId  &&
                 a.FechaYHora < FinEstimado &&
                 nuevaFechaYHora < a.FechaYHora.AddHours(1) &&
-                a.Id != actividadId,
+                a.Id != actividadId &&
+                a.Estado != EstadoActividad.Cancelada,
                  ct); // chequear lógica
     }
 
@@ -29,7 +30,8 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                 a => a.SalaId == salaId  &&
                 a.FechaYHora < FinEstimado &&
                 nuevaFechaYHora < a.FechaYHora.AddHours(1) &&
-                a.Id != actividadId,
+                a.Id != actividadId &&
+                a.Estado != EstadoActividad.Cancelada,
                  ct); // chequear lógica
     }
     
@@ -63,6 +65,19 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                              .ToListAsync(ct);
     }
 
+    public async Task<ICollection<Actividad>> ListarPorSerieIdConReservasAsync(Guid serieId, CancellationToken ct = default)
+    {
+        return await _context.Actividades
+                             .Where(a => a.SerieId == serieId)
+                             .Include(a => a.Sala)
+                             .Include(a => a.Profesor)
+                             .ThenInclude(p => p.User)
+                             .Include(a => a.Reservas)
+                                 .ThenInclude(r => r.Cliente)
+                                 .ThenInclude(c => c.User)
+                             .ToListAsync(ct);
+    }
+
     public async Task<ICollection<Actividad>> ListarPorProfesorIdAsync(Guid profesorId, CancellationToken ct = default)
     {
         return await _context.Actividades
@@ -72,6 +87,16 @@ public class ActividadRepository : RepositoryBase<Actividad>, IActividadReposito
                              .ThenInclude(p => p.User)
                              .ToListAsync(ct);
     }
+    public async Task<ICollection<Actividad>> ListarActividadesPorEstadoYAntesDeAsync(EstadoActividad estado, DateTime fechaLimite, CancellationToken ct = default)
+    {
+        return await _context.Actividades
+            .Include(a => a.Reservas)
+                .ThenInclude(r => r.Cliente)
+            .Include(a => a.Profesor)
+            .Where(a => a.Estado == estado && a.FechaYHora <= fechaLimite)
+            .ToListAsync(ct);
+    }
+
     public async Task<Actividad?> ObtenerPorIdAsync(Guid actividadId, CancellationToken ct = default)
     {
         return await _context.Actividades

@@ -1,13 +1,16 @@
-using Domain;
+using Domain.Users;
 using Domain.Salas;
 using Domain.Reservas;
 using Domain.Clientes;
 using Domain.Profesores;
 using Domain.Actividades;
 using Domain.AptosFisicos;
+using Domain.Pagos;
+using Domain.Notificaciones;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Infrastructure.Persistence;
 
@@ -19,7 +22,8 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
     public DbSet<Sala> Salas { get; set; }
     public DbSet<Actividad> Actividades { get; set; }
     public DbSet<AptoFisico> AptosFisicos { get; set; }
-    public DbSet<SuscripcionAbonado> SuscripcionesAbonado { get; set; }
+    public DbSet<IntencionPago> IntencionesPago { get; set; }
+    public DbSet<Notificacion> Notificaciones { get; set; }
 
     public RehabilitarDbContext(DbContextOptions<RehabilitarDbContext> options) : base(options) { }
 
@@ -38,6 +42,9 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
             .HasColumnName("Dni")
             .HasMaxLength(8)
             .IsRequired();
+
+            entity.Property(u => u.NotificacionAplicacion)
+                .HasDefaultValue(true);
         });
         builder.Entity<Role>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
@@ -140,16 +147,25 @@ public class RehabilitarDbContext : IdentityDbContext<User, Role, Guid>
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        builder.Entity<SuscripcionAbonado>(entity =>
+        builder.Entity<IntencionPago>(entity =>
         {
-            entity.ToTable("SuscripcionesAbonado");
-            entity.HasKey(s => s.Id);
-            entity.Property(s => s.Estado)
-                  .HasConversion<string>()
-                  .IsRequired();
-            entity.HasOne<Cliente>()
+            entity.ToTable("IntencionesPago");
+            entity.HasKey(i => i.Id);
+            entity.Property(i => i.ActividadesIds)
+                  .HasConversion(
+                      v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                      v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions)null)!
+                  );
+            entity.Property(i => i.MontoAPagar).HasColumnType("decimal(18, 2)");
+        });
+
+        builder.Entity<Notificacion>(entity =>
+        {
+            entity.ToTable("Notificaciones");
+            entity.HasKey(n => n.Id);
+            entity.HasOne<User>()
                   .WithMany()
-                  .HasForeignKey(s => s.ClienteId)
+                  .HasForeignKey(n => n.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using Domain;
+using Domain.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;

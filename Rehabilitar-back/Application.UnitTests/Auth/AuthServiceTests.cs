@@ -1,12 +1,14 @@
 using Application.Auth;
 using Application.Auth.DTOs;
 using Application.Clientes;
+using Application.Profesores;
 using Application.Common.Interfaces;
 using Application.Common.Settings;
-using Domain;
+using Domain.Users;
 using Domain.Clientes;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using FluentAssertions;
@@ -17,6 +19,7 @@ public class AuthServiceTests
 {
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<IClienteRepository> _clienteRepoMock;
+    private readonly Mock<IProfesorRepository> _profesorRepoMock;
     private readonly Mock<IUnitOfWork> _uowMock;
     private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<IJwtProvider> _jwtMock;
@@ -28,6 +31,7 @@ public class AuthServiceTests
         var userStoreMock = new Mock<IUserStore<User>>();
         _userManagerMock = new Mock<UserManager<User>>(userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
         _clienteRepoMock = new Mock<IClienteRepository>();
+        _profesorRepoMock = new Mock<IProfesorRepository>();
         _uowMock = new Mock<IUnitOfWork>();
         _emailServiceMock = new Mock<IEmailService>();
         _jwtMock = new Mock<IJwtProvider>();
@@ -41,6 +45,7 @@ public class AuthServiceTests
         _authService = new AuthService(
             _userManagerMock.Object,
             _clienteRepoMock.Object,
+            _profesorRepoMock.Object,
             _uowMock.Object,
             _emailServiceMock.Object,
             _jwtMock.Object,

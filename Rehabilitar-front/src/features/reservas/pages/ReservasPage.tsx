@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
 import { Card, Badge, Button, Input, FilterDropdown } from '../../../components/ui';
@@ -6,10 +7,11 @@ import { useAuth } from '../../../hooks/useAuth';
 import { reservasApi, actividadesApi } from '../../../api';
 import { Reserva, Actividad } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 
 const estadoLabel: Record<string, string> = {
-  PendienteDePago: 'Pendiente de pago',
+  PendienteDePago: 'Señada',
   Activa: 'Activa',
   EnEspera: 'En espera',
   Cancelada: 'Cancelada',
@@ -46,10 +48,15 @@ export function ReservasPage() {
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [showConfirmCancel, setShowConfirmCancel] = useState(false);
   const [selectedReserva, setSelectedReserva] = useState<Reserva | null>(null);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Reserva[]>([]);
+  const [showConfirmCancelGrupo, setShowConfirmCancelGrupo] = useState(false);
+  const [grupoParaCancelar, setGrupoParaCancelar] = useState<Reserva[] | null>(null);
 
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
@@ -99,6 +106,15 @@ export function ReservasPage() {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    if (!showGroupModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowGroupModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showGroupModal]);
+
   const handlePagar = (reserva: Reserva) => {
     const montoPagado = reserva.montoTotal - reserva.montoPendiente;
     navigate(`/reservas/confirmar/${reserva.id}`, {
@@ -127,9 +143,7 @@ export function ReservasPage() {
       await reservasApi.cancelar(reservaId, actividadId);
       setReservas((prev) => prev.map((r) => r.id === reservaId ? { ...r, estadoDeReserva: 'Cancelada' } : r));
       window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
-      setToastType('success');
-      setToastMessage('Reserva cancelada correctamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Reserva cancelada correctamente' });
     } catch (err) {
       const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
       const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al cancelar la reserva';
@@ -144,8 +158,10 @@ export function ReservasPage() {
 
   const montoPagado = (r: Reserva) => r.montoTotal - r.montoPendiente;
   const estaCompletado = (r: Reserva) => r.montoPendiente === 0;
+  const esSuscripto = (r: Reserva) => r.tipoCliente === 'Abonado';
 
   const filteredReservas = reservas.filter(r => {
+    if (filters.estadoDeReserva === 'all' && r.estadoDeReserva === 'Cancelada') return false;
     if (filters.estadoDeReserva !== 'all' && r.estadoDeReserva !== filters.estadoDeReserva) return false;
     if (filters.pagado === 'pagados' && r.montoPendiente !== 0) return false;
     if (filters.pagado === 'pendientes' && r.montoPendiente === 0) return false;
@@ -168,16 +184,10 @@ export function ReservasPage() {
   const displayReservas = useMemo(() => {
     const byDate = (r: Reserva) => new Date(actividades[r.actividadId]?.fechaYHora ?? 0).getTime();
     const sorted = [...filteredReservas].sort((a, b) => byDate(a) - byDate(b));
-    if (filters.estadoDeReserva === 'Cancelada') return sorted;
-    let cancelCount = 0;
-    return sorted.filter(r => {
-      if (r.estadoDeReserva === 'Cancelada') {
-        cancelCount++;
-        return cancelCount <= 5;
-      }
-      return true;
-    });
-  }, [filteredReservas, filters.estadoDeReserva, actividades]);
+    // Remove the 5-item limit on cancelled reservations so that groups 
+    // (suscripciones) always display ALL their activities even if cancelled
+    return sorted;
+  }, [filteredReservas, actividades]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -208,6 +218,38 @@ export function ReservasPage() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
+  const NULL_GUID = '00000000-0000-0000-0000-000000000000';
+
+  const { grupos, individuales } = useMemo(() => {
+    const gruposMap = new Map<string, Reserva[]>();
+    const ind: Reserva[] = [];
+    for (const r of displayReservas) {
+      const act = actividades[r.actividadId];
+      if (act?.serieId && act.serieId.trim() !== '' && act.serieId !== NULL_GUID) {
+        if (!gruposMap.has(act.serieId)) {
+          gruposMap.set(act.serieId, []);
+        }
+        gruposMap.get(act.serieId)!.push(r);
+      } else {
+        ind.push(r);
+      }
+    }
+    const sortByFecha = (a: Reserva, b: Reserva) =>
+      new Date(actividades[a.actividadId]?.fechaYHora ?? 0).getTime() -
+      new Date(actividades[b.actividadId]?.fechaYHora ?? 0).getTime();
+    for (const [, reservas] of gruposMap) {
+      reservas.sort(sortByFecha);
+    }
+    ind.sort(sortByFecha);
+    const gruposArr = Array.from(gruposMap.entries());
+    gruposArr.sort(([, a], [, b]) => {
+      const aSus = a.length >= 4 ? 0 : 1;
+      const bSus = b.length >= 4 ? 0 : 1;
+      return aSus - bSus;
+    });
+    return { grupos: gruposArr, individuales: ind };
+  }, [displayReservas, actividades]);
+
   const cleanFilters = () => {
     setFilters({
       estadoDeReserva: 'all',
@@ -216,6 +258,82 @@ export function ReservasPage() {
     setDateFrom('');
     setDateTo('');
     setSearchTerm('');
+  };
+
+  const esGrupoPagable = (reservas: Reserva[]) =>
+    reservas.some(r => r.estadoDeReserva === 'PendienteDePago' || (r.estadoDeReserva === 'Activa' && r.montoPendiente > 0));
+
+  const handleAbrirGrupo = (reservas: Reserva[]) => {
+    setSelectedGroup(reservas);
+    setShowGroupModal(true);
+  };
+
+  const handleConfirmCancelGrupo = async () => {
+    if (!grupoParaCancelar || grupoParaCancelar.length === 0) return;
+    if (!effectiveUserId) {
+      setToastType('error');
+      setToastMessage('Error: no se pudo identificar al usuario');
+      setShowToast(true);
+      setGrupoParaCancelar(null);
+      return;
+    }
+    setShowConfirmCancelGrupo(false);
+    try {
+      const serieId = actividades[grupoParaCancelar[0]?.actividadId]?.serieId;
+      if (!serieId) {
+        setToastType('error');
+        setToastMessage('Error: no se encontró la serie de la actividad');
+        setShowToast(true);
+        return;
+      }
+      
+      await reservasApi.cancelarSerie(serieId, effectiveUserId);
+      
+      await importantNotification({ type: 'success', message: 'Todas las reservas activas fueron canceladas correctamente' });
+      window.dispatchEvent(new CustomEvent('rehabicoins:refresh'));
+      setShowGroupModal(false);
+      fetchReservas();
+    } catch (err) {
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.errorCode ?? apiError?.error ?? 'Error al cancelar las reservas';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setGrupoParaCancelar(null);
+    }
+  };
+
+  const handlePagarGrupo = () => {
+    const pending = selectedGroup.find(
+      r => r.estadoDeReserva === 'PendienteDePago' || (r.estadoDeReserva === 'Activa' && r.montoPendiente > 0)
+    );
+    if (pending) {
+      setShowGroupModal(false);
+      handlePagar(pending);
+    }
+  };
+
+  const getRefundMessage = (reserva: Reserva | null) => {
+    if (!reserva) return '';
+    const act = actividades[reserva.actividadId];
+    if (!act) return '';
+
+    const diffHours = (new Date(act.fechaYHora).getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+    if (esSuscripto(reserva)) {
+      if (diffHours >= 48) {
+        return 'Se te devolverá 1 RehabiliCoin.';
+      } else {
+        return 'No se te devolverá el RehabiliCoin por cancelar con menos de 48hs de anticipación.';
+      }
+    } else {
+      if (diffHours >= 24) {
+        return 'Se te reembolsará el dinero pagado.';
+      } else {
+        return 'No se te reembolsará el dinero por cancelar con menos de 24hs de anticipación.';
+      }
+    }
   };
 
 
@@ -227,9 +345,8 @@ export function ReservasPage() {
             <Input
               placeholder="Buscar por actividad..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.slice(0, 40))}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="min-w-125 h-12"
-              maxLength={40}
             />
             <Button
               variant="primary"
@@ -326,7 +443,117 @@ export function ReservasPage() {
   </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayReservas.map((reserva) => {
+            {grupos.map(([serieId, reservas]) => {
+              const primeraAct = actividades[reservas[0]?.actividadId];
+              const pagadoTotal = reservas.reduce((s, r) => s + (r.montoTotal - r.montoPendiente), 0);
+              const totalTotal = reservas.reduce((s, r) => s + r.montoTotal, 0);
+              const hayPendientes = reservas.some(r => r.montoPendiente > 0 && r.estadoDeReserva !== 'Cancelada');
+              const stripe = "h-2.5 border-x border-b border-border dark:border-gray-700 rounded-b-2xl pointer-events-none";
+              return (
+                <div
+                  key={serieId}
+                  onClick={() => handleAbrirGrupo(reservas)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Grupo de ${reservas.length} reservas recurrentes`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') handleAbrirGrupo(reservas);
+                  }}
+                  className="cursor-pointer flex flex-col h-full relative overflow-hidden"
+                >
+                  {reservas.length >= 4 && (
+                    <div className="absolute top-0 right-0 z-10">
+                      <div className="bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950 text-[10px] font-bold px-2 py-0.5 rounded-bl-xl flex items-center gap-1 shadow-sm">
+                        <svg className="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l4 6 6-2-3 7H5l-3-7 6 2 4-6z" />
+                        </svg>
+                        Suscripto
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-col flex-1">
+                    <Card className="flex flex-col flex-1 transition-shadow hover:shadow-dark-green hover:bg-green-50 dark:hover:bg-gray-900 dark:hover:shadow-gray-500">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex gap-1.5 flex-wrap">
+                          <Badge variant="recurrente">
+                            Recurrente
+                          </Badge>
+                          {reservas.length > 0 && reservas.every(r => r.estadoDeReserva === 'Cancelada') && (
+                            <Badge variant="danger">Cancelada</Badge>
+                          )}
+                        </div>
+                        <Badge variant="info">
+                          {reservas.length} {reservas.length === 1 ? 'reserva' : 'reservas'}
+                        </Badge>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
+                        {primeraAct?.nombre || 'Actividad'}
+                      </h3>
+
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <span>
+                          {reservas.length} clases: {formatDate(actividades[reservas[0].actividadId]?.fechaYHora ?? '')}
+                          {reservas.length > 1 ? ` — ${formatDate(actividades[reservas[reservas.length - 1].actividadId]?.fechaYHora ?? '')}` : ''}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-dark dark:text-gray-100 mb-4 space-y-1">
+                        <p>
+                          Pagado: <span className="font-semibold">${pagadoTotal.toFixed(2)}</span>
+                          {' / '}
+                          <span className="font-semibold">${totalTotal.toFixed(2)}</span>
+                        </p>
+                        {hayPendientes && (
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Saldo pendiente: <span className="font-medium">${reservas.reduce((s, r) => s + r.montoPendiente, 0).toFixed(2)}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex-1" />
+
+                      <div className="flex gap-2 mt-auto flex-wrap" onClick={(e) => e.stopPropagation()}>
+                        {hayPendientes && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              const pending = reservas.find(
+                                r => r.estadoDeReserva === 'PendienteDePago' || (r.estadoDeReserva === 'Activa' && r.montoPendiente > 0)
+                              );
+                              if (pending) handlePagar(pending);
+                            }}
+                          >
+                            Pagar pendientes
+                          </Button>
+                        )}
+                        {reservas.some(r => r.estadoDeReserva !== 'Cancelada') && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setGrupoParaCancelar(reservas);
+                              setShowConfirmCancelGrupo(true);
+                            }}
+                          >
+                            Cancelar todas
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                    <div className={`${stripe} -mt5 bg-dark/5 w-[92%] mx-auto`} />
+                    <div className={`${stripe} shadow-xl -mt5 bg-dark/20 w-[84%] mx-auto`} />
+                    <div className={`${stripe} shadow-xl -mt5 bg-dark/40 w-[76%] mx-auto`} />
+                    <div className={`${stripe} shadow-xl -mt5 bg-dark/50 w-[68%] mx-auto`} />
+                  </div>
+                </div>
+              );
+            })}
+            {individuales.map((reserva) => {
               const act = actividades[reserva.actividadId];
               const pagado = montoPagado(reserva);
               const completado = estaCompletado(reserva);
@@ -411,15 +638,134 @@ export function ReservasPage() {
         )}
       </div>
 
+      {showGroupModal && selectedGroup.length > 0 && createPortal(
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowGroupModal(false)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button
+                onClick={() => setShowGroupModal(false)}
+                className="absolute -top-4 -right-4 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">
+                {actividades[selectedGroup[0].actividadId]?.nombre || 'Actividad recurrente'}
+              </h2>
+              <p className="text-sm font-bold text-dark dark:text-gray-400 mt-1">
+                {selectedGroup.length} {selectedGroup.length === 1 ? 'reserva' : 'reservas'}
+              </p>
+              <div className="flex gap-2 mt-3">
+                {esGrupoPagable(selectedGroup) && (
+                  <Button variant="primary" size="sm" onClick={handlePagarGrupo}>
+                    Pagar pendientes
+                  </Button>
+                )}
+                {selectedGroup.some(
+                  r => r.estadoDeReserva === 'PendienteDePago' || r.estadoDeReserva === 'Activa' || r.estadoDeReserva === 'EnEspera'
+                ) && (
+                  <Button variant="danger" size="sm" onClick={() => { setGrupoParaCancelar(selectedGroup); setShowConfirmCancelGrupo(true); }}>
+                    Cancelar todas
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {selectedGroup.map((reserva) => {
+                const act = actividades[reserva.actividadId];
+                const pagado = montoPagado(reserva);
+                const completado = estaCompletado(reserva);
+                return (
+                  <Card key={reserva.id} className="flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <Badge variant={estadoVariant[reserva.estadoDeReserva] || 'default'}>
+                        {estadoLabel[reserva.estadoDeReserva] || reserva.estadoDeReserva}
+                      </Badge>
+                      {completado && <Badge variant="success">Pagado</Badge>}
+                      {esSuscripto(reserva) && (
+                        <div className="bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l4 6 6-2-3 7H5l-3-7 6 2 4-6z" />
+                          </svg>
+                          Suscripto
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">
+                      {act?.nombre || 'Actividad'}
+                    </h3>
+                    {act && (
+                      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <p>{formatDate(act.fechaYHora)} — {formatTime(act.fechaYHora)}</p>
+                      </div>
+                    )}
+                    <div className="text-sm text-dark dark:text-gray-100 mb-3">
+                      <p>Pagado: <span className="font-semibold">${pagado.toFixed(2)}</span> / <span className="font-semibold">${reserva.montoTotal.toFixed(2)}</span></p>
+                      {!completado && (
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Saldo: ${reserva.montoPendiente.toFixed(2)}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-auto">
+                      {(reserva.estadoDeReserva === 'PendienteDePago' || (reserva.estadoDeReserva === 'Activa' && !completado)) && (
+                        <Button variant="primary" size="sm" className="flex-1" onClick={() => { setShowGroupModal(false); handlePagar(reserva); }}>
+                          {reserva.estadoDeReserva === 'PendienteDePago' ? 'Pagar' : 'Pagar saldo'}
+                        </Button>
+                      )}
+                      {(reserva.estadoDeReserva === 'PendienteDePago' || reserva.estadoDeReserva === 'Activa' || reserva.estadoDeReserva === 'EnEspera') && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="flex-1"
+                          loading={cancelandoId === reserva.id}
+                          onClick={() => handleCancelClick(reserva)}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                      {reserva.estadoDeReserva === 'Cancelada' && (
+                        <span className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 rounded-xl w-full justify-center">
+                          Cancelada
+                        </span>
+                      )}
+                      {reserva.estadoDeReserva === 'Activa' && completado && (
+                        <span className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/50 rounded-xl w-full justify-center">
+                          Completado
+                        </span>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <ConfirmActionModal
         isOpen={showConfirmCancel}
         title="Cancelar reserva"
-        body="¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer."
+        body={`¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer. ${getRefundMessage(selectedReserva)}`}
         confirmLabel="Cancelar reserva"
         onConfirm={handleConfirmCancel}
         onCancel={() => {
           setShowConfirmCancel(false);
           setSelectedReserva(null);
+        }}
+      />
+
+      <ConfirmActionModal
+        isOpen={showConfirmCancelGrupo}
+        title="Cancelar todas las reservas"
+        body="¿Estás seguro de que deseas cancelar todas las reservas activas de este grupo? Esta acción no se puede deshacer."
+        confirmLabel="Cancelar todas"
+        onConfirm={handleConfirmCancelGrupo}
+        onCancel={() => {
+          setShowConfirmCancelGrupo(false);
+          setGrupoParaCancelar(null);
         }}
       />
 

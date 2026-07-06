@@ -1,4 +1,5 @@
 using Domain.Exceptions;
+using Domain.Users;
 
 namespace Domain.Clientes;
 
@@ -34,6 +35,13 @@ public class Cliente
     public void RecibirRehabilicoin()
     {
         RehabiliCoins++;
+    }
+
+    public void AgregarRehabiliCoins(int cantidad)
+    {
+        if (cantidad < 0)
+            throw new DomainException("La cantidad debe ser positiva.");
+        RehabiliCoins += cantidad;
     }
 
     public void CanjearRehabilicoin()

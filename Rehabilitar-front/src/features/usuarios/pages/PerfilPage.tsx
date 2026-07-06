@@ -5,6 +5,7 @@ import { PrivacyEye } from "../../../components/PrivacyEye";
 import { useAuth } from "../../../hooks/useAuth";
 import { authApi, usuariosApi } from "../../../api";
 import { Notitoast } from "../../../components/Notitoast";
+import { useImportantNotification } from "../../../hooks/useImportantNotification";
 
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
 
@@ -110,6 +111,10 @@ export function PerfilPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [toastMessage, setToastMessage] = useState("");
+  const importantNotification = useImportantNotification();
+
+  const [notificacionAplicacion, setNotificacionAplicacion] = useState(user?.notificacionAplicacion ?? true);
+  const [prefToggleLoading, setPrefToggleLoading] = useState(false);
 
   // New states for AptoFisico
   const [aptos, setAptos] = useState<AptoFisico[]>([]);
@@ -139,6 +144,27 @@ export function PerfilPage() {
     setShowToast(true);
   };
 
+  const handlePrefToggle = async () => {
+    if (!user || prefToggleLoading) return;
+
+    const previousValue = notificacionAplicacion;
+    const newValue = !previousValue;
+    setNotificacionAplicacion(newValue);
+    setPrefToggleLoading(true);
+
+    try {
+      await usuariosApi.update(user.id, { notificacionAplicacion: newValue });
+      updateUser({ ...user, notificacionAplicacion: newValue });
+      showToastMessage("Preferencia de notificación actualizada.", "success");
+    } catch (err) {
+      setNotificacionAplicacion(previousValue);
+      const errorCode = (err as any)?.response?.data?.error || "Error al actualizar la preferencia.";
+      showToastMessage(errorCode, "error");
+    } finally {
+      setPrefToggleLoading(false);
+    }
+  };
+
   const handleConfirmSave = async () => {
     if (!user) return;
 
@@ -159,7 +185,7 @@ export function PerfilPage() {
         nombre: trimmedNombre,
         apellido: trimmedApellido,
       });
-      showToastMessage("Perfil actualizado exitosamente.", "success");
+      await importantNotification({ type: 'success', message: 'Perfil actualizado exitosamente.' });
       setEditing(false);
     } catch (err) {
       const msg =
@@ -270,10 +296,7 @@ export function PerfilPage() {
       const result = await authApi.changePassword(
         changePasswordDataRef.current,
       );
-      showToastMessage(
-        result.message || "Contraseña actualizada correctamente.",
-        "success",
-      );
+      await importantNotification({ type: 'success', message: result.message || "Contraseña actualizada correctamente." });
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -454,17 +477,19 @@ export function PerfilPage() {
                           >
                             Ver archivo
                           </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => setSubiendo(true)}
-                          >
+                          {aptoActual.estado !== "Aprobado" && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => setSubiendo(true)}
+                            >
                             {aptoActual.estado === "Pendiente"
                               ? "Cargar de nuevo"
                               : aptoActual.estado === "Rechazado"
                                 ? "Reintentar"
                                 : "Actualizar"}
-                          </Button>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -592,6 +617,25 @@ export function PerfilPage() {
               </Button>
             </div>
           )}
+        </Card>
+
+        <Card className="mt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-dark dark:text-gray-100">
+              Preferencias de notificación
+            </h3>
+          </div>
+          <label className="flex items-center gap-3 mt-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notificacionAplicacion}
+              onChange={handlePrefToggle}
+              className="w-5 h-5 rounded accent-primary border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+            />
+            <span className="text-dark dark:text-gray-100 text-sm">
+              Recibir notificaciones dentro del sistema
+            </span>
+          </label>
         </Card>
 
         <ConfirmActionModalVerde

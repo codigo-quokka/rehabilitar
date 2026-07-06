@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, Badge, Button, Modal, Input, Select } from "../../../components/ui";
 import { Actividad, Role, Sala, User } from "../../../types";
-import { actividadesApi } from "../../../api";
+import { actividadesApi, reservasApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
 import { ActividadCard } from "./ActividadCard";
+import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { formatDate, tipoLabel } from "../constants";
 
 interface RecurrenteGroupProps {
@@ -14,6 +16,9 @@ interface RecurrenteGroupProps {
   onModificar: (act: Actividad) => void;
   onTomarActividad: (act: Actividad) => void;
   onVerReservas?: (act: Actividad) => void;
+  onVerSuscriptores?: (actividadesGrupo: Actividad[]) => void;
+  onAprobar?: (act: Actividad) => void;
+  onEliminarPropuesta?: (act: Actividad) => void;
   onUpdate: () => void;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
@@ -27,14 +32,24 @@ export function RecurrenteGroup({
   onError,
   onSuccess,
   onVerReservas,
+  onVerSuscriptores,
+  onAprobar,
+  onEliminarPropuesta,
   salas,
   ...cardProps
 }: RecurrenteGroupProps) {
   const [expanded, setExpanded] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const [selectedMonths, setSelectedMonths] = useState(1);
+  const [futureByMonth, setFutureByMonth] = useState<Record<string, Actividad[]>>({});
+  const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
+  const [fetchingMonths, setFetchingMonths] = useState(false);
   const { hasRole } = cardProps;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const first = actividades[0];
   const count = actividades.length;
 
@@ -66,6 +81,8 @@ export function RecurrenteGroup({
     salaId: first.salaId,
     estado: first.estado,
   });
+
+  const [showTomarTodasConfirm, setShowTomarTodasConfirm] = useState(false);
 
   const availableMonthKeys = useMemo(() => {
     const months = new Set<string>();
@@ -130,10 +147,119 @@ export function RecurrenteGroup({
     setShowEditGroup(true);
   };
 
-  const handleSubscribe = () => {
-      onError?.('Falta implementar suscripcion');
-      return;
+  const handleVerSuscriptores = () => {
+    onVerSuscriptores?.(actividades);
+  }
+
+  const handleAbrirSelectorMeses = async () => {
+    setFetchingMonths(true);
+    try {
+      const userReservas = await reservasApi.getAll({ usuarioId: user!.id });
+      const userReservedIds = new Set(
+        userReservas
+          .filter(r => r.estadoDeReserva !== 'Cancelada')
+          .map(r => r.actividadId)
+      );
+      setReservedIds(userReservedIds);
+
+      const allFuture = actividades
+        .filter(a => new Date(a.fechaYHora) > new Date())
+        .sort((a, b) => new Date(a.fechaYHora).getTime() - new Date(b.fechaYHora).getTime());
+
+      if (allFuture.length === 0 || allFuture.every(a => userReservedIds.has(a.id))) {
+        onError?.('Ya estás suscripto en esta actividad.');
+        return;
+      }
+
+      const disponibles = allFuture.filter(a => !userReservedIds.has(a.id));
+      if (disponibles.length < 4) {
+        onError?.(`Hay ${disponibles.length} clases disponibles. Se necesitan al menos 4 para comprar un paquete. Podés reservarlas individualmente.`);
+        return;
+      }
+
+      const byMonth: Record<string, Actividad[]> = {};
+      for (const act of allFuture) {
+        const d = new Date(act.fechaYHora);
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        if (!byMonth[key]) byMonth[key] = [];
+        byMonth[key].push(act);
+      }
+
+      setFutureByMonth(byMonth);
+      setSelectedMonths(1);
+      setShowMonthSelector(true);
+    } catch (err) {
+      console.error('Error al cargar disponibilidad', err);
+      onError?.('Error al cargar la disponibilidad de clases.');
+    } finally {
+      setFetchingMonths(false);
     }
+  };
+
+  const getSelectedFromMonths = useCallback((months: number) => {
+    const monthKeys = Object.keys(futureByMonth).sort();
+    const selectedMonthKeys = monthKeys.slice(0, months);
+    const result: Actividad[] = [];
+    for (let i = 0; i < selectedMonthKeys.length; i++) {
+      const acts = futureByMonth[selectedMonthKeys[i]];
+      if (i < selectedMonthKeys.length - 1) {
+        result.push(...acts.slice(0, 4));
+      } else {
+        result.push(...acts);
+      }
+    }
+    return result.filter(a => !reservedIds.has(a.id));
+  }, [futureByMonth, reservedIds]);
+
+  const handleConfirmarCompra = async () => {
+    setSubscribeLoading(true);
+    try {
+      const selectedActs = getSelectedFromMonths(selectedMonths);
+
+      if (selectedActs.length < 1) {
+        onError?.('No hay clases disponibles para los meses seleccionados.');
+        return;
+      }
+
+      if (selectedActs.length < 4) {
+        onError?.('Debes seleccionar al menos 4 clases disponibles para comprar el paquete. Seleccioná más meses.');
+        return;
+      }
+
+      const res = await reservasApi.createRecurrente({
+        clienteId: user!.id,
+        actividadesIds: selectedActs.map(a => a.id),
+      });
+
+      setShowMonthSelector(false);
+      navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
+        state: {
+          intencionId: res.intencionId,
+          actividades: selectedActs,
+          montoTotal: selectedActs.reduce((sum, a) => sum + a.precio, 0),
+        },
+      });
+    } catch (err) {
+      console.error('Error al comprar paquete', err);
+      const axiosErr = err as { response?: { status?: number; data?: Record<string, unknown> }; message?: string };
+      const data = axiosErr?.response?.data;
+      const msg = typeof data?.error === 'string'
+        ? data.error
+        : typeof data?.errorCode === 'string'
+          ? data.errorCode
+          : typeof data?.title === 'string'
+            ? data.title
+            : typeof data?.message === 'string'
+              ? data.message
+              : axiosErr?.message ?? 'Error al realizar la compra';
+      onError?.(msg);
+    } finally {
+      setSubscribeLoading(false);
+    }
+  };
+
+  const monthKeys = useMemo(() => Object.keys(futureByMonth).sort(), [futureByMonth]);
+  const totalMonthsDisponibles = monthKeys.length;
 
   const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,9 +290,11 @@ export function RecurrenteGroup({
       setShowEditGroup(false);
       onUpdate();
     } catch (err) {
-      console.error('Error al modificar grupo', err);
-      const axiosErr = err as { response?: { data?: { error?: string; title?: string } }; message?: string };
-      const msg = axiosErr?.response?.data?.error || axiosErr?.response?.data?.title || axiosErr?.message || 'Error desconocido';
+      const axiosErr = err as { response?: { data?: { error?: string; title?: string ; fieldErrors?: Object} }; message?: string };
+      const fieldErrors = axiosErr?.response?.data?.fieldErrors;
+      const validationMessage = fieldErrors && Object.keys(fieldErrors).flat()[0];
+
+      const msg = validationMessage || axiosErr?.response?.data?.error || axiosErr?.response?.data?.title || axiosErr?.message || 'Error desconocido';
       onError?.(`Error al modificar la serie: ${msg}`);
     } finally {
       setEditLoading(false);
@@ -182,12 +310,21 @@ export function RecurrenteGroup({
       (act) => (!act.profesorId || act.profesorId === NULL_GUID) && act.tipo === user.especialidad
     );
     if (unassigned.length === 0) return;
+    setShowTomarTodasConfirm(true);
+  };
+
+  const handleConfirmarTomarTodas = async () => {
+    if (!user) return;
+    const unassigned = actividades.filter(
+      (act) => (!act.profesorId || act.profesorId === NULL_GUID) && act.tipo === user.especialidad
+    );
+    setShowTomarTodasConfirm(false);
     const results = await Promise.allSettled(unassigned.map((act) => actividadesApi.asignarProfesor(act.id, user.id)));
     const failed = results.filter(r => r.status === 'rejected');
     if (failed.length > 0) {
       const reasons = failed.map(r => {
         const err = (r as PromiseRejectedResult).reason;
-        return err?.response?.data?.error || err?.message || 'Error desconocido';
+        return err?.response?.data?.error || err?.response?.data?.errorCode || err?.message || 'Error desconocido';
       });
       onError?.(`${failed.length} actividad(es) no pudieron asignarse: ${reasons[0]}`);
     }
@@ -220,7 +357,17 @@ export function RecurrenteGroup({
           <div className="flex items-start justify-between mb-3">
             <div className="flex gap-2">
               <Badge variant="success">{tipoLabel[first.tipo] || first.tipo}</Badge>
-              <Badge className="bg-purple-200 text-purple-500 dark:bg-purple-900/30 dark:text-purple-300">Recurrente</Badge>
+              <Badge variant="recurrente">Recurrente</Badge>
+              {hasRole(["Administrador", "Profesor", "Recepción"]) && (
+                <Badge variant={
+                  first.estado === 'Cancelada' ? 'warning' :
+                  first.estado === 'EnCurso' ? 'info' :
+                  first.estado === 'Aprobada' ? 'success' :
+                  first.estado === 'Propuesta' ? 'amber' : 'default'
+                }>
+                  {first.estado}
+                </Badge>
+              )}
             </div>
             <Badge variant="info">
               {count} actividades
@@ -260,10 +407,10 @@ export function RecurrenteGroup({
           <div className="flex-1" />
 
           <div className="flex flex-col gap-2">
-            {hasRole(["Administrador"]) && (
+            {hasRole(["Administrador"]) && first.estado !== 'Cancelada' && first.estado !== 'Finalizada' && (
               <div className="flex gap-2">
                 <Button
-                  variant="verde"
+                  variant="primary"
                   className="flex-1"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -272,25 +419,63 @@ export function RecurrenteGroup({
                 >
                   Modificar todas
                 </Button>
-                <Button
-                  variant="violeta"
-                  className="flex-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSubscribe();
-                  }}
-                >
-                  Ver suscriptores
-                </Button>
+                {first.estado !== 'Propuesta' && (
+                  <Button
+                    variant="violeta"
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVerSuscriptores();
+                    }}
+                  >
+                    Ver suscriptores
+                  </Button>
+                )}
               </div>
             )}
-            {hasRole(["Recepción"]) && onVerReservas && (
+            {hasRole(["Administrador"]) && first.estado === 'Propuesta' && (
+              <div className="flex gap-2">
+                {onAprobar && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAprobar(first);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-primary/20 text-dark-green hover:bg-primary/40 dark:bg-dark-green/30 dark:text-green-300 dark:hover:bg-dark-green/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary cursor-pointer"
+                    aria-label="Aprobar actividad"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Aprobar
+                  </button>
+                )}
+                {onEliminarPropuesta && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEliminarPropuesta(first);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-red-300 text-red-800 hover:bg-red-400 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 cursor-pointer"
+                    aria-label="Eliminar actividad"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            )}
+            {hasRole(["Recepción"]) && onVerReservas && first.estado !== 'Propuesta' && (
               <Button
                 variant="violeta"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSubscribe();
+                  handleVerSuscriptores();
                 }}
               >
                 Ver suscriptores
@@ -298,19 +483,20 @@ export function RecurrenteGroup({
             )}
             {hasRole(["Cliente Registrado"]) && (
               <Button
-                variant="verde"
+                variant="primary"
                 className="w-full"
+                loading={fetchingMonths || subscribeLoading}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSubscribe();
+                  handleAbrirSelectorMeses();
                 }}
               >
-                Suscribirse
+                Comprar Paquete
               </Button>
             )}
             {hasRole(["Profesor"]) && unassignedCount > 0 && (
               <Button
-                variant="verde"
+                variant="primary"
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -410,6 +596,134 @@ export function RecurrenteGroup({
         </form>
       </Modal>
 
+      <Modal
+        isOpen={showMonthSelector}
+        onClose={() => setShowMonthSelector(false)}
+        title="Seleccioná los meses de suscripción"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Cada mes incluye hasta 4 clases. El último mes se cobran solo las clases disponibles si son menos de 4.
+          </p>
+
+          {totalMonthsDisponibles === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+              No hay clases futuras disponibles para esta serie.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {Array.from({ length: totalMonthsDisponibles }, (_, i) => i + 1).map((m) => {
+                const selectedMonthKeys = monthKeys.slice(0, m);
+                const allActs = selectedMonthKeys.flatMap((key, idx) => {
+                  const acts = futureByMonth[key];
+                  return idx < selectedMonthKeys.length - 1 ? acts.slice(0, 4) : acts;
+                });
+                const totalClases = allActs.length;
+                const disponibles = allActs.filter(a => !reservedIds.has(a.id)).length;
+
+                const lastMonthKey = selectedMonthKeys[selectedMonthKeys.length - 1];
+                const lastActs = futureByMonth[lastMonthKey];
+                const lastMonthHasLess = lastActs && lastActs.length < 4;
+
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setSelectedMonths(m)}
+                    className={`w-full p-3 rounded-xl border text-left transition-colors ${
+                      selectedMonths === m
+                        ? 'border-primary bg-primary/10 dark:bg-primary/20 ring-1 ring-primary'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-primary/50 dark:hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-dark dark:text-gray-100">
+                        {m} {m === 1 ? 'mes' : 'meses'}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {totalClases} clases
+                        {disponibles < totalClases && (
+                          <span className="text-primary font-medium"> ({disponibles} a comprar)</span>
+                        )}
+                      </span>
+                    </div>
+                    {lastMonthHasLess && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        * Último mes: {lastActs.length} {lastActs.length === 1 ? 'clase disponible' : 'clases disponibles'}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Clases a comprar</span>
+              <span className="font-semibold text-dark dark:text-gray-100">
+                {getSelectedFromMonths(selectedMonths).length}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Meses</span>
+              <span className="font-semibold text-dark dark:text-gray-100">
+                {selectedMonths} {selectedMonths === 1 ? 'mes' : 'meses'}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Total estimado</span>
+              <span className="font-semibold text-primary">
+                ${getSelectedFromMonths(selectedMonths).reduce((s, a) => s + a.precio, 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Fechas seleccionadas</p>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {(() => {
+                const months = Object.keys(futureByMonth).sort().slice(0, selectedMonths);
+                const allSelected = months.flatMap((key, idx) => {
+                  const acts = futureByMonth[key];
+                  return (idx < months.length - 1 ? acts.slice(0, 4) : acts).filter(a => !reservedIds.has(a.id));
+                });
+                return allSelected.length > 0 ? allSelected.map(a => (
+                  <div key={a.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>{formatDate(a.fechaYHora)} — {new Date(a.fechaYHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                )) : (
+                  <p className="text-xs text-gray-400 dark:text-gray-500">No hay clases disponibles en los meses seleccionados.</p>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <Button
+              variant="ghost"
+              type="button"
+              className="text-dark dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={() => setShowMonthSelector(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              loading={subscribeLoading}
+              disabled={totalMonthsDisponibles === 0}
+              onClick={handleConfirmarCompra}
+            >
+              Confirmar compra
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {expanded && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -430,7 +744,7 @@ export function RecurrenteGroup({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">
                 {first.nombre}
               </h2>
               <div className="flex items-center justify-center gap-3 mt-3">
@@ -448,7 +762,7 @@ export function RecurrenteGroup({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-base font-semibold text-dark dark:text-gray-100 min-w-36 text-center">
+                <span className="text-base font-bold text-gray-800/90 dark:text-gray-100 min-w-36 text-center">
                   {monthNames[verMonth.getMonth()]} {verMonth.getFullYear()}
                 </span>
                 <button
@@ -466,7 +780,7 @@ export function RecurrenteGroup({
                   </svg>
                 </button>
               </div>
-              <p className="text-sm text-gray-200 dark:text-gray-400 mt-4">
+              <p className="text-sm font-semibold text-gray-200 dark:text-gray-400 mt-4">
                 {filteredByMonth.length} {filteredByMonth.length === 1 ? 'actividad' : 'actividades'} en {monthNames[verMonth.getMonth()]}
               </p>
             </div>
@@ -486,6 +800,8 @@ export function RecurrenteGroup({
                       setExpanded(false);
                       await cardProps.onTomarActividad(a);
                     }}
+                    onAprobar={onAprobar}
+                    onEliminarPropuesta={onEliminarPropuesta}
                   />
                 ))
               ) : (
@@ -498,6 +814,15 @@ export function RecurrenteGroup({
         </div>,
         document.body
       )}
+
+      <ConfirmActionModalVerde
+        isOpen={showTomarTodasConfirm}
+        title="Tomar todas las actividades"
+        body={`¿Estás seguro de que querés tomar todas las actividades disponibles (${unassignedCount}) de esta serie recurrente?`}
+        confirmLabel="Tomar todas"
+        onConfirm={handleConfirmarTomarTodas}
+        onCancel={() => setShowTomarTodasConfirm(false)}
+      />
     </>
   );
 }

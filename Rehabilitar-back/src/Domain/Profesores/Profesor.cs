@@ -1,4 +1,5 @@
 using Domain.Actividades;
+using Domain.Users;
 
 namespace Domain.Profesores;
 

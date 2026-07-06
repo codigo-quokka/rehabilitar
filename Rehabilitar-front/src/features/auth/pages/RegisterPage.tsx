@@ -9,7 +9,6 @@ import {
 } from "../../../components/InformRequirements";
 import { authApi } from "../../../api";
 import { useAuth } from "../../../hooks/useAuth";
-import { useNotifications } from "../../../hooks/useNotifications";
 import logo from "../../../assets/logo.png";
 import axios from "axios";
 import { DniScanner } from "../components/DniScanner";
@@ -120,7 +119,7 @@ export function RegisterPage() {
       setFormData((prev) => ({ ...prev, fechaNacimiento: "" }));
       return;
     }
-    const clamped = raw < "1900-01-01" ? "1900-01-01" : raw > todayStr ? todayStr : raw;
+    const clamped = raw > todayStr ? todayStr : raw;
     setFormData((prev) => ({ ...prev, fechaNacimiento: clamped }));
   };
 
@@ -280,12 +279,12 @@ export function RegisterPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-linear-to-br from-bg-main via-bg-secondary to-bg-surface dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-8">
+      <div className="min-h-screen  bg-linear-to-br from-dark-green/10 from-10% via-dark-green/30 via-50% to-dark-green/40 to-70% dark:from-0% dark:via-45% dark:to-90% dark:from-gray-700 dark:via-gray-950 dark:to-gray-900 bg-fixed flex items-center justify-center p-8">
           <div className="w-full max-w-5xl">
           <div className="text-center mb-10">
             <img src={logo} alt="RehabilitAR" className="w-24 h-auto mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-dark dark:text-gray-100">RehabilitAR</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Centro de Rehabilitación</p>
+            <p className="font-semibold text-dark dark:text-gray-400 mt-2 text-lg">Centro de Rehabilitación</p>
           </div>
 
           <Card className="shadow-">
@@ -391,6 +390,8 @@ export function RegisterPage() {
                             name="fechaNacimiento"
                             value={formData.fechaNacimiento}
                             onChange={handleFechaChange}
+                            min="1900-01-01"
+                            max={todayStr}
                           />
                           <InformRequirements value={formData.fechaNacimiento} requirements={edadReqs} />
                         </div>
@@ -440,7 +441,7 @@ export function RegisterPage() {
 
                       <div className="pt-6 border-t border-border text-center">
                         <p>
-                          <span className="text-gray-600 dark:text-gray-400">¿Ya tienes cuenta? </span>
+                          <span className="text-gray-600 font-semibold dark:text-gray-400">¿Ya tienes cuenta? </span>
                           <span onClick={() => (window.location.href = '/login')}  className="inline text-dark-green dark:text-primary hover:underline font-medium cursor-pointer">
                             Iniciar sesión
                           </span>

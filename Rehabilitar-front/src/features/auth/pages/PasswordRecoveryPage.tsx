@@ -30,6 +30,15 @@ export function PasswordRecoveryPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLoading(false);
+      setToastType("error");
+      setToastMessage("Por favor, ingresa un email válido");
+      setShowToast(true);
+      return;
+    }
+
     try {
       await authApi.recoverPassword(email);
     } catch (err) {
@@ -62,11 +71,11 @@ export function PasswordRecoveryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-main dark:bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen  bg-linear-to-br from-dark-green/10 from-10% via-dark-green/30 via-50% to-dark-green/40 to-70% dark:from-0% dark:via-45% dark:to-90% dark:from-gray-700 dark:via-gray-950 dark:to-gray-900 bg-fixed flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">RehabilitAR</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Centro de Rehabilitación</p>
+          <h1 className="text-3xl font-bold text-dark-green">RehabilitAR</h1>
+          <p className="font-semibold text-dark dark:text-gray-400 mt-2">Centro de Rehabilitación</p>
         </div>
 
         <Card>
@@ -75,17 +84,15 @@ export function PasswordRecoveryPage() {
             Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              onKeyDown={emailFilter.handleKeyDown}
-              onPaste={emailFilter.handlePaste}
-              // required
-            />
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.replace(INPUT_PRESETS.email.cleanPasteRegex, ''))}
+                onKeyDown={emailFilter.handleKeyDown}
+                onPaste={emailFilter.handlePaste}
+                placeholder="tu@email.com"
+              />
 
             <Button type="submit" className="w-full" loading={loading}>
               Enviar enlace

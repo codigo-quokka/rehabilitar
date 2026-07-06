@@ -3,10 +3,11 @@ using Application.Common.Interfaces;
 using Application.Profesores;
 using Application.Usuarios.Requests;
 using Application.Usuarios.Responses;
-using Domain;
+using Domain.Users;
 using Domain.Profesores;
 using ErrorOr;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Usuarios;
 
@@ -19,6 +20,7 @@ public class UsuarioService : IUsuarioService
     private readonly IProfesorRepository _profesorRepo;
     private readonly IUnitOfWork _uow;
     private readonly IEmailService _emailService;
+    private readonly ILogger<UsuarioService> _logger;
 
     // private readonly RehabilitarDbContext _dbContext;
 
@@ -29,7 +31,8 @@ public class UsuarioService : IUsuarioService
         IClienteRepository clienteRepo,
         IProfesorRepository profesorRepo,
         IUnitOfWork uow,
-        IEmailService emailService)
+        IEmailService emailService,
+        ILogger<UsuarioService> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -38,6 +41,7 @@ public class UsuarioService : IUsuarioService
         _profesorRepo = profesorRepo;
         _uow = uow;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<UsuarioResponse>> GetAllAsync()
@@ -133,6 +137,11 @@ public class UsuarioService : IUsuarioService
             return Error.Validation("Usuario.ActualizacionFallida", string.Join(", ", updateResult.Errors.Select(e => e.Description)));
         }
 
+        if (request.NotificacionAplicacion.HasValue)
+        {
+            user.ActualizarPreferenciaNotificacion(request.NotificacionAplicacion.Value);
+        }
+
         if (!string.IsNullOrEmpty(request.Rol))
         {
             var currentRoles = await _userManager.GetRolesAsync(user);
@@ -191,6 +200,15 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.SetLockoutEnabledAsync(user, true);
         await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+
+        try
+        {
+            await _emailService.SendCuentaSuspendidaEmail(user.Email!);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send suspension email for user {UserId}", id);
+        }
         
         return Result.Success;
     }
@@ -203,6 +221,16 @@ public class UsuarioService : IUsuarioService
 
         await _userManager.SetLockoutEndDateAsync(user, null);
         await _userManager.SetLockoutEnabledAsync(user, false);
+
+        try
+        {
+            // nombreActividad y fechaActividad no se usan en la plantilla del email
+            await _emailService.SendCuentaReactivadaEmail(user.Email!, string.Empty, default);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send reactivation email for user {UserId}", id);
+        }
         
         return Result.Success;
     }
@@ -252,6 +280,7 @@ public class UsuarioService : IUsuarioService
             CancelacionesConsecutivas = cliente?.CancelacionesConsecutivas ?? null,
             InasistenciasConsecutivas = cliente?.InasistenciasConsecutivas ?? null,
             Especialidad = profesor?.Especialidad.ToString(),
+            NotificacionAplicacion = user.NotificacionAplicacion,
         };
     }
 

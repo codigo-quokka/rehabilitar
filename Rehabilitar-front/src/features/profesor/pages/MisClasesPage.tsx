@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../../../components/layout';
-import { Card, Badge, Button } from '../../../components/ui';
+import { Card, Badge, Button, Modal } from '../../../components/ui';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
-import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { profesorApi, actividadesApi } from '../../../api';
 import { Actividad } from '../../../types';
@@ -39,6 +40,19 @@ const estadoLabel: Record<string, string> = {
 
 const NULL_GUID = '00000000-0000-0000-0000-000000000000';
 
+const CLASE_DURACION_MS = 60 * 60 * 1000;
+const VENTANA_QR_MS = 60 * 60 * 1000;
+
+function qrDisponible(act: Actividad): boolean {
+  if (act.estado !== 'Aprobada' && act.estado !== 'EnCurso') return false;
+  const inicio = new Date(act.fechaYHora).getTime();
+  const ahora = Date.now();
+  return ahora >= inicio - VENTANA_QR_MS && ahora <= inicio + CLASE_DURACION_MS + VENTANA_QR_MS;
+}
+
+const puedeRemoverProfesor = (act: Actividad): boolean =>
+  act.estado !== 'Cancelada' && act.estado !== 'Finalizada' && act.estado !== 'EnCurso';
+
 export function MisClasesPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -51,9 +65,9 @@ export function MisClasesPage() {
   const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [confirmGroupSerieId, setConfirmGroupSerieId] = useState<string | null>(null);
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
+  const { showToast } = useNotifications();
+  const [qrActividadId, setQrActividadId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,14 +106,11 @@ export function MisClasesPage() {
     try {
       await actividadesApi.removerProfesor(selectedActividad.id, user.id);
       setClases(prev => prev.filter(a => a.id !== selectedActividad.id));
-      setToastType('success');
-      setToastMessage('Te has dado de baja exitosamente');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Te has dado de baja exitosamente' });
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
-      setToastType('error');
-      setToastMessage(msg);
-      setShowToast(true);
+      const apiError = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+      const msg = apiError?.error || apiError?.errorCode || (err as Error)?.message || 'Error al darse de baja';
+      showToast(msg, 'error');
     } finally {
       setShowConfirmModal(false);
       setSelectedActividad(null);
@@ -110,18 +121,57 @@ export function MisClasesPage() {
     if (!user) return;
     try {
       const groupActividades = grupos.find(([id]) => id === serieId)?.[1] || [];
-      await Promise.allSettled(
-        groupActividades.map((act) => actividadesApi.removerProfesor(act.id, user.id))
+      const removibles = groupActividades.filter(puedeRemoverProfesor);
+      const noRemovibles = groupActividades.filter(a => !puedeRemoverProfesor(a));
+
+      const resultados = await Promise.allSettled(
+        removibles.map((act) => actividadesApi.removerProfesor(act.id, user.id))
       );
-      setClases(prev => prev.filter(a => a.serieId !== serieId));
-      setToastType('success');
-      setToastMessage('Te has dado de baja de todas las actividades exitosamente');
-      setShowToast(true);
-    } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al darse de baja';
-      setToastType('error');
-      setToastMessage(msg);
-      setShowToast(true);
+
+      const idsExitosos = new Set<string>();
+      let count24h = 0;
+      let countOtrosErrores = 0;
+
+      resultados.forEach((res, i) => {
+        const act = removibles[i];
+        if (res.status === 'fulfilled') {
+          idsExitosos.add(act.id);
+        } else {
+          const reason = res.reason as { response?: { data?: { errorCode?: string; error?: string } } };
+          const errorCode = reason?.response?.data?.errorCode;
+          if (errorCode === 'Profesor.BajaConMenosDe24Horas') {
+            count24h++;
+          } else {
+            countOtrosErrores++;
+          }
+        }
+      });
+
+      setClases(prev => prev.filter(a => !idsExitosos.has(a.id)));
+
+      const partes: string[] = [];
+      if (idsExitosos.size > 0) {
+        partes.push(`Te has dado de baja de ${idsExitosos.size} ${idsExitosos.size === 1 ? 'actividad' : 'actividades'} exitosamente.`);
+      }
+      if (count24h > 0) {
+        partes.push(`No se pudo dar de baja en ${count24h} ${count24h === 1 ? 'actividad' : 'actividades'} porque comienza${count24h === 1 ? '' : 'n'} en menos de 24 horas.`);
+      }
+      if (noRemovibles.length > 0) {
+        const estados = noRemovibles.map(a => estadoLabel[a.estado] || a.estado).filter((v, i, a) => a.indexOf(v) === i);
+        partes.push(`${noRemovibles.length} ${noRemovibles.length === 1 ? 'actividad está' : 'actividades están'} ${estados.join(' / ')}.`);
+      }
+      if (countOtrosErrores > 0) {
+        partes.push(`Ocurrió un error inesperado en ${countOtrosErrores} ${countOtrosErrores === 1 ? 'actividad' : 'actividades'}.`);
+      }
+
+      const msg = partes.join(' ');
+      if (idsExitosos.size > 0) {
+        await importantNotification({ type: 'success', message: msg });
+      } else {
+        showToast(msg, 'error');
+      }
+    } catch {
+      showToast('Error al procesar la baja', 'error');
     } finally {
       setConfirmGroupSerieId(null);
     }
@@ -155,13 +205,14 @@ export function MisClasesPage() {
                 <thead>
                   <tr className="border-b border-border dark:border-gray-700">
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Actividad</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Frecuencia</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Fecha</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Horario</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Sala</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Tipo</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Estado</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100">Cupo</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100" style={{ width: 170 }}></th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-dark dark:text-gray-100" style={{ width: 240 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -174,11 +225,12 @@ export function MisClasesPage() {
                     const isExpanded = expandedGroup === serieId;
                     const salaUnica = acts.every(a => a.salaNombre === first.salaNombre);
 
+                    const todasNoRemovibles = acts.every(a => !puedeRemoverProfesor(a));
                     return (
                       <>
                         <tr
                           key={serieId}
-                          className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                          className="border-b border-border/50 dark:border-gray-700/50 hover:bg-primary/10 dark:hover:bg-gray-800 cursor-pointer"
                           onClick={() => setExpandedGroup(isExpanded ? null : serieId)}
                         >
                           <td className="px-4 py-3">
@@ -189,12 +241,12 @@ export function MisClasesPage() {
                               >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
-                              <div className="flex items-center gap-2 min-w-0">
+                              <div className="min-w-0">
                                 <span className="text-sm font-medium text-dark dark:text-gray-100 truncate">{first.nombre}</span>
-                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs shrink-0">Recurrente</Badge>
                               </div>
                             </div>
                           </td>
+                          <td className="px-4 py-3"><Badge variant="recurrente" className="text-xs shrink-0">Recurrente</Badge></td>
                           <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">
                             {formatDateShort(first.fechaYHora)}{first.fechaYHora !== last.fechaYHora ? ` — ${formatDateShort(last.fechaYHora)}` : ''}
                           </td>
@@ -211,9 +263,11 @@ export function MisClasesPage() {
                           <td className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">—</td>
                           <td className="px-4 py-3">
                             <Button
-                              variant="rojo"
+                              variant="danger"
                               size="sm"
                               className="w-full"
+                              disabled={todasNoRemovibles}
+                              title={todasNoRemovibles ? 'No hay actividades en las que puedas darte de baja' : undefined}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setConfirmGroupSerieId(serieId);
@@ -224,8 +278,9 @@ export function MisClasesPage() {
                           </td>
                         </tr>
                         {isExpanded && sorted.map((act) => (
-                          <tr key={act.id} className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-border/30 dark:border-gray-700/30">
+                          <tr key={act.id} className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-border/30 dark:border-gray-700/30 hover:bg-primary/10 dark:hover:bg-gray-800">
                             <td className="px-4 py-2.5 pl-10 text-sm text-dark dark:text-gray-100">{act.nombre}</td>
+                            <td className="px-4 py-2.5 text-sm text-gray-400 dark:text-gray-500">—</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatDate(act.fechaYHora)}</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatTime(act.fechaYHora)}</td>
                             <td className="px-4 py-2.5 text-sm text-dark dark:text-gray-100">{act.salaNombre || 'Sin sala'}</td>
@@ -243,19 +298,30 @@ export function MisClasesPage() {
                               </Badge>
                             </td>
                             <td className="px-4 py-2.5">
-                              {act.profesorId && act.profesorId !== NULL_GUID ? (
-                                <Button
-                                  variant="rojo"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => {
-                                    setSelectedActividad(act);
-                                    setShowConfirmModal(true);
-                                  }}
-                                >
-                                  Darse de baja
-                                </Button>
-                              ) : null}
+                              <div className="flex gap-1.5">
+                                {qrDisponible(act) && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="flex-1 min-w-0"
+                                    onClick={(e) => { e.stopPropagation(); setQrActividadId(act.id); }}
+                                  >
+                                    QR
+                                  </Button>
+                                )}
+                                {act.profesorId && act.profesorId !== NULL_GUID ? (
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    className="flex-1 min-w-0"
+                                    disabled={!puedeRemoverProfesor(act)}
+                                    title={!puedeRemoverProfesor(act) ? `No puedes darte de baja de una actividad ${estadoLabel[act.estado]?.toLowerCase() || act.estado.toLowerCase()}` : undefined}
+                                    onClick={(e) => { e.stopPropagation(); setSelectedActividad(act); setShowConfirmModal(true); }}
+                                  >
+                                    Baja
+                                  </Button>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -263,13 +329,14 @@ export function MisClasesPage() {
                     );
                   })}
                   {individuales.map((act) => (
-                    <tr key={act.id} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr key={act.id} className="border-b border-border/50 dark:border-gray-700/50 hover:bg-primary/10 dark:hover:bg-gray-800">
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100">{act.nombre}</td>
+                      <td className="px-4 py-3"><Badge variant="esporadica" className="text-xs shrink-0">Esporádica</Badge></td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatDate(act.fechaYHora)}</td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100 whitespace-nowrap">{formatTime(act.fechaYHora)}</td>
                       <td className="px-4 py-3 text-sm text-dark dark:text-gray-100">{act.salaNombre || 'Sin sala'}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="info">{tipoLabel[act.tipo] || act.tipo}</Badge>
+                        <Badge variant="success">{tipoLabel[act.tipo] || act.tipo}</Badge>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={estadoVariant(act.estado)}>
@@ -282,16 +349,30 @@ export function MisClasesPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        {act.profesorId && act.profesorId !== NULL_GUID ? (
-                          <Button
-                            variant="rojo"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
-                          >
-                            Darse de baja
-                          </Button>
-                        ) : null}
+                        <div className="flex gap-1.5">
+                          {qrDisponible(act) && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="flex-1 min-w-0"
+                              onClick={() => setQrActividadId(act.id)}
+                            >
+                              QR
+                            </Button>
+                          )}
+                          {act.profesorId && act.profesorId !== NULL_GUID ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="flex-1 min-w-0"
+                              disabled={!puedeRemoverProfesor(act)}
+                              title={!puedeRemoverProfesor(act) ? `No puedes darte de baja de una actividad ${estadoLabel[act.estado]?.toLowerCase() || act.estado.toLowerCase()}` : undefined}
+                              onClick={() => { setSelectedActividad(act); setShowConfirmModal(true); }}
+                            >
+                              Baja
+                            </Button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -320,13 +401,21 @@ export function MisClasesPage() {
         onCancel={() => setConfirmGroupSerieId(null)}
       />
 
-      {showToast && (
-        <Notitoast
-          type={toastType}
-          message={toastMessage}
-          onClose={() => setShowToast(false)}
-        />
-      )}
+      <Modal isOpen={!!qrActividadId} onClose={() => setQrActividadId(null)} title="Código QR">
+        <div className="flex flex-col items-center gap-4 py-4">
+          {qrActividadId && (
+            <img
+              src={actividadesApi.getQrUrl(qrActividadId)}
+              alt="QR de asistencia"
+              className="w-64 h-64 rounded-xl border border-border dark:border-gray-700"
+            />
+          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            Escaneá este código para registrar tu asistencia
+          </p>
+        </div>
+      </Modal>
+
     </MainLayout>
   );
 }

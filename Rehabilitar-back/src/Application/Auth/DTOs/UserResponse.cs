@@ -12,4 +12,5 @@ public class UserResponse
     public string? FechaNacimiento { get; set; }
     public string? Documento { get; set; }
     public string? Especialidad { get; set; }
+    public bool NotificacionAplicacion { get; set; }
 }

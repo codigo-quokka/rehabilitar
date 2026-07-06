@@ -7,6 +7,7 @@ import { usuariosApi, reservasApi, actividadesApi, profesorApi} from '../../../a
 import {aptosFisicosApi} from '../../../api/aptosFisicos';
 import { User, Role, Reserva, Actividad, AptoFisico } from '../../../types';
 import { Notitoast } from '../../../components/Notitoast';
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
 import { ConfirmActionModal } from '../../../components/ConfirmActionModal';
 import { InformRequirements, type Requirement } from '../../../components/InformRequirements';
 import { useInputFilter } from '../../../hooks/useInputFilter';
@@ -37,6 +38,7 @@ export function UsuariosPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
 
   const [reservasModalUser, setReservasModalUser] = useState<User | null>(null);
   const [reservasModalData, setReservasModalData] = useState<Reserva[]>([]);
@@ -219,9 +221,7 @@ export function UsuariosPage() {
       await usuariosApi.delete(userToDelete.id);
       setUserToDelete(null);
       fetchData();
-      setToastType('success');
-      setToastMessage('Usuario eliminado con éxito');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Usuario eliminado con éxito' });
     } catch (err) {
       setUserToDelete(null);
       const msg = (err as any)?.response?.data?.error || 'Error al eliminar usuario';
@@ -237,9 +237,7 @@ export function UsuariosPage() {
       const response = await usuariosApi.suspender(userToSuspend.id);
       setUserToSuspend(null);
       fetchData();
-      setToastType('success');
-      setToastMessage(response?.message || 'Cuenta suspendida con éxito');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: response?.message || 'Cuenta suspendida con éxito' });
     } catch (err) {
       setUserToSuspend(null);
       const msg = (err as any)?.response?.data?.error || 'Error al suspender la cuenta';
@@ -318,9 +316,7 @@ export function UsuariosPage() {
         acts.forEach((a) => { actsMap[a.id] = a; });
         setReservasActividadesMap(actsMap);
       }
-      setToastType('success');
-      setToastMessage('Pago registrado con éxito');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Pago registrado con éxito' });
     } catch (err) {
       const msg = (err as any)?.response?.data?.error || 'Error al registrar el pago';
       setToastType('error');
@@ -337,9 +333,7 @@ export function UsuariosPage() {
       await usuariosApi.reactivar(userToReactivar.id);
       setUserToReactivar(null);
       fetchData();
-      setToastType('success');
-      setToastMessage('Cuenta reactivada con éxito');
-      setShowToast(true);
+      await importantNotification({ type: 'success', message: 'Cuenta reactivada con éxito' });
     } catch (err) {
       setUserToReactivar(null);
       const msg = (err as any)?.response?.data?.error || 'Error al reactivar la cuenta';
@@ -358,7 +352,7 @@ export function UsuariosPage() {
       header: 'Rol',
       render: (u: User) => (
         <div className="flex items-center gap-2">
-          <Badge variant={u.rol === 'Administrador' ? 'danger' : u.rol === 'Profesor' ? 'info' : u.rol === 'Recepción' ? 'amber' : 'default'}>
+          <Badge variant={u.rol === 'Administrador' ? 'danger' : u.rol === 'Profesor' ? 'verde' : u.rol === 'Recepción' ? 'amber' : 'default'}>
             {rolLabel[u.rol] || u.rol.replace('_', ' ')}
           </Badge>
           {u.rol === 'Profesor' && u.especialidad && (
@@ -423,14 +417,16 @@ export function UsuariosPage() {
             </Button>
           )
           )}
+          {/* 
           {!isReception ? (
+            
             <Button variant="rojo" size="sm" onClick={() => handleDeleteClick(u)}>
               Eliminar
             </Button>
           ) : (
             <span className="min-w-17.5 inline-block" />
           )}
-          
+          */}
         </div>
       ),
     },
@@ -611,8 +607,8 @@ export function UsuariosPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasModalUser.nombre} {reservasModalUser.apellido}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasModalData.length} reserva(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasModalUser.nombre} {reservasModalUser.apellido}</h2>
+              <p className="text-sm text-gray-200 font-semibold dark:text-gray-400 mt-1">{reservasModalData.length} reserva(s)</p>
             </div>
             {reservasModalLoading ? (
               <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
@@ -639,7 +635,7 @@ export function UsuariosPage() {
                         </Badge>
                         {completado && <Badge variant="success">Pagado</Badge>}
                       </div>
-                      <h3 className="text-lg font-semibold text-dark dark:text-gray-100 mb-2">{act?.nombre || 'Actividad'}</h3>
+                      <h3 className="text-lg font-bold text-dark dark:text-gray-100 mb-2">{act?.nombre || 'Actividad'}</h3>
                       {act && (
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                           <div className="flex items-center gap-2">
@@ -690,7 +686,6 @@ export function UsuariosPage() {
               max={pagoModal.montoPendiente}
               value={montoPago}
               onChange={(e) => setMontoPago(e.target.value)}
-              required
             />
             <Select
               label="Método de pago"
@@ -721,8 +716,8 @@ export function UsuariosPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Clases de {clasesModalUser.nombre} {clasesModalUser.apellido}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{clasesModalData.length} clase(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Clases de {clasesModalUser.nombre} {clasesModalUser.apellido}</h2>
+              <p className="text-sm text-gray-200 font-semibold dark:text-gray-400 mt-1">{clasesModalData.length} clase(s)</p>
             </div>
             {clasesModalLoading ? (
               <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
@@ -787,6 +782,7 @@ interface UsuarioFormProps {
 }
 
 function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
+  const importantNotification = useImportantNotification();
   const MIN_DNI_LENGTH = 7;
   const MAX_DNI_LENGTH = 8;
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -841,23 +837,45 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
       onNotify?.('error', `Ingrese un DNI válido`);
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      onNotify?.('error', 'Ingrese un correo electrónico válido');
+      return;
+    }
     if (formData.rol === 'Profesor' && !formData.especialidad) {
       onNotify?.('error', 'Debe seleccionar una especialidad para el profesor');
+      return;
+    }
+    const fechaNac = new Date(formData.fechaNacimiento);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mesDiff = hoy.getMonth() - fechaNac.getMonth();
+    if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
+    }
+    if (edad < 18) {
+      onNotify?.('error', 'Debe ser mayor de edad para poder ser registrado en el sitio');
       return;
     }
     setLoading(true);
     try {
       if (user) {
         await usuariosApi.update(user.id, formData);
-        onNotify?.('success', 'Usuario actualizado con éxito');
+        await importantNotification({ type: 'success', message: 'Usuario actualizado con éxito' });
       } else {
         await usuariosApi.create(formData);
-        onNotify?.('success', 'Usuario creado con éxito');
+        await importantNotification({ type: 'success', message: 'Usuario creado con éxito' });
       }
       onClose();
     } catch (err) {
-      const apiMsg = (err as any)?.response?.data?.error;
-      const msg = apiMsg && apiMsg.includes("is already taken")
+      const data = (err as any)?.response?.data;
+      const errorMessages = [
+        data?.error,
+        data?.title,
+        data?.detail,
+        data?.message,
+      ].filter(Boolean);
+      const apiMsg = errorMessages[0];
+      const msg = apiMsg?.includes("is already taken")
         ? "El correo ingresado ya se encuentra en uso"
         : apiMsg || `Error al ${user ? 'actualizar' : 'crear'} usuario.`;
       onNotify?.('error', msg);
@@ -869,7 +887,7 @@ function UsuarioForm({ user, onClose, onNotify }: UsuarioFormProps) {
   const roles: Role[] = ['Administrador', 'Recepción', 'Profesor'];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Nombre"

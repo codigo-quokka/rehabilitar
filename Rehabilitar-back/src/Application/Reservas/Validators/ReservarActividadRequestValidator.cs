@@ -12,8 +12,5 @@ public class ReservarActividadRequestValidator : AbstractValidator<ReservarActiv
 
         RuleFor(x => x.ClienteId)
             .NotEmpty().WithMessage("El cliente es requerido.");
-
-        RuleFor(x => x.TipoCliente)
-            .IsInEnum().WithMessage("El tipo de cliente especificado no es válido.");
     }
 }

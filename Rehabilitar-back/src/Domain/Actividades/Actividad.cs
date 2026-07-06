@@ -23,8 +23,6 @@ public class Actividad
 	public int CupoOcupado { get; private set;}
 	public int CupoEsperaOcupado { get; private set; }
 	public int CupoDisponible => CupoMaximo - CupoOcupado;
-	public bool ProbabilidadListaEspera => 
-		CupoMaximo > 0 && (CupoOcupado + Reservas.Count(r => r.EstadoDeReserva == EstadoDeReserva.PendienteDePago)) >= CupoMaximo;
 	public decimal Precio { get; private set; }
 
 	public Guid SalaId { get; private set; }
@@ -103,20 +101,21 @@ public class Actividad
 	{
 		Version = Guid.NewGuid();
 		Reserva reserva = Reserva.Create(cliente.UserId, this.Id, new DetallePago(this.Precio, 0), EstadoDeReserva.PendienteDePago, tipoCliente);
+		_reservas.Add(reserva);
 		return reserva;
 	}
 
 	public Reserva ProcesarPagoReserva(Guid reservaId, decimal montoPagado)
 	{
-		Version = Guid.NewGuid();
 		Reserva reserva = Reservas.FirstOrDefault(r => r.Id == reservaId) ?? throw new DomainException("Reserva no encontrada");
 		
-		var estadoAnterior = reserva.EstadoDeReserva;
+		var detalleAnterior = reserva.DetallePago;
 		reserva.ActualizarDetallePago(montoPagado);
 
-		// Si la reserva pasó a Activa (o ya lo estaba) y antes no ocupaba cupo, intentamos asignarlo
-		if (reserva.EstadoDeReserva == EstadoDeReserva.Activa && estadoAnterior == EstadoDeReserva.PendienteDePago)
+		bool recienPagado = reserva.DetallePago.MontoPagado > 0 && detalleAnterior.MontoPagado == 0;
+		if (recienPagado)
 		{
+			Version = Guid.NewGuid();
 			if (HayCupoDisponible())
 			{
 				CupoOcupado++;
@@ -175,6 +174,13 @@ public class Actividad
 
 		if (!lugarOcupado) BuscarYPromoverReservaEnEspera(TipoCliente.noAbonado);
 		
+	}
+
+	public void Aprobar()
+	{
+		if (Estado != EstadoActividad.Propuesta)
+			throw new InvalidOperationException("Solo se pueden aprobar actividades en estado Propuesta.");
+		Estado = EstadoActividad.Aprobada;
 	}
 
 	public void CancelarActividad()

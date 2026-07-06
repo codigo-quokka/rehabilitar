@@ -45,7 +45,7 @@ public class MercadoPagoService : IMercadoPagoService
                 // pending = $"{frontendUrl}/reservas/pago/pendiente"
             },
             auto_return = "approved",
-            notification_url = webhookUrl,
+            // notification_url = webhookUrl,
 
             payment_methods = new
             {
@@ -72,7 +72,7 @@ public class MercadoPagoService : IMercadoPagoService
         return (result.id, result.init_point);
     }
 
-    public async Task<ErrorOr<(bool IsApproved, string ExternalReference)>> GetPaymentStatusAsync(string paymentId)
+    public async Task<ErrorOr<(bool IsApproved, string ExternalReference, decimal? TransactionAmount)>> GetPaymentStatusAsync(string paymentId)
     {
         var response = await _httpClient.GetAsync($"v1/payments/{paymentId}");
         if (!response.IsSuccessStatusCode)
@@ -83,6 +83,6 @@ public class MercadoPagoService : IMercadoPagoService
         if (result == null)
             return Error.Failure("MercadoPago.GetPaymentStatus", "No se pudo obtener el estado del pago en MercadoPago.");
         
-        return (result.status == "approved", result.external_reference);
+        return (result.status == "approved", result.external_reference, result.transaction_amount);
     }
 }

@@ -1,6 +1,8 @@
 import { apiClient } from './client';
 import { Actividad, CreateActividadRequest, CreateActividadRecurrenteRequest } from '../types';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 export const actividadesApi = {
   getAll: async (params?: { fecha?: string; categoria?: string; profesorId?: string }) => {
     const response = await apiClient.get('/actividades', { params });
@@ -42,6 +44,11 @@ export const actividadesApi = {
     return response.data;
   },
 
+  aprobar: async (id: string) => {
+    const response = await apiClient.put(`/actividades/${id}/aprobar`);
+    return response.data;
+  },
+
   asignarProfesor: async (id: string, profesorId: string) => {
     const response = await apiClient.put(`/actividades/${id}/asignar-profesor`, { profesorId });
     return response.data;
@@ -49,6 +56,13 @@ export const actividadesApi = {
 
   removerProfesor: async (id: string, profesorId: string) => {
     const response = await apiClient.put(`/actividades/${id}/remover-profesor`, { profesorId });
+    return response.data;
+  },
+
+  getQrUrl: (id: string) => `${API_BASE_URL}/actividades/${id}/qr`,
+
+  checkIn: async (id: string, dni: string) => {
+    const response = await apiClient.post(`/actividades/${id}/check-in`, { dni });
     return response.data;
   },
 };

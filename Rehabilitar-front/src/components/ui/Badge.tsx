@@ -2,18 +2,21 @@ import { ReactNode } from 'react';
 
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'amber';
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'amber' | 'recurrente' | 'esporadica' | 'verde';
   className?: string;
 }
 
 export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {
   const variants = {
-    default: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-    success: 'bg-green-200 dark:bg-green-900/50 text-green-700 dark:text-green-400',
+    default: 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+    success: 'bg-green-300/80 dark:bg-green-900/50 text-green-800 dark:text-green-400',
     warning: 'bg-yellow-200/80 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400',
     danger: 'bg-red-200 dark:bg-red-900/50 text-red-700 dark:text-red-400',
     info: 'bg-primary/20 dark:bg-primary/10 text-primary-dark dark:text-primary',
     amber: 'bg-amber-200 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400',
+    recurrente: 'bg-purple-300/80 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    esporadica: 'bg-gray-300/80 text-gray-800 dark:bg-gray-600 dark:text-gray-300',
+    verde: 'bg-primary/50 text-dark-green dark:bg-green-900 dark:text-green-400',
   };
 
   return (

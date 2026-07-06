@@ -15,7 +15,10 @@ import { useAuth } from "../../../hooks/useAuth";
 import { actividadesApi, reservasApi, salasApi, usuariosApi } from "../../../api";
 import { Actividad, Sala, User, Reserva, CreateActividadRequest, CreateActividadRecurrenteRequest } from "../../../types";
 import { Notitoast } from "../../../components/Notitoast";
+import { useImportantNotification } from '../../../hooks/useImportantNotification';
+import { useNotifications } from '../../../hooks/useNotifications';
 import { ConfirmActionModal } from "../../../components/ConfirmActionModal";
+import { ConfirmActionModalVerde } from "../../../components/ConfirmActionModalVerde";
 import { ActividadCard } from "../components/ActividadCard";
 import { RecurrenteGroup } from "../components/RecurrenteGroup";
 import { tipoLabel, frecuenciaLabel, estadoLabel } from "../constants";
@@ -46,11 +49,25 @@ export function ActividadesPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const importantNotification = useImportantNotification();
 
   const [showReservasModal, setShowReservasModal] = useState(false);
   const [reservasActNombre, setReservasActNombre] = useState('');
   const [reservasData, setReservasData] = useState<Reserva[]>([]);
   const [reservasLoading, setReservasLoading] = useState(false);
+
+  const [showSuscriptoresModal, setShowSuscriptoresModal] = useState(false);
+  const [suscriptoresGrupoNombre, setSuscriptoresGrupoNombre] = useState('');
+  const [suscriptoresData, setSuscriptoresData] = useState<Reserva[]>([]);
+  const [suscriptoresLoading, setSuscriptoresLoading] = useState(false);
+
+  const [showTomarConfirm, setShowTomarConfirm] = useState(false);
+  const [tomarConfirmActividad, setTomarConfirmActividad] = useState<Actividad | null>(null);
+
+  const [showAprobarConfirm, setShowAprobarConfirm] = useState(false);
+  const [aprobarConfirmActividad, setAprobarConfirmActividad] = useState<Actividad | null>(null);
+  const [showEliminarPropuestaConfirm, setShowEliminarPropuestaConfirm] = useState(false);
+  const [eliminarPropuestaActividad, setEliminarPropuestaActividad] = useState<Actividad | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -94,6 +111,15 @@ export function ActividadesPage() {
     };
   }, [showReservasModal]);
 
+  useEffect(() => {
+    if (!showSuscriptoresModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSuscriptoresModal(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showSuscriptoresModal]);
+
   const handleVerReservas = async (actividad: Actividad) => {
     setReservasActNombre(actividad.nombre);
     setReservasLoading(true);
@@ -113,35 +139,113 @@ export function ActividadesPage() {
     }
   };
 
+  const handleConfirmarTomar = async () => {
+    if (!tomarConfirmActividad || !user) return;
+    try {
+      await actividadesApi.asignarProfesor(tomarConfirmActividad.id, user.id);
+      setShowTomarConfirm(false);
+      setTomarConfirmActividad(null);
+      fetchData();
+      await importantNotification({ type: 'success', message: 'Te has asignado a la actividad exitosamente' });
+    } catch (err) {
+      console.error('Error al tomar la actividad', err);
+      const data = (err as { response?: { data?: { error?: string; errorCode?: string } } })?.response?.data;
+      const msg = data?.error || data?.errorCode || (err as Error)?.message || 'Error al tomar la actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
+  const handleAprobar = async (actividad: Actividad) => {
+    try {
+      await actividadesApi.aprobar(actividad.id);
+      fetchData();
+      await importantNotification({ type: 'success', message: 'Actividad aprobada exitosamente' });
+    } catch (err: any) {
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al aprobar actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
+  const handleConfirmarAprobar = async () => {
+    if (!aprobarConfirmActividad) return;
+    setShowAprobarConfirm(false);
+    await handleAprobar(aprobarConfirmActividad);
+    setAprobarConfirmActividad(null);
+  };
+
+  const handleEliminarPropuesta = async (actividad: Actividad) => {
+    try {
+      await actividadesApi.delete(actividad.id);
+      fetchData();
+      await importantNotification({ type: 'success', message: 'Actividad eliminada exitosamente' });
+    } catch (err: any) {
+      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    }
+  };
+
+  const handleConfirmarEliminarPropuesta = async () => {
+    if (!eliminarPropuestaActividad) return;
+    setShowEliminarPropuestaConfirm(false);
+    await handleEliminarPropuesta(eliminarPropuestaActividad);
+    setEliminarPropuestaActividad(null);
+  };
+
+  const handleVerSuscriptores = async (actividadesGrupo: Actividad[]) => {
+    setSuscriptoresGrupoNombre(actividadesGrupo[0]?.nombre || 'Grupo recurrente');
+    setSuscriptoresLoading(true);
+    setShowSuscriptoresModal(true);
+    setSuscriptoresData([]);
+    try {
+      const results = await Promise.all(
+        actividadesGrupo.map(a => reservasApi.getAll({ actividadId: a.id }))
+      );
+      const todas = results.flat().filter(
+        (r, i, arr) => arr.findIndex(x => x.id === r.id) === i
+      );
+      setSuscriptoresData(todas.filter(r => r.tipoCliente === 'Abonado'));
+    } catch (err) {
+      console.error('Error al obtener suscriptores:', err);
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al cargar suscriptores';
+      setToastType('error');
+      setToastMessage(msg);
+      setShowToast(true);
+    } finally {
+      setSuscriptoresLoading(false);
+    }
+  };
+
   const handleReservar = async (actividad: Actividad) => {
     if (!user) return;
     setReservandoId(actividad.id);
     try {
-      const reserva = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
-      if (reserva.probabilidadListaEspera) {
+      const res = await reservasApi.create({ actividadId: actividad.id, clienteId: user.id, tipoCliente: "noAbonado" });
+      if (res.probabilidadListaEspera) {
         setToastType('error');
         setToastMessage('Actividad muy solicitada. Por favor, realice su pago pronto');
         setShowToast(true);
         setTimeout(() => {
-          navigate(`/reservas/confirmar/${reserva.id}`, {
+          navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
             state: {
-              reservaId: reserva.id,
-              actividadId: reserva.actividadId,
-              montoTotal: reserva.montoTotal,
-              montoPagado: 0,
-              montoPendiente: reserva.montoPendiente,
-            },
+              intencionId: res.intencionId,
+              actividades: [actividad],
+              montoTotal: actividad.precio
+            }
           });
         }, 2000);
       } else {
-        navigate(`/reservas/confirmar/${reserva.id}`, {
+        navigate(`/reservas/confirmar-paquete/${res.intencionId}`, {
           state: {
-            reservaId: reserva.id,
-            actividadId: reserva.actividadId,
-            montoTotal: reserva.montoTotal,
-            montoPagado: 0,
-            montoPendiente: reserva.montoPendiente,
-          },
+            intencionId: res.intencionId,
+            actividades: [actividad],
+            montoTotal: actividad.precio
+          }
         });
       }
     } catch (err) {
@@ -414,22 +518,20 @@ export function ActividadesPage() {
                   setEditingActividad(act);
                   setShowModal(true);
                 }}
-                onTomarActividad={async (act) => {
-                  try {
-                    await actividadesApi.asignarProfesor(act.id, user!.id);
-                    fetchData();
-                    setToastType('success');
-                    setToastMessage('Te has asignado a la actividad exitosamente');
-                    setShowToast(true);
-                  } catch (err) {
-                    console.error('Error al tomar la actividad', err);
-                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
-                    setToastType('error');
-                    setToastMessage(msg);
-                    setShowToast(true);
-                  }
+                onTomarActividad={(act) => {
+                  setTomarConfirmActividad(act);
+                  setShowTomarConfirm(true);
                 }}
                 onVerReservas={handleVerReservas}
+                onVerSuscriptores={handleVerSuscriptores}
+                onAprobar={(act) => {
+                  setAprobarConfirmActividad(act);
+                  setShowAprobarConfirm(true);
+                }}
+                onEliminarPropuesta={(act) => {
+                  setEliminarPropuestaActividad(act);
+                  setShowEliminarPropuestaConfirm(true);
+                }}
                 onError={(msg) => {
                   setToastType('error');
                   setToastMessage(msg);
@@ -452,22 +554,19 @@ export function ActividadesPage() {
                   setEditingActividad(act);
                   setShowModal(true);
                 }}
-                onTomarActividad={async (act) => {
-                  try {
-                    await actividadesApi.asignarProfesor(act.id, user!.id);
-                    fetchData();
-                    setToastType('success');
-                    setToastMessage('Te has asignado a la actividad exitosamente');
-                    setShowToast(true);
-                  } catch (err) {
-                    console.error('Error al tomar la actividad', err);
-                    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || (err as Error)?.message || 'Error al tomar la actividad';
-                    setToastType('error');
-                    setToastMessage(msg);
-                    setShowToast(true);
-                  }
+                onTomarActividad={(act) => {
+                  setTomarConfirmActividad(act);
+                  setShowTomarConfirm(true);
                 }}
                 onVerReservas={handleVerReservas}
+                onAprobar={(act) => {
+                  setAprobarConfirmActividad(act);
+                  setShowAprobarConfirm(true);
+                }}
+                onEliminarPropuesta={(act) => {
+                  setEliminarPropuestaActividad(act);
+                  setShowEliminarPropuestaConfirm(true);
+                }}
               />
             ))}
           </div>
@@ -513,6 +612,77 @@ export function ActividadesPage() {
         />
       )}
 
+      {showSuscriptoresModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowSuscriptoresModal(false)} />
+          <div className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-6 relative">
+              <button onClick={() => setShowSuscriptoresModal(false)} className="absolute -top-2 -right-2 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors" aria-label="Cerrar">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Suscriptores de {suscriptoresGrupoNombre}</h2>
+            </div>
+            {suscriptoresLoading ? (
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
+            ) : suscriptoresData.length === 0 ? (
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400 py-8">Sin suscriptores</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(() => {
+                  const formatFecha = (iso: string) => new Date(iso).toLocaleDateString('es-AR', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                  });
+                  const map = new Map<string, { nombre: string; cantidad: number; fechas: string[] }>();
+                  for (const r of suscriptoresData) {
+                    const key = r.clienteId;
+                    if (!map.has(key)) {
+                      map.set(key, { nombre: r.nombreCliente || 'Cliente desconocido', cantidad: 0, fechas: [] });
+                    }
+                    const entry = map.get(key)!;
+                    entry.cantidad++;
+                    const act = actividades.find(a => a.id === r.actividadId);
+                    if (act) entry.fechas.push(formatFecha(act.fechaYHora));
+                  }
+                  return Array.from(map.values());
+                })().map((item) => {
+                  const iniciales = item.nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                  return (
+                    <Card key={item.nombre} className="flex flex-col relative">
+                      <div className="absolute top-3 right-3 bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l4 6 6-2-3 7H5l-3-7 6 2 4-6z" />
+                        </svg>
+                        Suscripto
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary dark:text-primary-dark font-bold text-sm shrink-0">
+                          {iniciales || '??'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-dark dark:text-gray-100 truncate">
+                            {item.nombre}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        {item.cantidad} {item.cantidad === 1 ? 'clase' : 'clases'}
+                      </div>
+                      <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        {item.fechas.map((f, i) => <p key={i}>{f}</p>)}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showReservasModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 backdrop-blur-sm bg-black/30" onClick={() => setShowReservasModal(false)} />
@@ -523,13 +693,13 @@ export function ActividadesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h2 className="text-xl font-bold text-dark dark:text-gray-100">Reservas de {reservasActNombre}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
+              <h2 className="text-xl font-bold text-gray-800/90 dark:text-gray-100">Reservas de {reservasActNombre}</h2>
+              <p className="text-sm text-gray-600 font-bold dark:text-gray-400 mt-1">{reservasData.length} reserva(s)</p>
             </div>
             {reservasLoading ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">Cargando...</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400">Cargando...</p>
             ) : reservasData.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sin reservas</p>
+              <p className="text-center text-gray-700 font-bold dark:text-gray-400 py-8">Sin reservas</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {reservasData.map((res) => {
@@ -580,6 +750,33 @@ export function ActividadesPage() {
         </div>,
         document.body
       )}
+
+      <ConfirmActionModalVerde
+        isOpen={showTomarConfirm}
+        title="Tomar actividad"
+        body={`¿Estás seguro de que querés tomar la actividad "${tomarConfirmActividad?.nombre}"?`}
+        confirmLabel="Tomar"
+        onConfirm={handleConfirmarTomar}
+        onCancel={() => { setShowTomarConfirm(false); setTomarConfirmActividad(null); }}
+      />
+
+      <ConfirmActionModalVerde
+        isOpen={showAprobarConfirm}
+        title="Aprobar actividad"
+        body={`¿Estás seguro de que deseas aprobar la actividad "${aprobarConfirmActividad?.nombre}"?`}
+        confirmLabel="Aprobar"
+        onConfirm={handleConfirmarAprobar}
+        onCancel={() => { setShowAprobarConfirm(false); setAprobarConfirmActividad(null); }}
+      />
+
+      <ConfirmActionModal
+        isOpen={showEliminarPropuestaConfirm}
+        title="Eliminar actividad"
+        body={`¿Estás seguro de que deseas eliminar la actividad "${eliminarPropuestaActividad?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={handleConfirmarEliminarPropuesta}
+        onCancel={() => { setShowEliminarPropuestaConfirm(false); setEliminarPropuestaActividad(null); }}
+      />
     </MainLayout>
   );
 }
@@ -597,6 +794,8 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const isEditing = !!actividad;
   const { hasRole } = useAuth();
   const isAdmin = hasRole(["Administrador"]);
+  const importantNotification = useImportantNotification();
+  const { showToast } = useNotifications();
   const [formData, setFormData] = useState<CreateActividadRequest>(
     actividad
       ? {
@@ -636,11 +835,12 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
     setLoading(true);
     try {
       await actividadesApi.delete(actividad.id);
-      onSuccess('Actividad eliminada exitosamente');
+      await importantNotification({ type: 'success', message: 'Actividad cancelada exitosamente' });
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.errorCode ?? err?.message ?? 'Error al eliminar actividad';
-      onError(msg);
+      const apiError = err?.response?.data;
+      const msg = apiError?.errorCode || apiError?.error || err?.message || 'Error al eliminar actividad';
+      showToast(msg, 'error');
     } finally {
       setShowConfirmDeleteModal(false);
       setLoading(false);
@@ -650,7 +850,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId) {
+    if (!formData.nombre || !formData.fechaYHora || !formData.fechaYHora.split('T')[0] || !formData.fechaYHora.split('T')[1] || !formData.salaId || !formData.cupoMaximo) {
       onError('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -691,7 +891,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
         await actividadesApi.update(actividad.id, payload);
       } else if (formData.frecuencia === 'Recurrente') {
         if (!fechaFinRecurrente) {
-          onError('Debe seleccionar una fecha fin para la recurrencia');
+          onError('Por favor, completa todos los campos obligatorios.'); // reemplazar por esto en caso de que Ana quiera notis especializadas: onError('Debe seleccionar una fecha fin para la recurrencia'); 
           setLoading(false);
           return;
         }
@@ -708,7 +908,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       } else {
         await actividadesApi.create(payload);
       }
-      onSuccess(isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente');
+      await importantNotification({ type: 'success', message: isEditing ? 'Actividad modificada exitosamente' : 'Actividad creada exitosamente' });
       onClose();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -726,7 +926,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {!stepFrecuencia ? (
         <div className="space-y-4">
-          <p className="text-sm text-dark-green dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
+          <p className="text-sm text-dark-green font-semibold  dark:text-primary text-bold">Seleccione el tipo de frecuencia para la actividad:</p>
           <Select
             label="Frecuencia"
             value=""
@@ -742,7 +942,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               { value: "Esporadica", label: "Esporádica" },
               { value: "Recurrente", label: "Recurrente" },
             ]}
-            required
           />
         </div>
       ) : (
@@ -752,7 +951,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             placeholder="Sin nombre"
-            required
           />
           <div>
             <label className="block text-sm font-medium text-dark dark:text-gray-100 mb-1.5">
@@ -844,7 +1042,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                 { value: "", label: "Seleccione una sala..." },
                 ...salas.map((s) => ({ value: s.id, label: `${s.nombre} (Cap. ${s.capacidad})` })),
               ]}
-              required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -901,7 +1098,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                     cupoMaximo: parseInt(e.target.value),
                   })
                 }
-                required
               />
             )}
           </div>
@@ -912,7 +1108,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
               value={fechaFinRecurrente}
               onChange={(e) => setFechaFinRecurrente(e.target.value)}
               min={formData.fechaYHora.split('T')[0] || todayStr}
-              required
             />
           )}
           {isAdmin && (
@@ -929,7 +1124,6 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
                     cupoMaximo: parseInt(e.target.value),
                   })
                 }
-                required
               />
               <Select
                 label="Profesor (opcional)"
@@ -956,7 +1150,7 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
       )}
 
       <div className={`flex gap-3 pt-4 ${isEditing ? 'justify-between' : 'justify-end'}`}>
-        {isEditing && (
+        {isEditing && actividad?.estado === 'Aprobada' && (
           <Button
             variant="rojo"
             type="button"
@@ -980,9 +1174,9 @@ export function ActividadForm({ onClose, salas, profesores, actividad, onError, 
 
       <ConfirmActionModal
         isOpen={showConfirmDeleteModal}
-        title="Eliminar actividad"
-        body="¿Estás seguro de que deseas eliminar esta actividad? Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
+        title="Cancelar actividad"
+        body="¿Estás seguro de que deseas cancelar esta actividad? Esta acción no se puede deshacer."
+        confirmLabel="Cancelar"
         onConfirm={handleDelete}
         onCancel={() => setShowConfirmDeleteModal(false)}
       />

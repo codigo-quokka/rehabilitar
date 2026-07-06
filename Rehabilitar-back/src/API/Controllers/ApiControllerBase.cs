@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,5 +36,15 @@ namespace API.Controllers
                 FieldErrors = fieldErrors
             });
         }
+
+        protected Guid GetCurrentUserId()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userId, out var guidId))
+                throw new UnauthorizedAccessException("Usuario no autenticado.");
+            return guidId;
+        }
     }
+
+    
 }

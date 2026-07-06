@@ -21,6 +21,7 @@ import { MetricasPage } from "../features/metricas/pages/MetricasPage";
 import { PerfilPage } from "../features/usuarios/pages/PerfilPage";
 import { MisClasesPage } from "../features/profesor/pages/MisClasesPage";
 import { AdminAptosFisicosPage } from '../features/aptosFisicos/pages/AdminAptosFisicosPage';
+import { CheckInPage } from '../features/asistencia/pages/CheckInPage';
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
@@ -64,6 +65,10 @@ export const routes = [
     element: <EmailVerificationPage />,
   },
   {
+    path: "/asistencia/:actividadId",
+    element: <CheckInPage />,
+  },
+  {
     element: <ProtectedRoute />,
     children: [
       {
@@ -88,6 +93,10 @@ export const routes = [
           {
             path: "confirmar/:reservaId",
             element: <ConfirmarPagoPage />,
+          },
+          {
+            path: 'confirmar-paquete/:intencionId',
+            element: <ConfirmarPagoPage />
           },
           {
             path: "pago/exito",
